@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tournament Scorer</title>
+    <style>
+        :root {
+            --bg-dark: #121212; --bg-card: #1e1e1e; --text-main: #ffffff;
+            --text-muted: #a0a0a0; --accent-gold: #d4af37; --bg-table: #2a2a2a;
+        }
+
+        body {
+            background-color: var(--bg-dark); color: var(--text-main);
+            font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 20px;
+            padding-bottom: 80px;
+        }
+
+        .card {
+            background-color: var(--bg-card); border-top: 4px solid var(--accent-gold);
+            border-radius: 8px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+            max-width: 600px; margin: 0 auto 20px;
+        }
+
+        .screen { display: none; }
+        .screen.active { display: block; }
+
+        label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
+        input[type="number"], input[type="text"], select {
+            width: 100%; padding: 12px; box-sizing: border-box;
+            background: #2a2a2a; border: 1px solid #444; color: white;
+            border-radius: 4px; font-size: 16px; margin-bottom: 10px;
+        }
+        
+        button { font-family: 'Segoe UI', Tahoma, sans-serif; }
+        .btn-primary {
+            background-color: var(--accent-gold); color: #000;
+            width: 100%; padding: 15px; border: none; border-radius: 4px;
+            font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 15px;
+        }
+        .btn-secondary {
+            background-color: transparent; color: var(--text-muted);
+            width: 100%; padding: 15px; border: 1px solid #444; border-radius: 4px;
+            font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px;
+        }
+
+        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 5px; }
+        .checkbox-group label { text-transform: none; display: flex; align-items: center; gap: 8px; font-size: 15px; color: white; font-weight: normal;}
+        .checkbox-group input { width: 18px; height: 18px; accent-color: var(--accent-gold); }
+
+        /* Hole Navigation UI */
+        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;}
+        .hole-nav button { background: #444; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold;}
+        .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center;}
+        
+        /* Team Scorecard UI */
+        .team-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #555; }
+        .team-header { display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px;}
+        .team-header h3 { margin: 0; }
+        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+        .player-row span { font-size: 18px; font-weight: bold;}
+        
+        /* Mobile Optimized Input */
+        .score-box { width: 60px; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 10px; border: 2px solid #555; color: white; border-radius: 6px;}
+        .score-box:focus { border-color: var(--accent-gold); outline: none; background: #000; }
+
+        /* Standings UI */
+        .standings-row { display: flex; justify-content: space-between; padding: 15px; background: #252525; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid var(--accent-gold);}
+        .standings-team { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
+        .score-pill { background: #111; padding: 5px 10px; border-radius: 4px; font-size: 14px; color: var(--text-muted); border: 1px solid #333; margin-top: 5px; display: inline-block;}
+        
+        /* Skin Row */
+        .skin-row { background: #252525; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #cc3300; display: flex; justify-content: space-between; align-items: center;}
+        .skin-winner { font-size: 1.2em; font-weight: bold; color: var(--accent-gold); }
+
+        /* Full Scorecard Grid */
+        .table-wrapper { overflow-x: auto; margin-top: 20px; }
+        table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; }
+        th, td { border: 1px solid #444; padding: 8px; }
+        th { background-color: #333; color: var(--accent-gold); }
+        .par-row { background-color: #222; font-weight: bold; color: var(--text-muted); }
+        .out-in-col { background-color: #3a3a3a; font-weight: bold; }
+        .score-cell { font-weight: bold; }
+
+        .under-par { color: #00ff00; }
+        .over-par { color: #ff3333; }
+        .even-par { color: white; }
+    </style>
+</head>
+<body>
+
+    <div id="step-1" class="screen card">
+        <h2>Tournament Setup</h2>
+        <label>Select Course</label>
+        <select id="course-selector"></select>
+
+        <div style="display: flex; gap: 15px;">
+            <div style="flex: 1;">
+                <label>Groups?</label>
+                <input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric">
+            </div>
+            <div style="flex: 1;">
+                <label>Players/Group?</label>
+                <input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric">
+            </div>
+        </div>
+
+        <label>Team Formats</label>
+        <div class="checkbox-group">
+            <label><input type="checkbox" id="fmt-1" value="1-best" checked> 1-Best Ball</label>
+            <label><input type="checkbox" id="fmt-2" value="2-best" checked> 2-Best Ball</label>
+            <label><input type="checkbox" id="fmt-3" value="3-best"> 3-Best Ball</label>
+        </div>
+        <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
+    </div>
+
+    <div id="step-2" class="screen card">
+        <h2>Enter Player Names</h2>
+        <p style="color: var(--text-muted); font-size: 0.9em;">Player 1 will be set as the Group Captain.</p>
+        <div id="roster-container"></div>
+        <button class="btn-secondary" onclick="switchScreen('step-2', 'step-1')">← Back</button>
+        <button class="btn-primary" onclick="goToStep3()">Start Round</button>
+    </div>
+
+    <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
+        <div class="hole-nav">
+            <button onclick="changeHole(-1)">◀ Prev</button>
+            <div>
+                <h2 id="current-hole-display">Hole 1</h2>
+                <div id="current-par-display" style="text-align: center; color: var(--text-muted);">Par 4</div>
+            </div>
+            <button onclick="changeHole(1)">Next ▶</button>
+        </div>
+
+        <div id="entry-container"></div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px;">
+            <button class="btn-primary" onclick="viewStandings()" style="background-color: #28a745; color: white; margin-top: 0; border: 1px solid #1e7e34;">🏆 Standings</button>
+            <button class="btn-primary" onclick="viewSkins()" style="background-color: #cc3300; color: white; margin-top: 0; border: 1px solid #a32900;">🔥 View Skins</button>
+            <button class="btn-secondary" onclick="viewFullCard()" style="grid-column: span 2;">📋 View Full Scorecard</button>
+        </div>
+    </div>
+
+    <div id="step-4" class="screen card">
+        <h2>Live Leaderboard</h2>
+        <p style="color: var(--accent-gold); margin-top: 0;" id="standings-hole-status"></p>
+        <div id="standings-container"></div>
+        <button class="btn-secondary" onclick="switchScreen('step-4', 'step-3')">← Back to Scoring</button>
+    </div>
+
+    <div id="step-5" class="screen card">
+        <h2>Skins (Birdie or Better)</h2>
+        <p style="color: var(--text-muted); margin-top: 0;">Ties cancel. Must beat Par.</p>
+        <div id="skins-container"></div>
+        <button class="btn-secondary" onclick="switchScreen('step-5', 'step-3')">← Back to Scoring</button>
+    </div>
+
+    <div id="step-6" class="screen card" style="max-width: 100%;">
+        <h2>Full Scorecard View</h2>
+        <div class="table-wrapper" id="full-card-container"></div>
+        
+        <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px; max-width: 400px;">
+            <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
+            <hr style="border-color: #444; width: 100%; margin: 20px 0;">
+            <button class="btn-primary" onclick="finalizeRoundAndReset()" style="background-color: #8b0000; color: white;">🛑 Finalize & Reset App</button>
+            <p style="color: #8b0000; font-size: 12px; text-align: center; margin-top: 0;">This will clear all scores from your phone's memory.</p>
+        </div>
+    </div>
+
+    <script>
+        const courseDatabase = {
+            "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] }
+        };
+
+        // Professional, high-visibility color palette for teams
+        const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493', '#32CD32', '#4169E1'];
+
+        let roundData = { course: null, groups: [], formats: [], currentHole: 1 };
+        let scoresDb = {}; 
+
+        // INITIALIZATION & LOCAL STORAGE CHECK
+        window.onload = () => {
+            const savedState = localStorage.getItem('tournamentAppMemory');
+            
+            if (savedState) {
+                // Restore game from memory
+                const parsedState = JSON.parse(savedState);
+                roundData = parsedState.roundData;
+                scoresDb = parsedState.scoresDb;
+                renderScoreEntry();
+                document.getElementById('step-3').classList.add('active');
+            } else {
+                // Start fresh
+                const selector = document.getElementById('course-selector');
+                for (const [key, course] of Object.entries(courseDatabase)) {
+                    selector.innerHTML += `<option value="${key}">${course.name}</option>`;
+                }
+                document.getElementById('step-1').classList.add('active');
+            }
+        };
+
+        function saveAppState() {
+            const appState = { roundData: roundData, scoresDb: scoresDb };
+            localStorage.setItem('tournamentAppMemory', JSON.stringify(appState));
+        }
+
+        function finalizeRoundAndReset() {
+            if(confirm("Are you absolutely sure? This will permanently delete the current round data from this device.")) {
+                localStorage.removeItem('tournamentAppMemory');
+                window.location.reload(); 
+            }
+        }
+
+        function switchScreen(hide, show) {
+            document.getElementById(hide).classList.remove('active');
+            document.getElementById(show).classList.add('active');
+        }
+
+        function goToStep2() {
+            roundData.course = courseDatabase[document.getElementById('course-selector').value];
+            const gCount = parseInt(document.getElementById('group-count').value);
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+
+            let html = '';
+            for (let g = 1; g <= gCount; g++) {
+                html += `<div style="padding:15px; background:#252525; border-radius:5px; margin-bottom: 15px;">`;
+                html += `<h3 style="margin-top:0; color:var(--accent-gold);">Group ${g}</h3>`;
+                for (let p = 1; p <= pCount; p++) {
+                    let placeholder = p === 1 ? "Player 1 (Captain)" : `Player ${p}`;
+                    html += `<input type="text" id="g${g}-p${p}" placeholder="${placeholder}">`;
+                }
+                html += `</div>`;
+            }
+            document.getElementById('roster-container').innerHTML = html;
+            switchScreen('step-1', 'step-2');
+        }
+
+        function goToStep3() {
+            roundData.formats = [];
+            if(document.getElementById('fmt-1').checked) roundData.formats.push(1);
+            if(document.getElementById('fmt-2').checked) roundData.formats.push(2);
+            if(document.getElementById('fmt-3').checked) roundData.formats.push(3);
+
+            roundData.groups = [];
+            scoresDb = {};
+            const gCount = parseInt(document.getElementById('group-count').value);
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            
+            for (let g = 1; g <= gCount; g++) {
+                let teamPlayers = [];
+                scoresDb[g] = {};
+                for (let p = 1; p <= pCount; p++) {
+                    let name = document.getElementById(`g${g}-p${p}`).value || `Golfer ${g}-${p}`;
+                    teamPlayers.push({ id: p, name: name });
+                    scoresDb[g][p] = {}; 
+                }
+                
+                // Assign a curated color to the group
+                let teamColor = curatedColors[(g - 1) % curatedColors.length];
+                roundData.groups.push({ id: g, captain: teamPlayers[0].name, players: teamPlayers, color: teamColor });
+            }
+
+            roundData.currentHole = 1;
+            saveAppState(); // Save initial state
+            renderScoreEntry();
+            switchScreen('step-2', 'step-3');
+        }
+
+        function changeHole(direction) {
+            let newHole = roundData.currentHole + direction;
+            if(newHole >= 1 && newHole <= 18) {
+                roundData.currentHole = newHole;
+                saveAppState(); // Remember what hole we are on
+                renderScoreEntry();
+            }
+        }
+
+        function renderScoreEntry() {
+            let hole = roundData.currentHole;
+            document.getElementById('current-hole-display').innerText = `Hole ${hole}`;
+            document.getElementById('current-par-display').innerText = `Par ${roundData.course.pars[hole-1]}`;
+
+            let html = '';
+            roundData.groups.forEach(group => {
+                html += `<div class="team-card" style="border-left-color: ${group.color};">
+                    <div class="team-header">
+                        <h3 style="color: ${group.color};">Team ${group.id}</h3>
+                        <span style="color: var(--text-muted); font-size: 14px;">Capt: ${group.captain}</span>
+                    </div>`;
+                
+                group.players.forEach(player => {
+                    let currentScore = scoresDb[group.id][player.id][hole] || '';
+                    html += `
+                    <div class="player-row">
+                        <span>${player.name}</span>
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-box" value="${currentScore}" 
+                               onchange="saveScore(${group.id}, ${player.id}, ${hole}, this.value)">
+                    </div>`;
+                });
+                html += `</div>`;
+            });
+            document.getElementById('entry-container').innerHTML = html;
+        }
+
+        function saveScore(groupId, playerId, hole, value) {
+            let val = parseInt(value);
+            if(!isNaN(val) && val > 0) {
+                scoresDb[groupId][playerId][hole] = val;
+            } else {
+                delete scoresDb[groupId][playerId][hole]; 
+            }
+            saveAppState(); // Save data immediately to prevent loss
+        }
+
+        // --- STANDINGS ENGINE ---
+        function viewStandings() {
+            document.getElementById('standings-hole-status').innerText = `Thru Hole ${roundData.currentHole}`;
+            let html = '';
+            roundData.groups.forEach(group => {
+                let teamTotals = { 1: 0, 2: 0, 3: 0 };
+                let parsPlayed = { 1: 0, 2: 0, 3: 0 };
+
+                for(let h = 1; h <= roundData.currentHole; h++) {
+                    let holeScores = [];
+                    let par = roundData.course.pars[h-1];
+                    group.players.forEach(p => {
+                        if(scoresDb[group.id][p.id][h]) holeScores.push(scoresDb[group.id][p.id][h]);
+                    });
+
+                    holeScores.sort((a, b) => a - b);
+                    roundData.formats.forEach(f => {
+                        if(holeScores.length >= f) {
+                            teamTotals[f] += holeScores.slice(0, f).reduce((a, b) => a + b, 0);
+                            parsPlayed[f] += par * f; 
+                        }
+                    });
+                }
+
+                html += `<div class="standings-row" style="border-left-color: ${group.color};">
+                            <div><div class="standings-team" style="color: ${group.color};">Team ${group.id}</div></div>
+                            <div>`;
+                roundData.formats.forEach(f => {
+                    let net = teamTotals[f] - parsPlayed[f];
+                    let displayObj = formatNetScore(net, teamTotals[f]);
+                    html += `<div class="score-pill">${f}-Ball: <span class="${displayObj.css}">${displayObj.text}</span></div><br>`;
+                });
+                html += `</div></div>`;
+            });
+            document.getElementById('standings-container').innerHTML = html;
+            switchScreen('step-3', 'step-4');
+        }
+
+        // --- SKINS ENGINE ---
+        function viewSkins() {
+            let html = '';
+            let skinsCount = 0;
+
+            for(let h=1; h<=18; h++) {
+                let par = roundData.course.pars[h-1];
+                let holeScores = [];
+                
+                roundData.groups.forEach(g => {
+                    g.players.forEach(p => {
+                        let s = scoresDb[g.id][p.id][h];
+                        if(s) holeScores.push({name: p.name, score: s, color: g.color});
+                    });
+                });
+
+                if(holeScores.length > 0) {
+                    let minScore = Math.min(...holeScores.map(x => x.score));
+                    if(minScore < par) { 
+                        let winners = holeScores.filter(x => x.score === minScore);
+                        if(winners.length === 1) { 
+                            skinsCount++;
+                            let term = (minScore === par - 1) ? "Birdie" : "Eagle";
+                            if(minScore <= par - 3) term = "Albatross/Ace";
+                            
+                            html += `
+                            <div class="skin-row" style="border-left-color: ${winners[0].color};">
+                                <div>
+                                    <div style="color: var(--text-muted); font-size: 0.9em;">Hole ${h} (Par ${par})</div>
+                                    <div class="skin-winner" style="color: ${winners[0].color};">${winners[0].name}</div>
+                                </div>
+                                <div style="font-size: 24px; font-weight: bold;">${minScore} <span style="font-size: 14px; font-weight: normal; color: var(--text-muted);">(${term})</span></div>
+                            </div>`;
+                        }
+                    }
+                }
+            }
+            if(skinsCount === 0) html = "<p style='text-align: center; padding: 20px; background: #222; border-radius: 6px;'>No skins won yet.</p>";
+            
+            document.getElementById('skins-container').innerHTML = html;
+            switchScreen('step-3', 'step-5');
+        }
+
+        // --- FULL READ-ONLY SCORECARD ---
+        function viewFullCard() {
+            let tableHTML = `<table><thead><tr><th style="text-align:left;">Player</th>`;
+            for(let i=1; i<=9; i++) tableHTML += `<th>${i}</th>`;
+            tableHTML += `<th class="out-in-col">OUT</th>`;
+            for(let i=10; i<=18; i++) tableHTML += `<th>${i}</th>`;
+            tableHTML += `<th class="out-in-col">IN</th><th class="out-in-col">TOT</th></tr></thead><tbody>`;
+
+            let outPar = roundData.course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
+            let inPar = roundData.course.pars.slice(9, 18).reduce((a, b) => a + b, 0);
+            
+            tableHTML += `<tr class="par-row"><td style="text-align:left;">PAR</td>`;
+            roundData.course.pars.slice(0,9).forEach(par => tableHTML += `<td>${par}</td>`);
+            tableHTML += `<td class="out-in-col">${outPar}</td>`;
+            roundData.course.pars.slice(9,18).forEach(par => tableHTML += `<td>${par}</td>`);
+            tableHTML += `<td class="out-in-col">${inPar}</td><td class="out-in-col">${outPar+inPar}</td></tr>`;
+
+            roundData.groups.forEach(g => {
+                g.players.forEach(p => {
+                    tableHTML += `<tr><td style="text-align:left; white-space:nowrap;"><b>${p.name}</b> <span style="font-size:10px; color:${g.color};">(G${g.id})</span></td>`;
+                    let outScore = 0, inScore = 0;
+
+                    for(let h=1; h<=18; h++) {
+                        let score = scoresDb[g.id][p.id][h] || '-';
+                        let cssClass = "score-cell";
+                        
+                        if(score !== '-') {
+                            if(h <= 9) outScore += score; else inScore += score;
+                            let par = roundData.course.pars[h-1];
+                            if(score < par) cssClass += " under-par";
+                            else if(score > par) cssClass += " over-par";
+                        }
+
+                        if(h === 10) tableHTML += `<td class="out-in-col">${outScore || '-'}</td>`;
+                        tableHTML += `<td class="${cssClass}">${score}</td>`;
+                    }
+                    tableHTML += `<td class="out-in-col">${inScore || '-'}</td><td class="out-in-col">${(outScore+inScore) || '-'}</td></tr>`;
+                });
+            });
+
+            tableHTML += `</tbody></table>`;
+            document.getElementById('full-card-container').innerHTML = tableHTML;
+            switchScreen('step-3', 'step-6');
+        }
+
+        function formatNetScore(net, raw) {
+            if(raw === 0 || net === 0) return { text: "E", css: "even-par" };
+            if(net < 0) return { text: net, css: "under-par" }; 
+            return { text: `+${net}`, css: "over-par" }; 
+        }
+    </script>
+</body>
+</html>
