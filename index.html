@@ -233,9 +233,15 @@
         </div>
     </div>
 
+    <div id="step-dead-link" class="screen card" style="text-align: center; padding: 40px 20px;">
+        <h2 style="color: var(--accent-gold); font-size: 2.2em; margin-bottom: 10px;">⛳ Round Complete</h2>
+        <p style="color: var(--text-main); font-size: 1.1em;">This tournament has been finalized.</p>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 20px;">The active scorecard is now locked. Please wait for a new link from the administrator to begin your next round.</p>
+    </div>
+
     <script>
         // ==========================================
-        // 1. FIREBASE CONFIGURATION (Wired with your keys)
+        // 1. FIREBASE CONFIGURATION 
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
@@ -243,8 +249,7 @@
             projectId: "golf-327be",
             storageBucket: "golf-327be.firebasestorage.app",
             messagingSenderId: "481710804257",
-            appId: "1:481710804257:web:84ab3594fcc80b7affc260",
-            measurementId: "G-4XCBSJ6T14"
+            appId: "1:481710804257:web:84ab3594fcc80b7affc260"
         };
 
         firebase.initializeApp(firebaseConfig);
@@ -270,7 +275,7 @@
         let allAvailableCourses = {}; 
 
         // ==========================================
-        // 3. STARTUP & CLOUD LISTENER WITH AUTO-REFRESH
+        // 3. STARTUP & CLOUD LISTENER
         // ==========================================
         window.onload = () => {
             let parGridHTML = '';
@@ -293,29 +298,41 @@
                 currentTeamFilter = savedFilter;
             }
 
-            // Real-time listener that auto-refreshes whatever screen you are looking at
             activeTournamentRef.onSnapshot((doc) => {
+                // First, hide all screens
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+
                 if (doc.exists) {
                     const data = doc.data();
                     roundData = data.roundData;
                     scoresDb = data.scoresDb;
 
-                    if (document.getElementById('step-1').classList.contains('active')) {
-                        document.getElementById('step-1').classList.remove('active');
+                    // Figure out what screen they should be on based on previous memory
+                    if (!document.getElementById('step-3').classList.contains('active') && 
+                        !document.getElementById('step-4').classList.contains('active') && 
+                        !document.getElementById('step-5').classList.contains('active') && 
+                        !document.getElementById('step-6').classList.contains('active')) {
+                        
+                        // Default to step 3 if they aren't looking at another live view
                         renderCaptainGrid();
                         renderScoreEntry();
                         document.getElementById('step-3').classList.add('active');
-                    } else if (document.getElementById('step-3').classList.contains('active')) {
-                        updateUIWithoutLosingFocus();
-                    } else if (document.getElementById('step-4').classList.contains('active')) {
-                        viewStandings(); 
-                    } else if (document.getElementById('step-5').classList.contains('active')) {
-                        viewSkins(); 
-                    } else if (document.getElementById('step-6').classList.contains('active')) {
-                        viewFullCard(); 
+                    } else {
+                        // Refresh whatever live view they are looking at
+                        if (document.getElementById('step-3').classList.contains('active')) updateUIWithoutLosingFocus();
+                        if (document.getElementById('step-4').classList.contains('active')) viewStandings(); 
+                        if (document.getElementById('step-5').classList.contains('active')) viewSkins(); 
+                        if (document.getElementById('step-6').classList.contains('active')) viewFullCard(); 
                     }
                 } else {
-                    document.getElementById('step-1').classList.add('active');
+                    // THE ROUND HAS BEEN DELETED / FINALIZED
+                    if (lockedTeamId !== null) {
+                        // If it's a captain with a magic link, show the Dead Link screen
+                        document.getElementById('step-dead-link').classList.add('active');
+                    } else {
+                        // If it's the Admin, show the Setup Screen
+                        document.getElementById('step-1').classList.add('active');
+                    }
                 }
             });
         };
@@ -452,7 +469,9 @@
             if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) {
                 saveToArchive();
                 activeTournamentRef.delete().then(() => {
-                    window.location.href = window.location.href.split('?')[0]; 
+                    // Removed the reload here so the listener can naturally catch the deletion and trigger the "Dead Link" screen for others
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    document.getElementById('step-1').classList.add('active');
                 });
             }
         }
@@ -462,7 +481,8 @@
             if (pin === "1234") {
                 saveToArchive();
                 activeTournamentRef.delete().then(() => {
-                    window.location.href = window.location.href.split('?')[0]; 
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    document.getElementById('step-1').classList.add('active');
                 });
             } else if (pin !== null && pin !== "") alert("Incorrect PIN. Reset aborted.");
         }
@@ -520,7 +540,7 @@
             saveAppStateToCloud();
             renderCaptainGrid();
             renderScoreEntry();
-            switchScreen('step-2', 'step-3');
+            // Swapping screen is handled by the onSnapshot listener now since we pushed to cloud
         }
 
         function renderCaptainGrid() {
@@ -666,7 +686,8 @@
                 html += `</div></div>`;
             });
             document.getElementById('standings-container').innerHTML = html;
-            switchScreen('step-3', 'step-4');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-4').classList.add('active');
         }
 
         function generateSkinsHTML(rData, sDb) {
@@ -768,13 +789,15 @@
 
         function viewSkins() {
             document.getElementById('skins-container').innerHTML = generateSkinsHTML(roundData, scoresDb);
-            switchScreen('step-3', 'step-5');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-5').classList.add('active');
         }
 
         function viewFullCard() {
             document.getElementById('full-card-container').innerHTML = generateScorecardHTML(roundData, scoresDb);
             document.getElementById('final-skins-container').innerHTML = generateSkinsHTML(roundData, scoresDb);
-            switchScreen('step-3', 'step-6');
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-6').classList.add('active');
         }
 
         function formatNetScore(net, raw) {
