@@ -55,7 +55,7 @@
         .group-selector-card .player-list { font-size: 12px; color: #ccc; line-height: 1.4; }
         
         /* Hole Navigation UI */
-        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #444;}
+        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 8px; border: 1px solid #444;}
         .hole-nav button { background: #444; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold;}
         .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center;}
         
@@ -146,7 +146,9 @@
         
         <div id="captain-grid-container" class="group-selector-grid"></div>
 
-        <div class="hole-nav">
+        <div id="entry-container"></div>
+
+        <div class="hole-nav" style="margin-top: 15px; margin-bottom: 0;">
             <button onclick="changeHole(-1)">◀ Prev</button>
             <div>
                 <h2 id="current-hole-display">Hole 1</h2>
@@ -154,8 +156,6 @@
             </div>
             <button onclick="changeHole(1)">Next ▶</button>
         </div>
-
-        <div id="entry-container"></div>
 
         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 25px;">
             <button class="btn-primary" onclick="viewStandings()" style="background-color: #28a745; color: white; margin-top: 0; border: 1px solid #1e7e34;">🏆 Standings</button>
@@ -212,9 +212,7 @@
 
     <div id="step-9" class="screen" style="max-width: 1000px; margin: 0 auto;">
         <h2 style="text-align: center; color: white; margin-bottom: 25px;">Archived Scorecard</h2>
-        
         <div id="archived-card-container"></div>
-        
         <div class="card" style="margin-top: 30px; max-width: 100%;">
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Archived Skins</h3>
             <div id="archived-skins-container"></div>
@@ -560,7 +558,6 @@
             return html;
         }
 
-        // --- NEW FULLY SEPARATED TEAM SCORECARDS ---
         function generateScorecardHTML(rData, sDb) {
             let fullHTML = '';
             let outPar = rData.course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
