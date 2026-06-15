@@ -48,8 +48,22 @@
         .checkbox-group label { text-transform: none; display: flex; align-items: center; gap: 8px; font-size: 15px; color: white; font-weight: normal;}
         .checkbox-group input { width: 18px; height: 18px; accent-color: var(--accent-gold); }
 
+        /* Captain Filter UI - NEW COLORED SQUARES */
+        .group-selector-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); 
+            gap: 12px; 
+            margin-bottom: 25px; 
+        }
+        .group-selector-card {
+            background: #222; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer;
+            border: 2px solid transparent; transition: all 0.2s ease;
+        }
+        .group-selector-card h3 { margin: 0 0 8px 0; font-size: 1.1em; }
+        .group-selector-card .player-list { font-size: 12px; color: #ccc; line-height: 1.4; }
+        
         /* Hole Navigation UI */
-        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #444;}
+        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border: 1px solid #444;}
         .hole-nav button { background: #444; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold;}
         .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center;}
         
@@ -59,17 +73,13 @@
         .team-header h3 { margin: 0; }
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .player-row span { font-size: 18px; font-weight: bold;}
-        
-        /* Mobile Optimized Input */
         .score-box { width: 60px; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 10px; border: 2px solid #555; color: white; border-radius: 6px;}
         .score-box:focus { border-color: var(--accent-gold); outline: none; background: #000; }
 
-        /* Standings UI */
+        /* Standings & Skins UI */
         .standings-row { display: flex; justify-content: space-between; padding: 15px; background: #252525; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid var(--accent-gold);}
         .standings-team { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
         .score-pill { background: #111; padding: 5px 10px; border-radius: 4px; font-size: 14px; color: var(--text-muted); border: 1px solid #333; margin-top: 5px; display: inline-block;}
-        
-        /* Skin Row */
         .skin-row { background: #252525; padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #cc3300; display: flex; justify-content: space-between; align-items: center;}
         .skin-winner { font-size: 1.2em; font-weight: bold; color: var(--accent-gold); }
 
@@ -81,7 +91,6 @@
         .par-row { background-color: #222; font-weight: bold; color: var(--text-muted); }
         .out-in-col { background-color: #3a3a3a; font-weight: bold; }
         .score-cell { font-weight: bold; }
-
         .under-par { color: #00ff00; }
         .over-par { color: #ff3333; }
         .even-par { color: white; }
@@ -95,14 +104,8 @@
         <select id="course-selector"></select>
 
         <div style="display: flex; gap: 15px;">
-            <div style="flex: 1;">
-                <label>Groups?</label>
-                <input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric">
-            </div>
-            <div style="flex: 1;">
-                <label>Players/Group?</label>
-                <input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric">
-            </div>
+            <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric"></div>
+            <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric"></div>
         </div>
 
         <label>Team Formats</label>
@@ -123,6 +126,10 @@
     </div>
 
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
+        
+        <div id="captain-grid-container" class="group-selector-grid">
+            </div>
+
         <div class="hole-nav">
             <button onclick="changeHole(-1)">◀ Prev</button>
             <div>
@@ -150,7 +157,6 @@
 
     <div id="step-5" class="screen card">
         <h2>Skins (Birdie or Better)</h2>
-        <p style="color: var(--text-muted); margin-top: 0;">Ties cancel. Must beat Par.</p>
         <div id="skins-container"></div>
         <button class="btn-secondary" onclick="switchScreen('step-5', 'step-3')">← Back to Scoring</button>
     </div>
@@ -162,8 +168,8 @@
         <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px; max-width: 400px;">
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
-            <button class="btn-primary" onclick="finalizeRoundAndReset()" style="background-color: #8b0000; color: white;">🛑 Finalize & Reset App</button>
-            <p style="color: #8b0000; font-size: 12px; text-align: center; margin-top: 0;">This will clear all scores from your phone's memory.</p>
+            <button class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Reset App</button>
+            <p style="color: #8b0000; font-size: 12px; text-align: center; margin-top: 0;">Applies safety lock before wiping data.</p>
         </div>
     </div>
 
@@ -171,26 +177,26 @@
         const courseDatabase = {
             "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] }
         };
-
-        // Professional, high-visibility color palette for teams
-        const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493', '#32CD32', '#4169E1'];
+        const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493'];
 
         let roundData = { course: null, groups: [], formats: [], currentHole: 1 };
         let scoresDb = {}; 
+        
+        // NEW Variable to track which square is selected
+        let currentTeamFilter = "ALL"; 
 
-        // INITIALIZATION & LOCAL STORAGE CHECK
         window.onload = () => {
             const savedState = localStorage.getItem('tournamentAppMemory');
-            
             if (savedState) {
-                // Restore game from memory
                 const parsedState = JSON.parse(savedState);
                 roundData = parsedState.roundData;
                 scoresDb = parsedState.scoresDb;
+                if(parsedState.currentTeamFilter) currentTeamFilter = parsedState.currentTeamFilter;
+                
+                renderCaptainGrid();
                 renderScoreEntry();
                 document.getElementById('step-3').classList.add('active');
             } else {
-                // Start fresh
                 const selector = document.getElementById('course-selector');
                 for (const [key, course] of Object.entries(courseDatabase)) {
                     selector.innerHTML += `<option value="${key}">${course.name}</option>`;
@@ -200,12 +206,29 @@
         };
 
         function saveAppState() {
-            const appState = { roundData: roundData, scoresDb: scoresDb };
-            localStorage.setItem('tournamentAppMemory', JSON.stringify(appState));
+            localStorage.setItem('tournamentAppMemory', JSON.stringify({ 
+                roundData: roundData, 
+                scoresDb: scoresDb,
+                currentTeamFilter: currentTeamFilter 
+            }));
         }
 
-        function finalizeRoundAndReset() {
-            if(confirm("Are you absolutely sure? This will permanently delete the current round data from this device.")) {
+        function validateAndFinalize() {
+            let missingScores = false;
+            roundData.groups.forEach(g => {
+                g.players.forEach(p => {
+                    for(let h = 1; h <= 18; h++) {
+                        if(!scoresDb[g.id][p.id][h]) missingScores = true;
+                    }
+                });
+            });
+
+            if(missingScores) {
+                alert("⚠️ Cannot finalize!\n\nAll scores have not been entered for all groups yet. Please check the Full Scorecard to find missing entries.");
+                return; 
+            }
+
+            if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and clear the board?")) {
                 localStorage.removeItem('tournamentAppMemory');
                 window.location.reload(); 
             }
@@ -254,23 +277,63 @@
                     teamPlayers.push({ id: p, name: name });
                     scoresDb[g][p] = {}; 
                 }
-                
-                // Assign a curated color to the group
                 let teamColor = curatedColors[(g - 1) % curatedColors.length];
                 roundData.groups.push({ id: g, captain: teamPlayers[0].name, players: teamPlayers, color: teamColor });
             }
 
             roundData.currentHole = 1;
-            saveAppState(); // Save initial state
+            currentTeamFilter = "ALL";
+            
+            renderCaptainGrid();
+            saveAppState(); 
             renderScoreEntry();
             switchScreen('step-2', 'step-3');
+        }
+
+        // NEW: Draw the Colored Squares Grid
+        function renderCaptainGrid() {
+            let container = document.getElementById('captain-grid-container');
+            let html = '';
+
+            // 1. The "All Groups" Square
+            let allStyle = currentTeamFilter === "ALL" ? `border-color: white; box-shadow: 0 0 10px white; opacity: 1;` : `border-color: #444; opacity: 0.5;`;
+            html += `
+            <div class="group-selector-card" style="${allStyle}" onclick="setTeamFilter('ALL')">
+                <h3 style="color: white;">All Groups</h3>
+                <div class="player-list">Admin View</div>
+            </div>`;
+
+            // 2. The Team Squares
+            roundData.groups.forEach(g => {
+                let isSelected = currentTeamFilter === g.id;
+                let cardStyle = isSelected ? `border-color: ${g.color}; box-shadow: 0 0 12px ${g.color}; opacity: 1; transform: scale(1.02);` : `border-color: #444; opacity: 0.5;`;
+                
+                // Build a string of player names separated by breaks
+                let playerNames = g.players.map(p => p.name).join('<br>');
+
+                html += `
+                <div class="group-selector-card" style="${cardStyle}" onclick="setTeamFilter(${g.id})">
+                    <h3 style="color: ${g.color};">Group ${g.id}</h3>
+                    <div class="player-list">${playerNames}</div>
+                </div>`;
+            });
+
+            container.innerHTML = html;
+        }
+
+        // NEW: Handle a square being clicked
+        function setTeamFilter(filterValue) {
+            currentTeamFilter = filterValue;
+            saveAppState(); // Save the layout choice so it remembers it
+            renderCaptainGrid(); // Redraw grid to show active highlight
+            renderScoreEntry();  // Redraw scorecards to show/hide teams
         }
 
         function changeHole(direction) {
             let newHole = roundData.currentHole + direction;
             if(newHole >= 1 && newHole <= 18) {
                 roundData.currentHole = newHole;
-                saveAppState(); // Remember what hole we are on
+                saveAppState(); 
                 renderScoreEntry();
             }
         }
@@ -279,12 +342,15 @@
             let hole = roundData.currentHole;
             document.getElementById('current-hole-display').innerText = `Hole ${hole}`;
             document.getElementById('current-par-display').innerText = `Par ${roundData.course.pars[hole-1]}`;
-
+            
             let html = '';
             roundData.groups.forEach(group => {
+                // HIDE logic based on the square clicked
+                if (currentTeamFilter !== "ALL" && currentTeamFilter !== group.id) return;
+
                 html += `<div class="team-card" style="border-left-color: ${group.color};">
                     <div class="team-header">
-                        <h3 style="color: ${group.color};">Team ${group.id}</h3>
+                        <h3 style="color: ${group.color};">Group ${group.id}</h3>
                         <span style="color: var(--text-muted); font-size: 14px;">Capt: ${group.captain}</span>
                     </div>`;
                 
@@ -304,15 +370,11 @@
 
         function saveScore(groupId, playerId, hole, value) {
             let val = parseInt(value);
-            if(!isNaN(val) && val > 0) {
-                scoresDb[groupId][playerId][hole] = val;
-            } else {
-                delete scoresDb[groupId][playerId][hole]; 
-            }
-            saveAppState(); // Save data immediately to prevent loss
+            if(!isNaN(val) && val > 0) scoresDb[groupId][playerId][hole] = val;
+            else delete scoresDb[groupId][playerId][hole]; 
+            saveAppState();
         }
 
-        // --- STANDINGS ENGINE ---
         function viewStandings() {
             document.getElementById('standings-hole-status').innerText = `Thru Hole ${roundData.currentHole}`;
             let html = '';
@@ -350,15 +412,12 @@
             switchScreen('step-3', 'step-4');
         }
 
-        // --- SKINS ENGINE ---
         function viewSkins() {
             let html = '';
             let skinsCount = 0;
-
             for(let h=1; h<=18; h++) {
                 let par = roundData.course.pars[h-1];
                 let holeScores = [];
-                
                 roundData.groups.forEach(g => {
                     g.players.forEach(p => {
                         let s = scoresDb[g.id][p.id][h];
@@ -374,7 +433,6 @@
                             skinsCount++;
                             let term = (minScore === par - 1) ? "Birdie" : "Eagle";
                             if(minScore <= par - 3) term = "Albatross/Ace";
-                            
                             html += `
                             <div class="skin-row" style="border-left-color: ${winners[0].color};">
                                 <div>
@@ -388,12 +446,10 @@
                 }
             }
             if(skinsCount === 0) html = "<p style='text-align: center; padding: 20px; background: #222; border-radius: 6px;'>No skins won yet.</p>";
-            
             document.getElementById('skins-container').innerHTML = html;
             switchScreen('step-3', 'step-5');
         }
 
-        // --- FULL READ-ONLY SCORECARD ---
         function viewFullCard() {
             let tableHTML = `<table><thead><tr><th style="text-align:left;">Player</th>`;
             for(let i=1; i<=9; i++) tableHTML += `<th>${i}</th>`;
