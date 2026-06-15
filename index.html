@@ -89,7 +89,13 @@
         .par-setup-item label { margin: 0; font-size: 12px; }
         .par-setup-item input { width: 50px; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
 
-        /* Print Styles for PDF Generation */
+        /* Financial Summary Styles */
+        .payout-card { background: #252525; border-radius: 8px; border-left: 5px solid #28a745; padding: 15px; margin-bottom: 15px;}
+        .payout-header { font-size: 1.2em; font-weight: bold; color: #28a745; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;}
+        .payout-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .payout-winner { color: white; font-weight: bold; }
+        .payout-amount { color: var(--accent-gold); font-weight: bold; }
+
         @media print {
             body * { visibility: hidden; }
             .screen { display: none !important; }
@@ -97,8 +103,8 @@
             #step-6, #step-9 { position: absolute; left: 0; top: 0; display: block !important; }
             button, hr { display: none !important; }
             body { background: white; color: black; }
-            .card, .skin-row, .table-wrapper { background: white !important; border: 1px solid #ccc !important; box-shadow: none !important; color: black !important;}
-            h2, h3, th, td, span, .skin-winner { color: black !important; border-color: #999 !important; }
+            .card, .skin-row, .table-wrapper, .payout-card { background: white !important; border: 1px solid #ccc !important; box-shadow: none !important; color: black !important;}
+            h2, h3, th, td, span, .skin-winner, .payout-header, .payout-amount { color: black !important; border-color: #999 !important; }
             .par-row { background: #eee !important; }
             .out-in-col { background: #e5e5e5 !important; }
         }
@@ -118,6 +124,11 @@
         <div style="display: flex; gap: 15px; margin-top: 15px;">
             <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric"></div>
             <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric"></div>
+        </div>
+
+        <div style="display: flex; gap: 15px; margin-top: 5px;">
+            <div style="flex: 1;"><label>Per Bet ($/Player)</label><input type="number" id="bet-amount" min="0" value="50" inputmode="numeric"></div>
+            <div style="flex: 1;"><label>Skins Buy-in ($/Player)</label><input type="number" id="skins-amount" min="0" value="50" inputmode="numeric"></div>
         </div>
 
         <label>Team Formats</label>
@@ -151,7 +162,7 @@
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
         <div id="captain-grid-container" class="group-selector-grid"></div>
 
-        <div class="hole-nav" style="margin-bottom: 15px;">
+        <div class="hole-nav" style="margin-bottom: 15px;" id="top-nav-bar">
             <button onclick="changeHole(-1)">◀ Prev</button>
             <div>
                 <h2 id="current-hole-display-top" style="margin: 0; color: var(--accent-gold);">Hole 1</h2>
@@ -181,6 +192,7 @@
 
     <div id="step-4" class="screen card">
         <h2>Live Leaderboard</h2>
+        <div id="financial-standings-container"></div>
         <p style="color: var(--accent-gold); margin-top: 0;" id="standings-hole-status"></p>
         <div id="standings-container"></div>
         <button class="btn-secondary" onclick="switchScreen('step-4', 'step-3')">← Back to Scoring</button>
@@ -199,6 +211,12 @@
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Final Skins List</h3>
             <div id="final-skins-container"></div>
         </div>
+        
+        <div class="card" style="margin-top: 30px; max-width: 100%;">
+            <h3 style="color: #28a745; border-bottom: 1px solid #444; padding-bottom: 10px;">Payout & Winnings Breakdown</h3>
+            <div id="payout-summary-container"></div>
+        </div>
+
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
             <button class="btn-primary" onclick="window.print()" style="background-color: #4682B4; color: white; margin-top: 0;">🖨️ Print / Save as PDF</button>
@@ -227,6 +245,12 @@
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Archived Skins</h3>
             <div id="archived-skins-container"></div>
         </div>
+        
+        <div class="card" style="margin-top: 30px; max-width: 100%;">
+            <h3 style="color: #28a745; border-bottom: 1px solid #444; padding-bottom: 10px;">Payout & Winnings Breakdown</h3>
+            <div id="archived-payout-summary-container"></div>
+        </div>
+
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
             <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 10px;">← Back to Archives</button>
             <button class="btn-primary" onclick="window.print()" style="background-color: #4682B4; color: white; margin-top: 0;">🖨️ Print / Save as PDF</button>
@@ -241,7 +265,7 @@
 
     <script>
         // ==========================================
-        // 1. FIREBASE CONFIGURATION 
+        // 1. FIREBASE CONFIGURATION
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
@@ -268,7 +292,7 @@
         };
         const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493'];
 
-        let roundData = { course: null, groups: [], formats: [], currentHole: 1 };
+        let roundData = { course: null, groups: [], formats: [], currentHole: 1, betAmount: 0, skinsAmount: 0 };
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
@@ -283,7 +307,6 @@
                 parGridHTML += `<div class="par-setup-item"><label>Hole ${i}</label><input type="number" id="custom-par-${i}" value="4" inputmode="numeric"></div>`;
             }
             document.getElementById('par-input-grid').innerHTML = parGridHTML;
-
             refreshCourseDropdown();
 
             const urlParams = new URLSearchParams(window.location.search);
@@ -294,12 +317,9 @@
             }
 
             const savedFilter = localStorage.getItem('tournamentViewFilter');
-            if (!lockedTeamId && savedFilter) {
-                currentTeamFilter = savedFilter;
-            }
+            if (!lockedTeamId && savedFilter) currentTeamFilter = savedFilter;
 
             activeTournamentRef.onSnapshot((doc) => {
-                // First, hide all screens
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 
                 if (doc.exists) {
@@ -307,30 +327,24 @@
                     roundData = data.roundData;
                     scoresDb = data.scoresDb;
 
-                    // Figure out what screen they should be on based on previous memory
                     if (!document.getElementById('step-3').classList.contains('active') && 
                         !document.getElementById('step-4').classList.contains('active') && 
                         !document.getElementById('step-5').classList.contains('active') && 
                         !document.getElementById('step-6').classList.contains('active')) {
                         
-                        // Default to step 3 if they aren't looking at another live view
                         renderCaptainGrid();
                         renderScoreEntry();
                         document.getElementById('step-3').classList.add('active');
                     } else {
-                        // Refresh whatever live view they are looking at
                         if (document.getElementById('step-3').classList.contains('active')) updateUIWithoutLosingFocus();
                         if (document.getElementById('step-4').classList.contains('active')) viewStandings(); 
                         if (document.getElementById('step-5').classList.contains('active')) viewSkins(); 
                         if (document.getElementById('step-6').classList.contains('active')) viewFullCard(); 
                     }
                 } else {
-                    // THE ROUND HAS BEEN DELETED / FINALIZED
                     if (lockedTeamId !== null) {
-                        // If it's a captain with a magic link, show the Dead Link screen
                         document.getElementById('step-dead-link').classList.add('active');
                     } else {
-                        // If it's the Admin, show the Setup Screen
                         document.getElementById('step-1').classList.add('active');
                     }
                 }
@@ -340,14 +354,12 @@
         function updateUIWithoutLosingFocus() {
             let hole = roundData.currentHole;
             let par = roundData.course.pars[hole-1];
-            
             roundData.groups.forEach(g => {
                 g.players.forEach(p => {
                     let inputEl = document.getElementById(`score-input-${g.id}-${p.id}`);
                     if (inputEl && document.activeElement !== inputEl) {
                         let cloudVal = scoresDb[g.id][p.id][hole] || '';
                         inputEl.value = cloudVal;
-                        
                         let ind = document.getElementById(`par-ind-${g.id}-${p.id}`);
                         if(ind) {
                             ind.innerText = getParText(cloudVal, par);
@@ -358,23 +370,12 @@
             });
         }
 
-        // ==========================================
-        // 4. FIREBASE SAVE FUNCTION
-        // ==========================================
         function saveAppStateToCloud() {
             let status = document.getElementById('sync-status');
-            if(status) {
-                status.innerText = "↻ Saving...";
-                status.style.color = "var(--accent-gold)";
-            }
-
+            if(status) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
             activeTournamentRef.set({ roundData: roundData, scoresDb: scoresDb })
-                .then(() => {
-                    if(status) { status.innerText = "● Synced"; status.style.color = "#00ff00"; }
-                }).catch((error) => {
-                    if(status) { status.innerText = "⚠ Sync Error"; status.style.color = "#ff3333"; }
-                    console.error("Firebase Error:", error);
-                });
+                .then(() => { if(status) { status.innerText = "● Synced"; status.style.color = "#00ff00"; } })
+                .catch((error) => { if(status) { status.innerText = "⚠ Sync Error"; status.style.color = "#ff3333"; } });
         }
 
         // ==========================================
@@ -383,14 +384,10 @@
         function refreshCourseDropdown() {
             allAvailableCourses = { ...courseDatabase }; 
             let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
-            for (const [key, course] of Object.entries(customCourses)) {
-                allAvailableCourses[key] = course;
-            }
+            for (const [key, course] of Object.entries(customCourses)) allAvailableCourses[key] = course;
             const selector = document.getElementById('course-selector');
             selector.innerHTML = '';
-            for (const [key, course] of Object.entries(allAvailableCourses)) {
-                selector.innerHTML += `<option value="${key}">${course.name}</option>`;
-            }
+            for (const [key, course] of Object.entries(allAvailableCourses)) selector.innerHTML += `<option value="${key}">${course.name}</option>`;
         }
 
         function saveCustomCourse() {
@@ -441,6 +438,7 @@
             let arc = (JSON.parse(localStorage.getItem('tournamentArchive')) || [])[index];
             document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(arc.roundData, arc.scoresDb);
             document.getElementById('archived-skins-container').innerHTML = generateSkinsHTML(arc.roundData, arc.scoresDb);
+            document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(arc.roundData, arc.scoresDb);
             switchScreen('step-8', 'step-9');
         }
 
@@ -469,7 +467,6 @@
             if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) {
                 saveToArchive();
                 activeTournamentRef.delete().then(() => {
-                    // Removed the reload here so the listener can naturally catch the deletion and trigger the "Dead Link" screen for others
                     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
                     document.getElementById('step-1').classList.add('active');
                 });
@@ -496,6 +493,10 @@
             roundData.course = allAvailableCourses[document.getElementById('course-selector').value];
             const gCount = parseInt(document.getElementById('group-count').value);
             const pCount = parseInt(document.getElementById('players-per-group').value);
+            
+            // Capture Financials
+            roundData.betAmount = parseInt(document.getElementById('bet-amount').value) || 0;
+            roundData.skinsAmount = parseInt(document.getElementById('skins-amount').value) || 0;
 
             let html = '';
             for (let g = 1; g <= gCount; g++) {
@@ -540,7 +541,6 @@
             saveAppStateToCloud();
             renderCaptainGrid();
             renderScoreEntry();
-            // Swapping screen is handled by the onSnapshot listener now since we pushed to cloud
         }
 
         function renderCaptainGrid() {
@@ -579,6 +579,8 @@
                 roundData.currentHole = newHole;
                 saveAppStateToCloud(); 
                 renderScoreEntry();
+                // AUTO-SCROLL TO TOP FIX
+                window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
 
@@ -638,12 +640,8 @@
 
         function handleInputAdvance(el, groupId, playerId, hole, par) {
             let val = el.value;
-            
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`);
-            if(ind) {
-                ind.innerText = getParText(val, par);
-                ind.style.color = getParColor(val, par);
-            }
+            if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
             let parsedVal = parseInt(val);
             if(!isNaN(parsedVal) && parsedVal > 0) scoresDb[groupId][playerId][hole] = parsedVal;
@@ -664,6 +662,23 @@
 
         function viewStandings() {
             document.getElementById('standings-hole-status').innerText = `Thru Hole ${roundData.currentHole}`;
+            
+            // FINANCIAL SUMMARY FOR STANDINGS
+            let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.length, 0);
+            let totalBets = roundData.formats.length * 3; // Front, Back, Overall per format
+            let totalTeamPot = totalPlayers * roundData.betAmount * totalBets;
+            let skinsPot = totalPlayers * roundData.skinsAmount;
+            
+            let finHTML = `
+            <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 5px solid #28a745;">
+                <h3 style="margin-top: 0; margin-bottom: 10px; color: #28a745;">💰 Live Purse</h3>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;"><span>Total Team Purse:</span> <b>$${totalTeamPot}</b></div>
+                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;"><span>Total Skins Pot:</span> <b>$${skinsPot}</b></div>
+                <hr style="border-color: #444; margin: 10px 0;">
+                <div style="display: flex; justify-content: space-between; font-size: 14px; color: var(--text-muted);"><span>Total Buy-in Per Player:</span> <b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
+            </div>`;
+            document.getElementById('financial-standings-container').innerHTML = finHTML;
+
             let html = '';
             roundData.groups.forEach(group => {
                 let teamTotals = { 1: 0, 2: 0, 3: 0 };
@@ -688,6 +703,106 @@
             document.getElementById('standings-container').innerHTML = html;
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-4').classList.add('active');
+        }
+
+        // ==========================================
+        // PAYOUT ENGINE
+        // ==========================================
+        function generateFinancialSummaryHTML(rData, sDb) {
+            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
+            if(totalPlayers === 0) return "<p>No data.</p>";
+
+            // 1. SKINS PAYOUT
+            let skinsHTML = `<div class="payout-card"><div class="payout-header">Skins Payout</div>`;
+            let skinsPot = totalPlayers * rData.skinsAmount;
+            let skinsWon = [];
+            for(let h=1; h<=18; h++) {
+                let par = rData.course.pars[h-1];
+                let holeScores = [];
+                rData.groups.forEach(g => {
+                    g.players.forEach(p => { let s = sDb[g.id][p.id][h]; if(s) holeScores.push({name: p.name, score: s, color: g.color}); });
+                });
+                if(holeScores.length > 0) {
+                    let minScore = Math.min(...holeScores.map(x => x.score));
+                    if(minScore < par) {
+                        let winners = holeScores.filter(x => x.score === minScore);
+                        if(winners.length === 1) skinsWon.push(winners[0]);
+                    }
+                }
+            }
+
+            if(skinsWon.length > 0 && skinsPot > 0) {
+                let perSkin = skinsPot / skinsWon.length;
+                skinsHTML += `<div class="payout-row" style="color:var(--text-muted); margin-bottom:15px;">Total Pot: $${skinsPot} | Value Per Skin: $${perSkin.toFixed(2)}</div>`;
+                skinsWon.forEach((s, idx) => {
+                    skinsHTML += `<div class="payout-row"><span class="payout-winner" style="color:${s.color}">${s.name}</span><span class="payout-amount">$${perSkin.toFixed(2)}</span></div>`;
+                });
+            } else {
+                skinsHTML += `<div class="payout-row">No skins won / No skins pot.</div>`;
+            }
+            skinsHTML += `</div>`;
+
+            // 2. TEAM BET PAYOUT
+            let teamHTML = `<div class="payout-card"><div class="payout-header">Team Bet Payouts</div>`;
+            let potPerBet = totalPlayers * rData.betAmount;
+            
+            if(potPerBet > 0) {
+                let teamPayouts = {};
+                rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, color: g.color, players: g.players.length }; });
+
+                rData.formats.forEach(f => {
+                    let f9Data = [], b9Data = [], totData = [];
+                    rData.groups.forEach(g => {
+                        let f9=0, b9=0, tot=0, pf9=0, pb9=0, ptot=0;
+                        for(let h=1; h<=18; h++) {
+                            let par = rData.course.pars[h-1] * f;
+                            let hs = [];
+                            g.players.forEach(p => { if(sDb[g.id][p.id][h]) hs.push(sDb[g.id][p.id][h]); });
+                            hs.sort((a,b)=>a-b);
+                            if(hs.length >= f) {
+                                let score = hs.slice(0,f).reduce((a,b)=>a+b,0);
+                                tot+=score; ptot+=par;
+                                if(h<=9) { f9+=score; pf9+=par; } else { b9+=score; pb9+=par; }
+                            }
+                        }
+                        f9Data.push({id: g.id, net: f9 - pf9});
+                        b9Data.push({id: g.id, net: b9 - pb9});
+                        totData.push({id: g.id, net: tot - ptot});
+                    });
+
+                    // Helper to split pot for ties
+                    const processBet = (data, title) => {
+                        let minNet = Math.min(...data.map(d => d.net));
+                        let winners = data.filter(d => d.net === minNet);
+                        let split = potPerBet / winners.length;
+                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Best Ball: ${title} ($${potPerBet} Pot)</div>`;
+                        winners.forEach(w => {
+                            teamPayouts[w.id].total += split;
+                            teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].color}">Team ${w.id} ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`;
+                        });
+                    };
+
+                    processBet(f9Data, "Front 9");
+                    processBet(b9Data, "Back 9");
+                    processBet(totData, "Overall");
+                });
+
+                teamHTML += `<div class="payout-header" style="margin-top:20px; font-size:1em;">Final Team Totals (Split Per Player)</div>`;
+                Object.keys(teamPayouts).forEach(tid => {
+                    let tp = teamPayouts[tid];
+                    if(tp.total > 0) {
+                        let perPlayer = tp.total / tp.players;
+                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.color}; font-size:16px;">Team ${tid} Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
+                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); padding-left:10px;"><span>Payout per teammate:</span><span>$${perPlayer.toFixed(2)}</span></div>`;
+                    }
+                });
+
+            } else {
+                teamHTML += `<div class="payout-row">No Team Bets configured.</div>`;
+            }
+            teamHTML += `</div>`;
+
+            return skinsHTML + teamHTML;
         }
 
         function generateSkinsHTML(rData, sDb) {
@@ -796,6 +911,7 @@
         function viewFullCard() {
             document.getElementById('full-card-container').innerHTML = generateScorecardHTML(roundData, scoresDb);
             document.getElementById('final-skins-container').innerHTML = generateSkinsHTML(roundData, scoresDb);
+            document.getElementById('payout-summary-container').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-6').classList.add('active');
         }
