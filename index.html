@@ -28,7 +28,7 @@
         .screen.active { display: block; }
 
         label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
-        input[type="number"], input[type="text"], select {
+        input[type="number"], input[type="text"], input[type="tel"], select {
             width: 100%; padding: 12px; box-sizing: border-box;
             background: #2a2a2a; border: 1px solid #444; color: white;
             border-radius: 4px; font-size: 16px; margin-bottom: 10px;
@@ -66,7 +66,7 @@
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
         .player-name { flex: 1; font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
         .par-indicator { font-size: 13px; font-weight: bold; width: 85px; text-align: right; text-transform: uppercase; flex-shrink: 0; }
-        .score-box { width: 65px; height: 45px; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 5px; border: 2px solid #555; color: white; border-radius: 6px; transition: all 0.2s ease; flex-shrink: 0; }
+        .score-box { width: 65px; height: 45px; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 5px; border: 2px solid #555; color: white; border-radius: 6px; transition: all 0.2s ease; flex-shrink: 0; margin-bottom: 0 !important; }
         .score-box:focus { border-color: var(--accent-gold); outline: none; background: #000; transform: scale(1.05); box-shadow: 0 0 10px var(--accent-gold); }
 
         .standings-row { display: flex; justify-content: space-between; padding: 15px; background: #252525; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid var(--accent-gold);}
@@ -123,13 +123,13 @@
         <p style="font-size: 0.9em; color: var(--accent-gold); cursor: pointer; text-decoration: underline; margin-top: 5px; display: inline-block;" onclick="switchScreen('step-1', 'step-add-course')">+ Create Custom Course</p>
 
         <div style="display: flex; gap: 15px; margin-top: 15px;">
-            <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric"></div>
-            <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric"></div>
+            <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric" onfocus="this.select()"></div>
+            <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric" onfocus="this.select()"></div>
         </div>
 
         <div style="display: flex; gap: 15px; margin-top: 5px;">
-            <div style="flex: 1;"><label>Per Bet ($/Player)</label><input type="number" id="bet-amount" min="0" value="50" inputmode="numeric"></div>
-            <div style="flex: 1;"><label>Skins Buy-in ($/Player)</label><input type="number" id="skins-amount" min="0" value="50" inputmode="numeric"></div>
+            <div style="flex: 1;"><label>Per Bet ($/Player)</label><input type="number" id="bet-amount" min="0" value="50" inputmode="numeric" onfocus="this.select()"></div>
+            <div style="flex: 1;"><label>Skins Buy-in ($/Player)</label><input type="number" id="skins-amount" min="0" value="50" inputmode="numeric" onfocus="this.select()"></div>
         </div>
 
         <label>Team Formats</label>
@@ -298,7 +298,7 @@
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
         let allAvailableCourses = {}; 
-        let lastAdvanceTime = 0; // Guard variable to prevent double-skipping
+        let lastAdvanceTime = 0;
 
         // ==========================================
         // 3. CLOUD LISTENER
@@ -604,9 +604,6 @@
             return "#ffffff"; 
         }
 
-        // ==========================================
-        // FIXED SCORING ENTRY WITH AUTO-ADVANCE FILTER
-        // ==========================================
         function renderScoreEntry() {
             let hole = roundData.currentHole;
             let par = roundData.course.pars[hole-1];
@@ -632,8 +629,9 @@
                     html += `<div class="player-row">
                         <span class="player-name">${player.name}</span>
                         <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
-                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-box score-input-field" 
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" class="score-box score-input-field" 
                                id="score-input-${group.id}-${player.id}" value="${currentScore}" 
+                               onfocus="this.select()"
                                oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})"></div>`;
                 });
                 html += `</div>`;
@@ -651,22 +649,16 @@
             else delete scoresDb[groupId][playerId][hole]; 
             saveAppStateToCloud();
 
-            // Auto advance trigger conditions
-            if((val.length === 1 && parseInt(val) > 1) || val.length >= 2) {
+            if(val.length >= 1 && parsedVal > 1) {
                 let now = Date.now();
-                
-                // DEBOUNCE GUARD: Filter out double-fires and ghost keyboard events under 300ms
-                if (now - lastAdvanceTime < 300) return;
+                if (now - lastAdvanceTime < 300) return; 
                 
                 let inputs = Array.from(document.querySelectorAll('.score-input-field'));
                 let idx = inputs.indexOf(el);
                 
                 if(idx > -1 && idx < inputs.length - 1) {
                     lastAdvanceTime = now;
-                    setTimeout(() => {
-                        inputs[idx + 1].focus();
-                        if (typeof inputs[idx + 1].select === 'function') inputs[idx + 1].select();
-                    }, 50); 
+                    inputs[idx + 1].focus();
                 } else if (idx === inputs.length - 1) {
                     lastAdvanceTime = now;
                     setTimeout(() => { changeHole(1); }, 400); 
@@ -718,9 +710,6 @@
             document.getElementById('step-4').classList.add('active');
         }
 
-        // ==========================================
-        // PAYOUT ENGINE
-        // ==========================================
         function generateFinancialSummaryHTML(rData, sDb) {
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
             if(totalPlayers === 0) return "<p>No data.</p>";
