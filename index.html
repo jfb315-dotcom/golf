@@ -48,17 +48,9 @@
         .checkbox-group label { text-transform: none; display: flex; align-items: center; gap: 8px; font-size: 15px; color: white; font-weight: normal;}
         .checkbox-group input { width: 18px; height: 18px; accent-color: var(--accent-gold); }
 
-        /* Captain Filter UI - NEW COLORED SQUARES */
-        .group-selector-grid { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); 
-            gap: 12px; 
-            margin-bottom: 25px; 
-        }
-        .group-selector-card {
-            background: #222; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer;
-            border: 2px solid transparent; transition: all 0.2s ease;
-        }
+        /* Captain Filter UI */
+        .group-selector-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 12px; margin-bottom: 25px; }
+        .group-selector-card { background: #222; border-radius: 8px; padding: 12px; text-align: center; cursor: pointer; border: 2px solid transparent; transition: all 0.2s ease;}
         .group-selector-card h3 { margin: 0 0 8px 0; font-size: 1.1em; }
         .group-selector-card .player-list { font-size: 12px; color: #ccc; line-height: 1.4; }
         
@@ -127,8 +119,7 @@
 
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
         
-        <div id="captain-grid-container" class="group-selector-grid">
-            </div>
+        <div id="captain-grid-container" class="group-selector-grid"></div>
 
         <div class="hole-nav">
             <button onclick="changeHole(-1)">◀ Prev</button>
@@ -165,11 +156,18 @@
         <h2>Full Scorecard View</h2>
         <div class="table-wrapper" id="full-card-container"></div>
         
-        <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px; max-width: 400px;">
+        <div style="margin-top: 30px;">
+            <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Final Skins List</h3>
+            <div id="final-skins-container"></div>
+        </div>
+
+        <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px;">
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
             <button class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Reset App</button>
             <p style="color: #8b0000; font-size: 12px; text-align: center; margin-top: 0;">Applies safety lock before wiping data.</p>
+            
+            <button onclick="adminForceReset()" style="background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 12px; margin-top: 10px;">Admin Override Reset</button>
         </div>
     </div>
 
@@ -181,8 +179,6 @@
 
         let roundData = { course: null, groups: [], formats: [], currentHole: 1 };
         let scoresDb = {}; 
-        
-        // NEW Variable to track which square is selected
         let currentTeamFilter = "ALL"; 
 
         window.onload = () => {
@@ -213,6 +209,7 @@
             }));
         }
 
+        // Standard Safe Finalize
         function validateAndFinalize() {
             let missingScores = false;
             roundData.groups.forEach(g => {
@@ -231,6 +228,17 @@
             if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and clear the board?")) {
                 localStorage.removeItem('tournamentAppMemory');
                 window.location.reload(); 
+            }
+        }
+
+        // NEW: Admin Override
+        function adminForceReset() {
+            let pin = prompt("Admin Override: Enter PIN to force reset");
+            if (pin === "1234") {
+                localStorage.removeItem('tournamentAppMemory');
+                window.location.reload(); 
+            } else if (pin !== null && pin !== "") {
+                alert("Incorrect PIN. Reset aborted.");
             }
         }
 
@@ -290,12 +298,10 @@
             switchScreen('step-2', 'step-3');
         }
 
-        // NEW: Draw the Colored Squares Grid
         function renderCaptainGrid() {
             let container = document.getElementById('captain-grid-container');
             let html = '';
 
-            // 1. The "All Groups" Square
             let allStyle = currentTeamFilter === "ALL" ? `border-color: white; box-shadow: 0 0 10px white; opacity: 1;` : `border-color: #444; opacity: 0.5;`;
             html += `
             <div class="group-selector-card" style="${allStyle}" onclick="setTeamFilter('ALL')">
@@ -303,12 +309,9 @@
                 <div class="player-list">Admin View</div>
             </div>`;
 
-            // 2. The Team Squares
             roundData.groups.forEach(g => {
                 let isSelected = currentTeamFilter === g.id;
                 let cardStyle = isSelected ? `border-color: ${g.color}; box-shadow: 0 0 12px ${g.color}; opacity: 1; transform: scale(1.02);` : `border-color: #444; opacity: 0.5;`;
-                
-                // Build a string of player names separated by breaks
                 let playerNames = g.players.map(p => p.name).join('<br>');
 
                 html += `
@@ -321,12 +324,11 @@
             container.innerHTML = html;
         }
 
-        // NEW: Handle a square being clicked
         function setTeamFilter(filterValue) {
             currentTeamFilter = filterValue;
-            saveAppState(); // Save the layout choice so it remembers it
-            renderCaptainGrid(); // Redraw grid to show active highlight
-            renderScoreEntry();  // Redraw scorecards to show/hide teams
+            saveAppState(); 
+            renderCaptainGrid(); 
+            renderScoreEntry();  
         }
 
         function changeHole(direction) {
@@ -345,7 +347,6 @@
             
             let html = '';
             roundData.groups.forEach(group => {
-                // HIDE logic based on the square clicked
                 if (currentTeamFilter !== "ALL" && currentTeamFilter !== group.id) return;
 
                 html += `<div class="team-card" style="border-left-color: ${group.color};">
@@ -412,7 +413,8 @@
             switchScreen('step-3', 'step-4');
         }
 
-        function viewSkins() {
+        // NEW REUSABLE SKINS FUNCTION
+        function generateSkinsHTML() {
             let html = '';
             let skinsCount = 0;
             for(let h=1; h<=18; h++) {
@@ -446,7 +448,11 @@
                 }
             }
             if(skinsCount === 0) html = "<p style='text-align: center; padding: 20px; background: #222; border-radius: 6px;'>No skins won yet.</p>";
-            document.getElementById('skins-container').innerHTML = html;
+            return html;
+        }
+
+        function viewSkins() {
+            document.getElementById('skins-container').innerHTML = generateSkinsHTML();
             switchScreen('step-3', 'step-5');
         }
 
@@ -491,6 +497,10 @@
 
             tableHTML += `</tbody></table>`;
             document.getElementById('full-card-container').innerHTML = tableHTML;
+            
+            // Generate the skins list for the bottom of the scorecard page
+            document.getElementById('final-skins-container').innerHTML = generateSkinsHTML();
+            
             switchScreen('step-3', 'step-6');
         }
 
