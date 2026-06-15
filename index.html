@@ -75,7 +75,7 @@
         .skin-winner { font-size: 1.2em; font-weight: bold; color: var(--accent-gold); }
 
         /* Full Scorecard Grid */
-        .table-wrapper { overflow-x: auto; margin-top: 20px; }
+        .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 30px; }
         table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; }
         th, td { border: 1px solid #444; padding: 8px; }
         th { background-color: #333; color: var(--accent-gold); }
@@ -181,7 +181,8 @@
 
     <div id="step-6" class="screen card" style="max-width: 100%;">
         <h2>Full Scorecard View</h2>
-        <div class="table-wrapper" id="full-card-container"></div>
+        
+        <div id="full-card-container"></div>
         
         <div style="margin-top: 30px;">
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Final Skins List</h3>
@@ -212,7 +213,9 @@
 
     <div id="step-9" class="screen card" style="max-width: 100%;">
         <h2>Archived Scorecard</h2>
-        <div class="table-wrapper" id="archived-card-container"></div>
+        
+        <div id="archived-card-container"></div>
+        
         <div style="margin-top: 30px;">
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Archived Skins</h3>
             <div id="archived-skins-container"></div>
@@ -235,20 +238,17 @@
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
-        let allAvailableCourses = {}; // Combines hardcoded + custom
+        let allAvailableCourses = {}; 
 
         window.onload = () => {
-            // Build the Custom Par Setup Grid
             let parGridHTML = '';
             for(let i=1; i<=18; i++) {
                 parGridHTML += `<div class="par-setup-item"><label>Hole ${i}</label><input type="number" id="custom-par-${i}" value="4" inputmode="numeric"></div>`;
             }
             document.getElementById('par-input-grid').innerHTML = parGridHTML;
 
-            // Load Courses
             refreshCourseDropdown();
 
-            // Check URL & Memory
             const urlParams = new URLSearchParams(window.location.search);
             const teamParam = urlParams.get('team');
             if (teamParam) {
@@ -270,16 +270,12 @@
             }
         };
 
-        // --- CUSTOM COURSE ENGINE ---
         function refreshCourseDropdown() {
-            allAvailableCourses = { ...courseDatabase }; // Start with hardcoded
+            allAvailableCourses = { ...courseDatabase }; 
             let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
-            
-            // Merge custom courses into the master list
             for (const [key, course] of Object.entries(customCourses)) {
                 allAvailableCourses[key] = course;
             }
-
             const selector = document.getElementById('course-selector');
             selector.innerHTML = '';
             for (const [key, course] of Object.entries(allAvailableCourses)) {
@@ -290,27 +286,19 @@
         function saveCustomCourse() {
             let name = document.getElementById('new-course-name').value.trim();
             if (!name) { alert("Please enter a course name."); return; }
-
             let pars = [];
             for(let i=1; i<=18; i++) {
                 let val = parseInt(document.getElementById(`custom-par-${i}`).value);
                 pars.push(isNaN(val) ? 4 : val);
             }
-
-            // Create a unique key (lowercase, no spaces)
             let courseKey = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, '');
-
             let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
             customCourses[courseKey] = { name: name + " (Custom)", pars: pars };
             localStorage.setItem('customCourses', JSON.stringify(customCourses));
-
-            refreshCourseDropdown(); // Update the dropdown
-            document.getElementById('course-selector').value = courseKey; // Auto-select the new course
-            
-            // Reset the form
+            refreshCourseDropdown(); 
+            document.getElementById('course-selector').value = courseKey; 
             document.getElementById('new-course-name').value = '';
             for(let i=1; i<=18; i++) document.getElementById(`custom-par-${i}`).value = '4';
-
             alert("Course Saved Successfully!");
             switchScreen('step-add-course', 'step-1');
         }
@@ -573,26 +561,44 @@
             return html;
         }
 
+        // --- NEW ISOLATED SCORECARD ENGINE ---
         function generateScorecardHTML(rData, sDb) {
-            let tableHTML = `<table><thead><tr><th style="text-align:left;">Player</th>`;
-            for(let i=1; i<=9; i++) tableHTML += `<th>${i}</th>`;
-            tableHTML += `<th class="out-in-col">OUT</th>`;
-            for(let i=10; i<=18; i++) tableHTML += `<th>${i}</th>`;
-            tableHTML += `<th class="out-in-col">IN</th><th class="out-in-col">TOT</th></tr></thead><tbody>`;
-
+            let fullHTML = '';
             let outPar = rData.course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
             let inPar = rData.course.pars.slice(9, 18).reduce((a, b) => a + b, 0);
-            
-            tableHTML += `<tr class="par-row"><td style="text-align:left;">PAR</td>`;
-            rData.course.pars.slice(0,9).forEach(par => tableHTML += `<td>${par}</td>`);
-            tableHTML += `<td class="out-in-col">${outPar}</td>`;
-            rData.course.pars.slice(9,18).forEach(par => tableHTML += `<td>${par}</td>`);
-            tableHTML += `<td class="out-in-col">${inPar}</td><td class="out-in-col">${outPar+inPar}</td></tr>`;
 
+            // Loop through each group to create an isolated table
             rData.groups.forEach(g => {
+                fullHTML += `
+                <div style="margin-top: 30px; margin-bottom: 10px;">
+                    <h3 style="color: ${g.color}; margin: 0 0 5px 0;">Group ${g.id}</h3>
+                    <div style="font-size: 14px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Capt: ${g.captain}</div>
+                </div>
+                
+                <div class="table-wrapper" style="margin-top: 0;">
+                    <table>
+                        <thead>
+                            <tr><th style="text-align:left;">Player</th>`;
+                
+                for(let i=1; i<=9; i++) fullHTML += `<th>${i}</th>`;
+                fullHTML += `<th class="out-in-col">OUT</th>`;
+                for(let i=10; i<=18; i++) fullHTML += `<th>${i}</th>`;
+                fullHTML += `<th class="out-in-col">IN</th><th class="out-in-col">TOT</th></tr>
+                        </thead>
+                        <tbody>`;
+
+                // Add the Par row for this specific table
+                fullHTML += `<tr class="par-row"><td style="text-align:left;">PAR</td>`;
+                rData.course.pars.slice(0,9).forEach(par => fullHTML += `<td>${par}</td>`);
+                fullHTML += `<td class="out-in-col">${outPar}</td>`;
+                rData.course.pars.slice(9,18).forEach(par => fullHTML += `<td>${par}</td>`);
+                fullHTML += `<td class="out-in-col">${inPar}</td><td class="out-in-col">${outPar+inPar}</td></tr>`;
+
+                // Add only the players assigned to this group
                 g.players.forEach(p => {
-                    tableHTML += `<tr><td style="text-align:left; white-space:nowrap;"><b>${p.name}</b> <span style="font-size:10px; color:${g.color};">(G${g.id})</span></td>`;
+                    fullHTML += `<tr><td style="text-align:left; white-space:nowrap;"><b>${p.name}</b></td>`;
                     let outScore = 0, inScore = 0;
+                    
                     for(let h=1; h<=18; h++) {
                         let score = sDb[g.id][p.id][h] || '-';
                         let cssClass = "score-cell";
@@ -602,14 +608,16 @@
                             if(score < par) cssClass += " under-par";
                             else if(score > par) cssClass += " over-par";
                         }
-                        if(h === 10) tableHTML += `<td class="out-in-col">${outScore || '-'}</td>`;
-                        tableHTML += `<td class="${cssClass}">${score}</td>`;
+                        if(h === 10) fullHTML += `<td class="out-in-col">${outScore || '-'}</td>`;
+                        fullHTML += `<td class="${cssClass}">${score}</td>`;
                     }
-                    tableHTML += `<td class="out-in-col">${inScore || '-'}</td><td class="out-in-col">${(outScore+inScore) || '-'}</td></tr>`;
+                    fullHTML += `<td class="out-in-col">${inScore || '-'}</td><td class="out-in-col">${(outScore+inScore) || '-'}</td></tr>`;
                 });
+
+                fullHTML += `</tbody></table></div>`;
             });
-            tableHTML += `</tbody></table>`;
-            return tableHTML;
+            
+            return fullHTML;
         }
 
         function viewSkins() {
