@@ -635,7 +635,6 @@
                     let indText = getParText(currentScore, par);
                     let indColor = getParColor(currentScore, par);
 
-                    // BULLETPROOF MOBILE FIX: 1-digit restriction, autocomplete off, instant synchronous switch
                     html += `<div class="player-row">
                         <span class="player-name">${player.name}</span>
                         <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
@@ -650,11 +649,9 @@
             document.getElementById('entry-container').innerHTML = html;
         }
 
-        // AGGRESSIVE 1-DIGIT AUTO ADVANCE (Chrome & Safari Verified)
         function handleInputAdvance(el, groupId, playerId, hole, par) {
             let val = el.value.trim();
             
-            // If they accidentally manage to input more than 1 character, force it to just the last digit hit
             if (val.length > 1) {
                 val = val.charAt(val.length - 1);
                 el.value = val;
@@ -672,21 +669,17 @@
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`);
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
-            // Sync to database silently
             setTimeout(() => { saveAppStateToCloud(); }, 10);
 
-            // INSTANT JUMP: Because we know scores are ALWAYS 1 digit, we don't hold back for anything
             if(val.length === 1) {
                 let inputs = Array.from(document.querySelectorAll('.score-input-field'));
                 let idx = inputs.indexOf(el);
                 
                 if(idx > -1 && idx < inputs.length - 1) {
-                    // Move completely synchronously to the next input row line immediately 
                     let nextInput = inputs[idx + 1];
                     nextInput.focus();
                     nextInput.select();
                 } else if (idx === inputs.length - 1) {
-                    // Last box for the current group/view, smoothly step to next hole
                     setTimeout(() => { changeHole(1); }, 300); 
                 }
             }
@@ -733,7 +726,7 @@
             });
             document.getElementById('standings-container').innerHTML = html;
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('step-4').add('active');
+            document.getElementById('step-4').classList.add('active');
         }
 
         function generateFinancialSummaryHTML(rData, sDb) {
