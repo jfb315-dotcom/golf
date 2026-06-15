@@ -85,16 +85,25 @@
         .under-par { color: #00ff00; }
         .over-par { color: #ff3333; }
         .even-par { color: white; }
+
+        /* Custom Course Setup UI */
+        .par-setup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .par-setup-item { display: flex; align-items: center; justify-content: space-between; background: #222; padding: 8px; border-radius: 4px; border: 1px solid #444;}
+        .par-setup-item label { margin: 0; font-size: 12px; }
+        .par-setup-item input { width: 50px; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
     </style>
 </head>
 <body>
 
-    <div id="step-1" class="screen card">
+    <div id="step-1" class="screen card active">
         <h2>Tournament Setup</h2>
+        
         <label>Select Course</label>
         <select id="course-selector"></select>
+        
+        <p style="font-size: 0.9em; color: var(--accent-gold); cursor: pointer; text-decoration: underline; margin-top: 5px; display: inline-block;" onclick="switchScreen('step-1', 'step-add-course')">+ Create Custom Course</p>
 
-        <div style="display: flex; gap: 15px;">
+        <div style="display: flex; gap: 15px; margin-top: 15px;">
             <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric"></div>
             <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric"></div>
         </div>
@@ -109,6 +118,21 @@
         
         <hr style="border-color: #444; margin: 30px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
+    </div>
+
+    <div id="step-add-course" class="screen card">
+        <h2>Create Custom Course</h2>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 0;">Add a local course on the fly. It will be saved permanently to this device.</p>
+        
+        <label>Course Name</label>
+        <input type="text" id="new-course-name" placeholder="e.g., Pinehurst No. 2">
+
+        <label>Enter Par for Each Hole</label>
+        <div class="par-setup-grid" id="par-input-grid">
+            </div>
+
+        <button class="btn-primary" onclick="saveCustomCourse()" style="margin-top: 25px;">💾 Save Course</button>
+        <button class="btn-secondary" onclick="switchScreen('step-add-course', 'step-1')">Cancel</button>
     </div>
 
     <div id="step-2" class="screen card">
@@ -138,7 +162,6 @@
             <button class="btn-primary" onclick="viewStandings()" style="background-color: #28a745; color: white; margin-top: 0; border: 1px solid #1e7e34;">🏆 Standings</button>
             <button class="btn-primary" onclick="viewSkins()" style="background-color: #cc3300; color: white; margin-top: 0; border: 1px solid #a32900;">🔥 View Skins</button>
             <button class="btn-secondary" onclick="viewFullCard()" style="grid-column: span 2;">📋 View Full Scorecard</button>
-            
             <button id="admin-share-btn" class="btn-primary" onclick="openShareMenu()" style="grid-column: span 2; background-color: #4682B4; color: white;">📱 Share Scorecards via SMS</button>
         </div>
     </div>
@@ -170,7 +193,6 @@
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
             <button id="admin-finalize-btn" class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
             <p style="color: #8b0000; font-size: 12px; text-align: center; margin-top: 0;">Applies safety lock before wiping memory.</p>
-            
             <button id="admin-override-btn" onclick="adminForceReset()" style="background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 12px; margin-top: 10px;">Admin Override Reset</button>
         </div>
     </div>
@@ -184,7 +206,6 @@
 
     <div id="step-8" class="screen card">
         <h2>Archived Rounds</h2>
-        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 0;">Select a past tournament to view the final results.</p>
         <div id="archive-list-container"></div>
         <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
     </div>
@@ -192,16 +213,15 @@
     <div id="step-9" class="screen card" style="max-width: 100%;">
         <h2>Archived Scorecard</h2>
         <div class="table-wrapper" id="archived-card-container"></div>
-        
         <div style="margin-top: 30px;">
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Archived Skins</h3>
             <div id="archived-skins-container"></div>
         </div>
-
         <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 30px; max-width: 400px;">← Back to Archives</button>
     </div>
 
     <script>
+        // CORE DATABASE
         const courseDatabase = {
             "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] },
             "chatata_valley": { name: "Chatata Valley (Cleveland, TN)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 5, 4, 3, 4, 3, 4, 5] },
@@ -209,15 +229,26 @@
             "chattanooga_cc": { name: "Chattanooga Country Club", pars: [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4] },
             "tennessee_national": { name: "Tennessee National (Loudon, TN)", pars: [4, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5, 4, 5, 3, 4] }
         };
-        
         const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493'];
 
         let roundData = { course: null, groups: [], formats: [], currentHole: 1 };
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
+        let allAvailableCourses = {}; // Combines hardcoded + custom
 
         window.onload = () => {
+            // Build the Custom Par Setup Grid
+            let parGridHTML = '';
+            for(let i=1; i<=18; i++) {
+                parGridHTML += `<div class="par-setup-item"><label>Hole ${i}</label><input type="number" id="custom-par-${i}" value="4" inputmode="numeric"></div>`;
+            }
+            document.getElementById('par-input-grid').innerHTML = parGridHTML;
+
+            // Load Courses
+            refreshCourseDropdown();
+
+            // Check URL & Memory
             const urlParams = new URLSearchParams(window.location.search);
             const teamParam = urlParams.get('team');
             if (teamParam) {
@@ -230,53 +261,80 @@
                 const parsedState = JSON.parse(savedState);
                 roundData = parsedState.roundData;
                 scoresDb = parsedState.scoresDb;
-                
-                if(!lockedTeamId && parsedState.currentTeamFilter) {
-                    currentTeamFilter = parsedState.currentTeamFilter;
-                }
+                if(!lockedTeamId && parsedState.currentTeamFilter) currentTeamFilter = parsedState.currentTeamFilter;
                 
                 renderCaptainGrid();
                 renderScoreEntry();
+                document.getElementById('step-1').classList.remove('active');
                 document.getElementById('step-3').classList.add('active');
-            } else {
-                const selector = document.getElementById('course-selector');
-                for (const [key, course] of Object.entries(courseDatabase)) {
-                    selector.innerHTML += `<option value="${key}">${course.name}</option>`;
-                }
-                document.getElementById('step-1').classList.add('active');
             }
         };
 
+        // --- CUSTOM COURSE ENGINE ---
+        function refreshCourseDropdown() {
+            allAvailableCourses = { ...courseDatabase }; // Start with hardcoded
+            let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
+            
+            // Merge custom courses into the master list
+            for (const [key, course] of Object.entries(customCourses)) {
+                allAvailableCourses[key] = course;
+            }
+
+            const selector = document.getElementById('course-selector');
+            selector.innerHTML = '';
+            for (const [key, course] of Object.entries(allAvailableCourses)) {
+                selector.innerHTML += `<option value="${key}">${course.name}</option>`;
+            }
+        }
+
+        function saveCustomCourse() {
+            let name = document.getElementById('new-course-name').value.trim();
+            if (!name) { alert("Please enter a course name."); return; }
+
+            let pars = [];
+            for(let i=1; i<=18; i++) {
+                let val = parseInt(document.getElementById(`custom-par-${i}`).value);
+                pars.push(isNaN(val) ? 4 : val);
+            }
+
+            // Create a unique key (lowercase, no spaces)
+            let courseKey = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
+            customCourses[courseKey] = { name: name + " (Custom)", pars: pars };
+            localStorage.setItem('customCourses', JSON.stringify(customCourses));
+
+            refreshCourseDropdown(); // Update the dropdown
+            document.getElementById('course-selector').value = courseKey; // Auto-select the new course
+            
+            // Reset the form
+            document.getElementById('new-course-name').value = '';
+            for(let i=1; i<=18; i++) document.getElementById(`custom-par-${i}`).value = '4';
+
+            alert("Course Saved Successfully!");
+            switchScreen('step-add-course', 'step-1');
+        }
+
         function saveAppState() {
             localStorage.setItem('tournamentAppMemory', JSON.stringify({ 
-                roundData: roundData, 
-                scoresDb: scoresDb,
-                currentTeamFilter: currentTeamFilter 
+                roundData: roundData, scoresDb: scoresDb, currentTeamFilter: currentTeamFilter 
             }));
         }
 
-        // --- NEW ARCHIVE ENGINE ---
         function saveToArchive() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
-            archive.push({
-                date: new Date().toLocaleString(),
-                course: roundData.course.name,
-                roundData: roundData,
-                scoresDb: scoresDb
-            });
+            archive.push({ date: new Date().toLocaleString(), course: roundData.course.name, roundData: roundData, scoresDb: scoresDb });
             localStorage.setItem('tournamentArchive', JSON.stringify(archive));
         }
 
         function viewArchiveList() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
             let html = '';
-            
             if(archive.length === 0) {
                 html = '<p style="text-align: center; padding: 20px; background: #222; border-radius: 6px;">No archived rounds found.</p>';
             } else {
                 archive.forEach((arc, i) => {
-                    html += `
-                    <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold);">
+                    html += `<div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold);">
                         <div style="font-weight: bold; font-size: 18px;">${arc.course}</div>
                         <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Played on: ${arc.date}</div>
                         <button class="btn-secondary" style="padding: 10px; font-size: 14px;" onclick="showArchivedCard(${i})">View Scorecard</button>
@@ -288,16 +346,12 @@
         }
 
         function showArchivedCard(index) {
-            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
-            let arc = archive[index];
-            
+            let arc = (JSON.parse(localStorage.getItem('tournamentArchive')) || [])[index];
             document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(arc.roundData, arc.scoresDb);
             document.getElementById('archived-skins-container').innerHTML = generateSkinsHTML(arc.roundData, arc.scoresDb);
-            
             switchScreen('step-8', 'step-9');
         }
 
-        // --- CORE LOGIC ---
         function openShareMenu() {
             let html = '';
             roundData.groups.forEach(g => {
@@ -317,19 +371,10 @@
         function validateAndFinalize() {
             let missingScores = false;
             roundData.groups.forEach(g => {
-                g.players.forEach(p => {
-                    for(let h = 1; h <= 18; h++) {
-                        if(!scoresDb[g.id][p.id][h]) missingScores = true;
-                    }
-                });
+                g.players.forEach(p => { for(let h = 1; h <= 18; h++) { if(!scoresDb[g.id][p.id][h]) missingScores = true; } });
             });
-
-            if(missingScores) {
-                alert("⚠️ Cannot finalize!\n\nAll scores have not been entered for all groups yet. Please check the Full Scorecard to find missing entries.");
-                return; 
-            }
-
-            if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and clear the active board?")) {
+            if(missingScores) { alert("⚠️ Cannot finalize!\n\nAll scores have not been entered for all groups yet."); return; }
+            if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) {
                 saveToArchive();
                 localStorage.removeItem('tournamentAppMemory');
                 window.location.href = window.location.href.split('?')[0]; 
@@ -342,9 +387,7 @@
                 saveToArchive();
                 localStorage.removeItem('tournamentAppMemory');
                 window.location.href = window.location.href.split('?')[0]; 
-            } else if (pin !== null && pin !== "") {
-                alert("Incorrect PIN. Reset aborted.");
-            }
+            } else if (pin !== null && pin !== "") alert("Incorrect PIN. Reset aborted.");
         }
 
         function switchScreen(hide, show) {
@@ -353,7 +396,7 @@
         }
 
         function goToStep2() {
-            roundData.course = courseDatabase[document.getElementById('course-selector').value];
+            roundData.course = allAvailableCourses[document.getElementById('course-selector').value];
             const gCount = parseInt(document.getElementById('group-count').value);
             const pCount = parseInt(document.getElementById('players-per-group').value);
 
@@ -414,26 +457,15 @@
 
             let container = document.getElementById('captain-grid-container');
             let html = '';
-
             let allStyle = currentTeamFilter === "ALL" ? `border-color: white; box-shadow: 0 0 10px white; opacity: 1;` : `border-color: #444; opacity: 0.5;`;
-            html += `
-            <div class="group-selector-card" style="${allStyle}" onclick="setTeamFilter('ALL')">
-                <h3 style="color: white;">All Groups</h3>
-                <div class="player-list">Admin View</div>
-            </div>`;
+            html += `<div class="group-selector-card" style="${allStyle}" onclick="setTeamFilter('ALL')"><h3 style="color: white;">All Groups</h3><div class="player-list">Admin View</div></div>`;
 
             roundData.groups.forEach(g => {
                 let isSelected = currentTeamFilter === g.id;
                 let cardStyle = isSelected ? `border-color: ${g.color}; box-shadow: 0 0 12px ${g.color}; opacity: 1; transform: scale(1.02);` : `border-color: #444; opacity: 0.5;`;
                 let playerNames = g.players.map(p => p.name).join('<br>');
-
-                html += `
-                <div class="group-selector-card" style="${cardStyle}" onclick="setTeamFilter(${g.id})">
-                    <h3 style="color: ${g.color};">Group ${g.id}</h3>
-                    <div class="player-list">${playerNames}</div>
-                </div>`;
+                html += `<div class="group-selector-card" style="${cardStyle}" onclick="setTeamFilter(${g.id})"><h3 style="color: ${g.color};">Group ${g.id}</h3><div class="player-list">${playerNames}</div></div>`;
             });
-
             container.innerHTML = html;
         }
 
@@ -461,7 +493,6 @@
             let html = '';
             roundData.groups.forEach(group => {
                 if (currentTeamFilter !== "ALL" && currentTeamFilter !== group.id) return;
-
                 html += `<div class="team-card" style="border-left-color: ${group.color};">
                     <div class="team-header">
                         <h3 style="color: ${group.color}; margin: 0 0 5px 0; font-size: 1.5em;">Group ${group.id}</h3>
@@ -470,12 +501,8 @@
                 
                 group.players.forEach(player => {
                     let currentScore = scoresDb[group.id][player.id][hole] || '';
-                    html += `
-                    <div class="player-row">
-                        <span>${player.name}</span>
-                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-box" value="${currentScore}" 
-                               onchange="saveScore(${group.id}, ${player.id}, ${hole}, this.value)">
-                    </div>`;
+                    html += `<div class="player-row"><span>${player.name}</span>
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-box" value="${currentScore}" onchange="saveScore(${group.id}, ${player.id}, ${hole}, this.value)"></div>`;
                 });
                 html += `</div>`;
             });
@@ -495,26 +522,16 @@
             roundData.groups.forEach(group => {
                 let teamTotals = { 1: 0, 2: 0, 3: 0 };
                 let parsPlayed = { 1: 0, 2: 0, 3: 0 };
-
                 for(let h = 1; h <= roundData.currentHole; h++) {
                     let holeScores = [];
                     let par = roundData.course.pars[h-1];
-                    group.players.forEach(p => {
-                        if(scoresDb[group.id][p.id][h]) holeScores.push(scoresDb[group.id][p.id][h]);
-                    });
-
+                    group.players.forEach(p => { if(scoresDb[group.id][p.id][h]) holeScores.push(scoresDb[group.id][p.id][h]); });
                     holeScores.sort((a, b) => a - b);
                     roundData.formats.forEach(f => {
-                        if(holeScores.length >= f) {
-                            teamTotals[f] += holeScores.slice(0, f).reduce((a, b) => a + b, 0);
-                            parsPlayed[f] += par * f; 
-                        }
+                        if(holeScores.length >= f) { teamTotals[f] += holeScores.slice(0, f).reduce((a, b) => a + b, 0); parsPlayed[f] += par * f; }
                     });
                 }
-
-                html += `<div class="standings-row" style="border-left-color: ${group.color};">
-                            <div><div class="standings-team" style="color: ${group.color};">Team ${group.id}</div></div>
-                            <div>`;
+                html += `<div class="standings-row" style="border-left-color: ${group.color};"><div><div class="standings-team" style="color: ${group.color};">Team ${group.id}</div></div><div>`;
                 roundData.formats.forEach(f => {
                     let net = teamTotals[f] - parsPlayed[f];
                     let displayObj = formatNetScore(net, teamTotals[f]);
@@ -526,7 +543,6 @@
             switchScreen('step-3', 'step-4');
         }
 
-        // --- REUSABLE DISPLAY ENGINES ---
         function generateSkinsHTML(rData, sDb) {
             let html = '';
             let skinsCount = 0;
@@ -534,10 +550,7 @@
                 let par = rData.course.pars[h-1];
                 let holeScores = [];
                 rData.groups.forEach(g => {
-                    g.players.forEach(p => {
-                        let s = sDb[g.id][p.id][h];
-                        if(s) holeScores.push({name: p.name, score: s, color: g.color});
-                    });
+                    g.players.forEach(p => { let s = sDb[g.id][p.id][h]; if(s) holeScores.push({name: p.name, score: s, color: g.color}); });
                 });
 
                 if(holeScores.length > 0) {
@@ -548,14 +561,10 @@
                             skinsCount++;
                             let term = (minScore === par - 1) ? "Birdie" : "Eagle";
                             if(minScore <= par - 3) term = "Albatross/Ace";
-                            html += `
-                            <div class="skin-row" style="border-left-color: ${winners[0].color};">
-                                <div>
+                            html += `<div class="skin-row" style="border-left-color: ${winners[0].color};"><div>
                                     <div style="color: var(--text-muted); font-size: 0.9em;">Hole ${h} (Par ${par})</div>
                                     <div class="skin-winner" style="color: ${winners[0].color};">${winners[0].name}</div>
-                                </div>
-                                <div style="font-size: 24px; font-weight: bold;">${minScore} <span style="font-size: 14px; font-weight: normal; color: var(--text-muted);">(${term})</span></div>
-                            </div>`;
+                                </div><div style="font-size: 24px; font-weight: bold;">${minScore} <span style="font-size: 14px; font-weight: normal; color: var(--text-muted);">(${term})</span></div></div>`;
                         }
                     }
                 }
@@ -584,25 +593,21 @@
                 g.players.forEach(p => {
                     tableHTML += `<tr><td style="text-align:left; white-space:nowrap;"><b>${p.name}</b> <span style="font-size:10px; color:${g.color};">(G${g.id})</span></td>`;
                     let outScore = 0, inScore = 0;
-
                     for(let h=1; h<=18; h++) {
                         let score = sDb[g.id][p.id][h] || '-';
                         let cssClass = "score-cell";
-                        
                         if(score !== '-') {
                             if(h <= 9) outScore += score; else inScore += score;
                             let par = rData.course.pars[h-1];
                             if(score < par) cssClass += " under-par";
                             else if(score > par) cssClass += " over-par";
                         }
-
                         if(h === 10) tableHTML += `<td class="out-in-col">${outScore || '-'}</td>`;
                         tableHTML += `<td class="${cssClass}">${score}</td>`;
                     }
                     tableHTML += `<td class="out-in-col">${inScore || '-'}</td><td class="out-in-col">${(outScore+inScore) || '-'}</td></tr>`;
                 });
             });
-
             tableHTML += `</tbody></table>`;
             return tableHTML;
         }
