@@ -97,18 +97,15 @@
         .payout-winner { color: white; font-weight: bold; }
         .payout-amount { color: var(--accent-gold); font-weight: bold; }
 
-        @media print {
-            body * { visibility: hidden; }
-            .screen { display: none !important; }
-            #step-6, #step-6 *, #step-9, #step-9 * { visibility: visible; }
-            #step-6, #step-9 { position: absolute; left: 0; top: 0; display: block !important; }
-            button, hr { display: none !important; }
-            body { background: white; color: black; }
-            .card, .skin-row, .table-wrapper, .payout-card { background: white !important; border: 1px solid #ccc !important; box-shadow: none !important; color: black !important;}
-            h2, h3, th, td, span, .skin-winner, .payout-header, .payout-amount { color: black !important; border-color: #999 !important; }
-            .par-row { background: #eee !important; }
-            .out-in-col { background: #e5e5e5 !important; }
-        }
+        /* SHARE MODAL STYLES */
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-content { background: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .pulse-text { animation: pulse 1.5s infinite; color: var(--accent-gold); font-size: 14px; text-align: center; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
+        .share-text-area { width: 100%; height: 250px; background: #111; color: #fff; border: 1px solid #444; border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 15px;}
+        .share-text-area:focus { outline: none; border-color: var(--accent-gold); }
+
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -220,7 +217,7 @@
 
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
-            <button class="btn-primary" onclick="window.print()" style="background-color: #4682B4; color: white; margin-top: 0;">🖨️ Print / Save as PDF</button>
+            <button class="btn-primary" onclick="openResultsShareModal()" style="background-color: #4682B4; color: white; margin-top: 0;">📤 Share Results</button>
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
             <button id="admin-finalize-btn" class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
             <button id="admin-override-btn" onclick="adminForceReset()" style="background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 12px; margin-top: 10px;">Admin Override Reset</button>
@@ -254,7 +251,7 @@
 
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
             <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 10px;">← Back to Archives</button>
-            <button class="btn-primary" onclick="window.print()" style="background-color: #4682B4; color: white; margin-top: 0;">🖨️ Print / Save as PDF</button>
+            <button class="btn-primary" onclick="openResultsShareModal()" style="background-color: #4682B4; color: white; margin-top: 0;">📤 Share Results</button>
         </div>
     </div>
 
@@ -262,6 +259,16 @@
         <h2 style="color: var(--accent-gold); font-size: 2.2em; margin-bottom: 10px;">⛳ Round Complete</h2>
         <p style="color: var(--text-main); font-size: 1.1em;">This tournament has been finalized.</p>
         <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 20px;">The active scorecard is now locked. Please wait for a new link from the administrator to begin your next round.</p>
+    </div>
+
+    <div id="share-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: #fff; text-align: center;">Share Results</h2>
+            <div class="pulse-text">👇 Press and hold text below to copy 👇</div>
+            <textarea id="share-text-content" class="share-text-area" readonly></textarea>
+            <button class="btn-primary" onclick="copyAndCloseShare()" style="background-color: #28a745; color: white;">📋 Auto-Copy & Close</button>
+            <button class="btn-secondary" onclick="closeShareModal()">Cancel</button>
+        </div>
     </div>
 
     <script>
@@ -298,6 +305,11 @@
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
         let allAvailableCourses = {}; 
+        let lastAdvanceTime = 0;
+
+        // View context for sharing
+        let activeViewRoundData = null;
+        let activeViewScoresDb = null;
 
         // ==========================================
         // 3. CLOUD LISTENER
@@ -427,6 +439,18 @@
             localStorage.setItem('tournamentArchive', JSON.stringify(archive));
         }
 
+        function deleteArchivedRound(index) {
+            let pin = prompt("Admin Override: Enter PIN to delete this archived round");
+            if (pin === "1234") {
+                let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+                archive.splice(index, 1);
+                localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+                viewArchiveList(); 
+            } else if (pin !== null && pin !== "") {
+                alert("Incorrect PIN. Deletion aborted.");
+            }
+        }
+
         function viewArchiveList() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
             let html = '';
@@ -435,8 +459,13 @@
             } else {
                 archive.forEach((arc, i) => {
                     html += `<div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold);">
-                        <div style="font-weight: bold; font-size: 18px;">${arc.course}</div>
-                        <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Played on: ${arc.date}</div>
+                        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+                            <div>
+                                <div style="font-weight: bold; font-size: 18px;">${arc.course}</div>
+                                <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Played on: ${arc.date}</div>
+                            </div>
+                            <button onclick="deleteArchivedRound(${i})" style="background:none; border:none; color:#ff3333; font-size:20px; cursor:pointer;">🗑️</button>
+                        </div>
                         <button class="btn-secondary" style="padding: 10px; font-size: 14px;" onclick="showArchivedCard(${i})">View Scorecard</button>
                     </div>`;
                 });
@@ -447,6 +476,9 @@
 
         function showArchivedCard(index) {
             let arc = (JSON.parse(localStorage.getItem('tournamentArchive')) || [])[index];
+            activeViewRoundData = arc.roundData;
+            activeViewScoresDb = arc.scoresDb;
+            
             document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(arc.roundData, arc.scoresDb);
             document.getElementById('archived-skins-container').innerHTML = generateSkinsHTML(arc.roundData, arc.scoresDb);
             document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(arc.roundData, arc.scoresDb);
@@ -729,6 +761,86 @@
             document.getElementById('step-4').classList.add('active');
         }
 
+        // ==========================================
+        // SHARE RESULTS MODAL ENGINE
+        // ==========================================
+        function openResultsShareModal() {
+            // Uses whichever context is actively loaded (Live vs Archived)
+            let rData = activeViewRoundData;
+            let sDb = activeViewScoresDb;
+
+            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
+            let totalBets = rData.formats.length * 3;
+            let totalTeamPot = totalPlayers * rData.betAmount * totalBets;
+            let skinsPot = totalPlayers * rData.skinsAmount;
+
+            let shareText = `⛳ GOLF TOURNAMENT RESULTS ⛳\n`;
+            shareText += `Course: ${rData.course.name}\n\n`;
+            shareText += `💰 TOTAL PURSE: $${totalTeamPot + skinsPot}\n\n`;
+
+            shareText += `🏆 TEAM STANDINGS (To Par):\n`;
+            rData.groups.forEach(g => {
+                shareText += `Group ${g.id} (${g.captain}):\n`;
+                let teamTotals = { 1: 0, 2: 0, 3: 0 };
+                let parsPlayed = { 1: 0, 2: 0, 3: 0 };
+                for(let h = 1; h <= 18; h++) {
+                    let hs = [];
+                    let par = rData.course.pars[h-1];
+                    g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
+                    hs.sort((a,b)=>a-b);
+                    rData.formats.forEach(f => {
+                        if(hs.length >= f) { teamTotals[f] += hs.slice(0,f).reduce((a,b)=>a+b,0); parsPlayed[f] += par * f; }
+                    });
+                }
+                rData.formats.forEach(f => {
+                    let net = teamTotals[f] - parsPlayed[f];
+                    let sign = net > 0 ? "+" : (net === 0 ? "E" : "");
+                    shareText += `  ${f}-Ball: ${sign}${net || "E"}\n`;
+                });
+            });
+
+            shareText += `\n🔥 SKINS WON:\n`;
+            let skinsWon = 0;
+            for(let h=1; h<=18; h++) {
+                let par = rData.course.pars[h-1];
+                let hs = [];
+                rData.groups.forEach(g => {
+                    g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s) hs.push({n:p.name, s:s}); });
+                });
+                if(hs.length > 0) {
+                    let min = Math.min(...hs.map(x=>x.s));
+                    if(min < par) {
+                        let winners = hs.filter(x=>x.s===min);
+                        if(winners.length===1) {
+                            shareText += `  Hole ${h}: ${winners[0].n} (Score: ${min})\n`;
+                            skinsWon++;
+                        }
+                    }
+                }
+            }
+            if(skinsWon === 0) shareText += `  No skins won.\n`;
+
+            document.getElementById('share-text-content').value = shareText;
+            document.getElementById('share-modal').classList.add('active');
+        }
+
+        function copyAndCloseShare() {
+            let textArea = document.getElementById('share-text-content');
+            textArea.select();
+            document.execCommand('copy'); 
+            if(navigator.clipboard) navigator.clipboard.writeText(textArea.value);
+            closeShareModal();
+            // Provide a brief visual confirmation 
+            let btn = document.querySelector('#share-modal .btn-primary');
+            let oldText = btn.innerText;
+            btn.innerText = "Copied!";
+            setTimeout(() => { btn.innerText = oldText; }, 2000);
+        }
+
+        function closeShareModal() {
+            document.getElementById('share-modal').classList.remove('active');
+        }
+
         function generateFinancialSummaryHTML(rData, sDb) {
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
             if(totalPlayers === 0) return "<p>No data.</p>";
@@ -920,13 +1032,9 @@
             return fullHTML;
         }
 
-        function viewSkins() {
-            document.getElementById('skins-container').innerHTML = generateSkinsHTML(roundData, scoresDb);
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('step-5').classList.add('active');
-        }
-
         function viewFullCard() {
+            activeViewRoundData = roundData;
+            activeViewScoresDb = scoresDb;
             document.getElementById('full-card-container').innerHTML = generateScorecardHTML(roundData, scoresDb);
             document.getElementById('final-skins-container').innerHTML = generateSkinsHTML(roundData, scoresDb);
             document.getElementById('payout-summary-container').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
