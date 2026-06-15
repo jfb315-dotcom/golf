@@ -136,6 +136,8 @@
             <button class="btn-primary" onclick="viewStandings()" style="background-color: #28a745; color: white; margin-top: 0; border: 1px solid #1e7e34;">🏆 Standings</button>
             <button class="btn-primary" onclick="viewSkins()" style="background-color: #cc3300; color: white; margin-top: 0; border: 1px solid #a32900;">🔥 View Skins</button>
             <button class="btn-secondary" onclick="viewFullCard()" style="grid-column: span 2;">📋 View Full Scorecard</button>
+            
+            <button id="admin-share-btn" class="btn-primary" onclick="openShareMenu()" style="grid-column: span 2; background-color: #4682B4; color: white;">📱 Share Scorecards via SMS</button>
         </div>
     </div>
 
@@ -164,11 +166,16 @@
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px;">
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
-            <button class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Reset App</button>
-            <p style="color: #8b0000; font-size: 12px; text-align: center; margin-top: 0;">Applies safety lock before wiping data.</p>
-            
-            <button onclick="adminForceReset()" style="background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 12px; margin-top: 10px;">Admin Override Reset</button>
+            <button id="admin-finalize-btn" class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Reset App</button>
+            <button id="admin-override-btn" onclick="adminForceReset()" style="background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 12px; margin-top: 10px;">Admin Override Reset</button>
         </div>
+    </div>
+
+    <div id="step-7" class="screen card">
+        <h2>Share Scorecards</h2>
+        <p style="color: var(--text-muted); margin-top: 0;">Select a team to generate a locked SMS link.</p>
+        <div id="share-buttons-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"></div>
+        <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
     </div>
 
     <script>
@@ -180,14 +187,29 @@
         let roundData = { course: null, groups: [], formats: [], currentHole: 1 };
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
+        
+        // NEW: URL Locking Variable
+        let lockedTeamId = null;
 
         window.onload = () => {
+            // 1. Check the URL for a magic link (e.g., ?team=2)
+            const urlParams = new URLSearchParams(window.location.search);
+            const teamParam = urlParams.get('team');
+            if (teamParam) {
+                lockedTeamId = parseInt(teamParam);
+                currentTeamFilter = lockedTeamId; // Force the filter to their team
+            }
+
             const savedState = localStorage.getItem('tournamentAppMemory');
             if (savedState) {
                 const parsedState = JSON.parse(savedState);
                 roundData = parsedState.roundData;
                 scoresDb = parsedState.scoresDb;
-                if(parsedState.currentTeamFilter) currentTeamFilter = parsedState.currentTeamFilter;
+                
+                // Only respect the saved filter if they ARE NOT using a magic link
+                if(!lockedTeamId && parsedState.currentTeamFilter) {
+                    currentTeamFilter = parsedState.currentTeamFilter;
+                }
                 
                 renderCaptainGrid();
                 renderScoreEntry();
@@ -209,7 +231,27 @@
             }));
         }
 
-        // Standard Safe Finalize
+        // --- NEW: SHARE ENGINE ---
+        function openShareMenu() {
+            let html = '';
+            roundData.groups.forEach(g => {
+                html += `<button class="btn-secondary" style="border-color: ${g.color}; color: ${g.color};" onclick="sendSMS(${g.id}, '${g.captain}')">📱 Text Group ${g.id} (Capt: ${g.captain})</button>`;
+            });
+            document.getElementById('share-buttons-container').innerHTML = html;
+            switchScreen('step-3', 'step-7');
+        }
+
+        function sendSMS(groupId, captainName) {
+            // Gets your website URL without any extra junk at the end
+            const baseUrl = window.location.href.split('?')[0]; 
+            const magicLink = `${baseUrl}?team=${groupId}`;
+            const message = encodeURIComponent(`Hey ${captainName}, here is your live scorecard for Group ${groupId}. Click here to start scoring: ${magicLink}`);
+            
+            // This triggers the phone's native text messaging app
+            window.location.href = `sms:?&body=${message}`;
+        }
+
+
         function validateAndFinalize() {
             let missingScores = false;
             roundData.groups.forEach(g => {
@@ -227,16 +269,15 @@
 
             if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and clear the board?")) {
                 localStorage.removeItem('tournamentAppMemory');
-                window.location.reload(); 
+                window.location.href = window.location.href.split('?')[0]; // Reset URL
             }
         }
 
-        // NEW: Admin Override
         function adminForceReset() {
             let pin = prompt("Admin Override: Enter PIN to force reset");
             if (pin === "1234") {
                 localStorage.removeItem('tournamentAppMemory');
-                window.location.reload(); 
+                window.location.href = window.location.href.split('?')[0]; // Reset URL
             } else if (pin !== null && pin !== "") {
                 alert("Incorrect PIN. Reset aborted.");
             }
@@ -299,6 +340,15 @@
         }
 
         function renderCaptainGrid() {
+            // NEW: If they are using a magic link, completely hide the grid and admin buttons
+            if(lockedTeamId) {
+                document.getElementById('captain-grid-container').style.display = 'none';
+                document.getElementById('admin-share-btn').style.display = 'none';
+                document.getElementById('admin-finalize-btn').style.display = 'none';
+                document.getElementById('admin-override-btn').style.display = 'none';
+                return; // Stop drawing the grid entirely
+            }
+
             let container = document.getElementById('captain-grid-container');
             let html = '';
 
@@ -413,7 +463,6 @@
             switchScreen('step-3', 'step-4');
         }
 
-        // NEW REUSABLE SKINS FUNCTION
         function generateSkinsHTML() {
             let html = '';
             let skinsCount = 0;
@@ -497,10 +546,7 @@
 
             tableHTML += `</tbody></table>`;
             document.getElementById('full-card-container').innerHTML = tableHTML;
-            
-            // Generate the skins list for the bottom of the scorecard page
             document.getElementById('final-skins-container').innerHTML = generateSkinsHTML();
-            
             switchScreen('step-3', 'step-6');
         }
 
