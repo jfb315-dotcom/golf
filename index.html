@@ -59,13 +59,16 @@
         .hole-nav button { background: #444; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold;}
         .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center;}
         
-        /* Team Scorecard Entry UI */
+        /* Team Scorecard Entry UI - UPDATED WITH FOCUS POLISH */
         .team-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #555; }
         .team-header { border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; display: block;}
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .player-row span { font-size: 18px; font-weight: bold;}
-        .score-box { width: 60px; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 10px; border: 2px solid #555; color: white; border-radius: 6px;}
-        .score-box:focus { border-color: var(--accent-gold); outline: none; background: #000; }
+        .score-box { width: 60px; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 10px; border: 2px solid #555; color: #ffffff; border-radius: 6px; transition: all 0.2s ease;}
+        .score-box:focus { border-color: var(--accent-gold); outline: none; background: #000000; transform: scale(1.05); box-shadow: 0 0 10px var(--accent-gold);}
+        
+        /* LIVE PAR INDICATOR */
+        .par-indicator { font-size: 13px; font-weight: bold; width: 80px; text-align: right; margin-right: 15px; text-transform: uppercase;}
 
         /* Standings & Skins UI */
         .standings-row { display: flex; justify-content: space-between; padding: 15px; background: #252525; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid var(--accent-gold);}
@@ -91,6 +94,20 @@
         .par-setup-item { display: flex; align-items: center; justify-content: space-between; background: #222; padding: 8px; border-radius: 4px; border: 1px solid #444;}
         .par-setup-item label { margin: 0; font-size: 12px; }
         .par-setup-item input { width: 50px; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
+
+        /* PRINT STYLES FOR SUMMARY PDF */
+        @media print {
+            body * { visibility: hidden; }
+            .screen { display: none !important; }
+            #step-6, #step-6 *, #step-9, #step-9 * { visibility: visible; }
+            #step-6, #step-9 { position: absolute; left: 0; top: 0; display: block !important; }
+            button, hr { display: none !important; }
+            body { background: white; color: black; }
+            .card, .skin-row, .table-wrapper { background: white !important; border: 1px solid #ccc !important; box-shadow: none !important; color: black !important;}
+            h2, h3, th, td, span, .skin-winner { color: black !important; border-color: #999 !important; }
+            .par-row { background: #eee !important; }
+            .out-in-col { background: #e5e5e5 !important; }
+        }
     </style>
 </head>
 <body>
@@ -151,8 +168,9 @@
         <div class="hole-nav" style="margin-top: 15px; margin-bottom: 0;">
             <button onclick="changeHole(-1)">◀ Prev</button>
             <div>
-                <h2 id="current-hole-display">Hole 1</h2>
-                <div id="current-par-display" style="text-align: center; color: var(--text-muted);">Par 4</div>
+                <h2 id="current-hole-display" style="margin: 0;">Hole 1</h2>
+                <div id="current-par-display" style="text-align: center; color: var(--text-muted); font-size: 14px;">Par 4</div>
+                <div id="sync-status" style="text-align: center; font-size: 10px; color: #00ff00; margin-top: 2px;">● Synced</div>
             </div>
             <button onclick="changeHole(1)">Next ▶</button>
         </div>
@@ -189,6 +207,7 @@
         </div>
 
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <button class="btn-primary" onclick="window.print()" style="background-color: #4682B4; color: white;">🖨️ Print / Save as PDF</button>
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
             <button id="admin-finalize-btn" class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
@@ -217,7 +236,10 @@
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Archived Skins</h3>
             <div id="archived-skins-container"></div>
         </div>
-        <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 30px; max-width: 400px; margin-left: auto; margin-right: auto; display: block;">← Back to Archives</button>
+        <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+            <button class="btn-primary" onclick="window.print()" style="background-color: #4682B4; color: white;">🖨️ Print / Save as PDF</button>
+            <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 10px;">← Back to Archives</button>
+        </div>
     </div>
 
     <script>
@@ -470,10 +492,32 @@
             }
         }
 
+        // --- NEW TEXT/COLOR HELPERS FOR PAR INDICATOR ---
+        function getParText(score, par) {
+            if(!score) return "";
+            let diff = score - par;
+            if(diff === 0) return "Par";
+            if(diff === -1) return "Birdie";
+            if(diff === -2) return "Eagle";
+            if(diff <= -3) return "Albatross";
+            if(diff === 1) return "Bogey";
+            if(diff === 2) return "Dbl Bogey";
+            return `+${diff}`;
+        }
+
+        function getParColor(score, par) {
+            if(!score) return "";
+            let diff = score - par;
+            if(diff < 0) return "#00ff00"; // Green for under par
+            if(diff > 0) return "#ff3333"; // Red for over par
+            return "#ffffff"; // White for par
+        }
+
         function renderScoreEntry() {
             let hole = roundData.currentHole;
+            let par = roundData.course.pars[hole-1];
             document.getElementById('current-hole-display').innerText = `Hole ${hole}`;
-            document.getElementById('current-par-display').innerText = `Par ${roundData.course.pars[hole-1]}`;
+            document.getElementById('current-par-display').innerText = `Par ${par}`;
             
             let html = '';
             roundData.groups.forEach(group => {
@@ -486,19 +530,67 @@
                 
                 group.players.forEach(player => {
                     let currentScore = scoresDb[group.id][player.id][hole] || '';
-                    html += `<div class="player-row"><span>${player.name}</span>
-                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-box" value="${currentScore}" onchange="saveScore(${group.id}, ${player.id}, ${hole}, this.value)"></div>`;
+                    let indText = getParText(currentScore, par);
+                    let indColor = getParColor(currentScore, par);
+
+                    // Added the live span indicator and the handleInputAdvance trigger
+                    html += `
+                    <div class="player-row">
+                        <span style="flex: 1;">${player.name}</span>
+                        <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
+                        <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-box score-input-field" value="${currentScore}" 
+                               oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                    </div>`;
                 });
                 html += `</div>`;
             });
             document.getElementById('entry-container').innerHTML = html;
         }
 
+        // --- NEW AUTO-ADVANCE ENGINE ---
+        function handleInputAdvance(el, groupId, playerId, hole, par) {
+            let val = el.value;
+            
+            // 1. Update the indicator text and color instantly
+            let ind = document.getElementById(`par-ind-${groupId}-${playerId}`);
+            if(ind) {
+                ind.innerText = getParText(val, par);
+                ind.style.color = getParColor(val, par);
+            }
+            
+            // 2. Save the score
+            saveScore(groupId, playerId, hole, val);
+
+            // 3. Auto-advance logic (jump down to the next box)
+            if((val.length === 1 && parseInt(val) > 1) || val.length >= 2) {
+                let inputs = Array.from(document.querySelectorAll('.score-input-field'));
+                let idx = inputs.indexOf(el);
+                if(idx > -1 && idx < inputs.length - 1) {
+                    setTimeout(() => inputs[idx + 1].focus(), 150); // slight delay makes it feel natural on mobile
+                }
+            }
+        }
+
         function saveScore(groupId, playerId, hole, value) {
+            // Flash the Sync status dot
+            let status = document.getElementById('sync-status');
+            if(status) {
+                status.innerText = "↻ Saving...";
+                status.style.color = "var(--accent-gold)";
+            }
+
             let val = parseInt(value);
             if(!isNaN(val) && val > 0) scoresDb[groupId][playerId][hole] = val;
             else delete scoresDb[groupId][playerId][hole]; 
             saveAppState();
+
+            // Set it back to green
+            setTimeout(() => {
+                if(status) {
+                    status.innerText = "● Synced";
+                    status.style.color = "#00ff00";
+                }
+            }, 600);
         }
 
         function viewStandings() {
