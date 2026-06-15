@@ -270,7 +270,7 @@
         let allAvailableCourses = {}; 
 
         // ==========================================
-        // 3. STARTUP & CLOUD LISTENER
+        // 3. STARTUP & CLOUD LISTENER WITH AUTO-REFRESH
         // ==========================================
         window.onload = () => {
             let parGridHTML = '';
@@ -293,6 +293,7 @@
                 currentTeamFilter = savedFilter;
             }
 
+            // Real-time listener that auto-refreshes whatever screen you are looking at
             activeTournamentRef.onSnapshot((doc) => {
                 if (doc.exists) {
                     const data = doc.data();
@@ -306,6 +307,12 @@
                         document.getElementById('step-3').classList.add('active');
                     } else if (document.getElementById('step-3').classList.contains('active')) {
                         updateUIWithoutLosingFocus();
+                    } else if (document.getElementById('step-4').classList.contains('active')) {
+                        viewStandings(); 
+                    } else if (document.getElementById('step-5').classList.contains('active')) {
+                        viewSkins(); 
+                    } else if (document.getElementById('step-6').classList.contains('active')) {
+                        viewFullCard(); 
                     }
                 } else {
                     document.getElementById('step-1').classList.add('active');
