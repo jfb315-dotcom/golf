@@ -61,11 +61,13 @@
         
         .team-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #555; }
         .team-header { border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; display: block;}
-        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-        .player-row span { font-size: 18px; font-weight: bold;}
-        .score-box { width: 60px; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 10px; border: 2px solid #555; color: white; border-radius: 6px; transition: all 0.2s ease;}
+        
+        /* UNIFORM SCORING ROW STYLES */
+        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+        .player-name { flex: 1; font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .par-indicator { font-size: 13px; font-weight: bold; width: 85px; text-align: right; text-transform: uppercase; flex-shrink: 0; }
+        .score-box { width: 65px; height: 45px; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 5px; border: 2px solid #555; color: white; border-radius: 6px; transition: all 0.2s ease; flex-shrink: 0; }
         .score-box:focus { border-color: var(--accent-gold); outline: none; background: #000; transform: scale(1.05); box-shadow: 0 0 10px var(--accent-gold); }
-        .par-indicator { font-size: 13px; font-weight: bold; width: 80px; text-align: right; margin-right: 15px; text-transform: uppercase;}
 
         .standings-row { display: flex; justify-content: space-between; padding: 15px; background: #252525; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid var(--accent-gold);}
         .standings-team { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
@@ -89,7 +91,6 @@
         .par-setup-item label { margin: 0; font-size: 12px; }
         .par-setup-item input { width: 50px; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
 
-        /* Financial Summary Styles */
         .payout-card { background: #252525; border-radius: 8px; border-left: 5px solid #28a745; padding: 15px; margin-bottom: 15px;}
         .payout-header { font-size: 1.2em; font-weight: bold; color: #28a745; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;}
         .payout-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
@@ -297,9 +298,10 @@
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
         let allAvailableCourses = {}; 
+        let lastAdvanceTime = 0; // Guard variable to prevent double-skipping
 
         // ==========================================
-        // 3. STARTUP & CLOUD LISTENER
+        // 3. CLOUD LISTENER
         // ==========================================
         window.onload = () => {
             let parGridHTML = '';
@@ -379,7 +381,7 @@
         }
 
         // ==========================================
-        // 5. CORE LOGIC
+        // 4. COURSE SETUP & ARCHIVE
         // ==========================================
         function refreshCourseDropdown() {
             allAvailableCourses = { ...courseDatabase }; 
@@ -494,7 +496,6 @@
             const gCount = parseInt(document.getElementById('group-count').value);
             const pCount = parseInt(document.getElementById('players-per-group').value);
             
-            // Capture Financials
             roundData.betAmount = parseInt(document.getElementById('bet-amount').value) || 0;
             roundData.skinsAmount = parseInt(document.getElementById('skins-amount').value) || 0;
 
@@ -579,7 +580,6 @@
                 roundData.currentHole = newHole;
                 saveAppStateToCloud(); 
                 renderScoreEntry();
-                // AUTO-SCROLL TO TOP FIX
                 window.scrollTo({ top: 0, behavior: 'smooth' });
             }
         }
@@ -604,6 +604,9 @@
             return "#ffffff"; 
         }
 
+        // ==========================================
+        // FIXED SCORING ENTRY WITH AUTO-ADVANCE FILTER
+        // ==========================================
         function renderScoreEntry() {
             let hole = roundData.currentHole;
             let par = roundData.course.pars[hole-1];
@@ -627,7 +630,7 @@
                     let indColor = getParColor(currentScore, par);
 
                     html += `<div class="player-row">
-                        <span style="flex: 1;">${player.name}</span>
+                        <span class="player-name">${player.name}</span>
                         <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
                         <input type="number" inputmode="numeric" pattern="[0-9]*" class="score-box score-input-field" 
                                id="score-input-${group.id}-${player.id}" value="${currentScore}" 
@@ -648,13 +651,24 @@
             else delete scoresDb[groupId][playerId][hole]; 
             saveAppStateToCloud();
 
+            // Auto advance trigger conditions
             if((val.length === 1 && parseInt(val) > 1) || val.length >= 2) {
+                let now = Date.now();
+                
+                // DEBOUNCE GUARD: Filter out double-fires and ghost keyboard events under 300ms
+                if (now - lastAdvanceTime < 300) return;
+                
                 let inputs = Array.from(document.querySelectorAll('.score-input-field'));
                 let idx = inputs.indexOf(el);
                 
                 if(idx > -1 && idx < inputs.length - 1) {
-                    setTimeout(() => inputs[idx + 1].focus(), 150); 
+                    lastAdvanceTime = now;
+                    setTimeout(() => {
+                        inputs[idx + 1].focus();
+                        if (typeof inputs[idx + 1].select === 'function') inputs[idx + 1].select();
+                    }, 50); 
                 } else if (idx === inputs.length - 1) {
+                    lastAdvanceTime = now;
                     setTimeout(() => { changeHole(1); }, 400); 
                 }
             }
@@ -663,9 +677,8 @@
         function viewStandings() {
             document.getElementById('standings-hole-status').innerText = `Thru Hole ${roundData.currentHole}`;
             
-            // FINANCIAL SUMMARY FOR STANDINGS
             let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.length, 0);
-            let totalBets = roundData.formats.length * 3; // Front, Back, Overall per format
+            let totalBets = roundData.formats.length * 3; 
             let totalTeamPot = totalPlayers * roundData.betAmount * totalBets;
             let skinsPot = totalPlayers * roundData.skinsAmount;
             
@@ -712,7 +725,6 @@
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
             if(totalPlayers === 0) return "<p>No data.</p>";
 
-            // 1. SKINS PAYOUT
             let skinsHTML = `<div class="payout-card"><div class="payout-header">Skins Payout</div>`;
             let skinsPot = totalPlayers * rData.skinsAmount;
             let skinsWon = [];
@@ -742,7 +754,6 @@
             }
             skinsHTML += `</div>`;
 
-            // 2. TEAM BET PAYOUT
             let teamHTML = `<div class="payout-card"><div class="payout-header">Team Bet Payouts</div>`;
             let potPerBet = totalPlayers * rData.betAmount;
             
@@ -770,7 +781,6 @@
                         totData.push({id: g.id, net: tot - ptot});
                     });
 
-                    // Helper to split pot for ties
                     const processBet = (data, title) => {
                         let minNet = Math.min(...data.map(d => d.net));
                         let winners = data.filter(d => d.net === minNet);
