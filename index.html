@@ -59,7 +59,7 @@
         .hole-nav button { background: #444; color: white; border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold;}
         .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center;}
         
-        /* Team Scorecard UI */
+        /* Team Scorecard Entry UI */
         .team-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #555; }
         .team-header { border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; display: block;}
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
@@ -75,7 +75,7 @@
         .skin-winner { font-size: 1.2em; font-weight: bold; color: var(--accent-gold); }
 
         /* Full Scorecard Grid */
-        .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 30px; }
+        .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 0px; }
         table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; }
         th, td { border: 1px solid #444; padding: 8px; }
         th { background-color: #333; color: var(--accent-gold); }
@@ -128,8 +128,7 @@
         <input type="text" id="new-course-name" placeholder="e.g., Pinehurst No. 2">
 
         <label>Enter Par for Each Hole</label>
-        <div class="par-setup-grid" id="par-input-grid">
-            </div>
+        <div class="par-setup-grid" id="par-input-grid"></div>
 
         <button class="btn-primary" onclick="saveCustomCourse()" style="margin-top: 25px;">💾 Save Course</button>
         <button class="btn-secondary" onclick="switchScreen('step-add-course', 'step-1')">Cancel</button>
@@ -179,17 +178,17 @@
         <button class="btn-secondary" onclick="switchScreen('step-5', 'step-3')">← Back to Scoring</button>
     </div>
 
-    <div id="step-6" class="screen card" style="max-width: 100%;">
-        <h2>Full Scorecard View</h2>
+    <div id="step-6" class="screen" style="max-width: 1000px; margin: 0 auto;">
+        <h2 style="text-align: center; color: white; margin-bottom: 25px;">Full Scorecard View</h2>
         
         <div id="full-card-container"></div>
         
-        <div style="margin-top: 30px;">
+        <div class="card" style="margin-top: 30px; max-width: 100%;">
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Final Skins List</h3>
             <div id="final-skins-container"></div>
         </div>
 
-        <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px;">
+        <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
             <button id="admin-finalize-btn" class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
@@ -211,16 +210,16 @@
         <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
     </div>
 
-    <div id="step-9" class="screen card" style="max-width: 100%;">
-        <h2>Archived Scorecard</h2>
+    <div id="step-9" class="screen" style="max-width: 1000px; margin: 0 auto;">
+        <h2 style="text-align: center; color: white; margin-bottom: 25px;">Archived Scorecard</h2>
         
         <div id="archived-card-container"></div>
         
-        <div style="margin-top: 30px;">
+        <div class="card" style="margin-top: 30px; max-width: 100%;">
             <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Archived Skins</h3>
             <div id="archived-skins-container"></div>
         </div>
-        <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 30px; max-width: 400px;">← Back to Archives</button>
+        <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 30px; max-width: 400px; margin-left: auto; margin-right: auto; display: block;">← Back to Archives</button>
     </div>
 
     <script>
@@ -561,60 +560,69 @@
             return html;
         }
 
-        // --- NEW ISOLATED SCORECARD ENGINE ---
+        // --- NEW FULLY SEPARATED TEAM SCORECARDS ---
         function generateScorecardHTML(rData, sDb) {
             let fullHTML = '';
             let outPar = rData.course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
             let inPar = rData.course.pars.slice(9, 18).reduce((a, b) => a + b, 0);
 
-            // Loop through each group to create an isolated table
             rData.groups.forEach(g => {
                 fullHTML += `
-                <div style="margin-top: 30px; margin-bottom: 10px;">
-                    <h3 style="color: ${g.color}; margin: 0 0 5px 0;">Group ${g.id}</h3>
-                    <div style="font-size: 14px; color: var(--text-muted); font-weight: bold; text-transform: uppercase;">Capt: ${g.captain}</div>
-                </div>
-                
-                <div class="table-wrapper" style="margin-top: 0;">
-                    <table>
-                        <thead>
-                            <tr><th style="text-align:left;">Player</th>`;
-                
-                for(let i=1; i<=9; i++) fullHTML += `<th>${i}</th>`;
-                fullHTML += `<th class="out-in-col">OUT</th>`;
-                for(let i=10; i<=18; i++) fullHTML += `<th>${i}</th>`;
-                fullHTML += `<th class="out-in-col">IN</th><th class="out-in-col">TOT</th></tr>
-                        </thead>
-                        <tbody>`;
-
-                // Add the Par row for this specific table
-                fullHTML += `<tr class="par-row"><td style="text-align:left;">PAR</td>`;
-                rData.course.pars.slice(0,9).forEach(par => fullHTML += `<td>${par}</td>`);
-                fullHTML += `<td class="out-in-col">${outPar}</td>`;
-                rData.course.pars.slice(9,18).forEach(par => fullHTML += `<td>${par}</td>`);
-                fullHTML += `<td class="out-in-col">${inPar}</td><td class="out-in-col">${outPar+inPar}</td></tr>`;
-
-                // Add only the players assigned to this group
-                g.players.forEach(p => {
-                    fullHTML += `<tr><td style="text-align:left; white-space:nowrap;"><b>${p.name}</b></td>`;
-                    let outScore = 0, inScore = 0;
+                <div style="background: #1e1e1e; border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
                     
+                    <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
+                        <h3 style="color: ${g.color}; margin: 0; font-size: 1.6em;">Group ${g.id}</h3>
+                        <div style="color: var(--text-muted); font-size: 14px; font-weight: bold; text-transform: uppercase;">Capt: <span style="color: #fff;">${g.captain}</span></div>
+                    </div>
+                    
+                    <div class="table-wrapper" style="margin-top: 0; padding-bottom: 10px;">
+                        <table style="width: 100%; min-width: 800px; text-align: center; border-collapse: collapse;">
+                            <thead>
+                                <tr>
+                                    <th style="text-align:left; background: #2a2a2a; color: ${g.color}; border-color: #333;">Hole</th>
+                                    `;
+                
+                for(let i=1; i<=9; i++) fullHTML += `<th style="background: #2a2a2a; border-color: #333;">${i}</th>`;
+                fullHTML += `<th class="out-in-col" style="background: #333; color: ${g.color}; border-color: #444;">OUT</th>`;
+                for(let i=10; i<=18; i++) fullHTML += `<th style="background: #2a2a2a; border-color: #333;">${i}</th>`;
+                fullHTML += `<th class="out-in-col" style="background: #333; color: ${g.color}; border-color: #444;">IN</th>
+                             <th class="out-in-col" style="background: #333; color: ${g.color}; border-color: #444;">TOT</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr class="par-row">
+                                    <td style="text-align:left; color: var(--text-muted); border-color: #333;">PAR</td>`;
+                
+                rData.course.pars.slice(0,9).forEach(par => fullHTML += `<td style="border-color: #333;">${par}</td>`);
+                fullHTML += `<td class="out-in-col" style="border-color: #444;">${outPar}</td>`;
+                rData.course.pars.slice(9,18).forEach(par => fullHTML += `<td style="border-color: #333;">${par}</td>`);
+                fullHTML += `<td class="out-in-col" style="border-color: #444;">${inPar}</td>
+                             <td class="out-in-col" style="border-color: #444;">${outPar+inPar}</td>
+                                </tr>`;
+
+                g.players.forEach(p => {
+                    fullHTML += `<tr><td style="text-align:left; white-space:nowrap; font-size: 15px; border-color: #333;"><b>${p.name}</b></td>`;
+                    let outScore = 0, inScore = 0;
+
                     for(let h=1; h<=18; h++) {
                         let score = sDb[g.id][p.id][h] || '-';
                         let cssClass = "score-cell";
+                        
                         if(score !== '-') {
                             if(h <= 9) outScore += score; else inScore += score;
                             let par = rData.course.pars[h-1];
                             if(score < par) cssClass += " under-par";
                             else if(score > par) cssClass += " over-par";
                         }
-                        if(h === 10) fullHTML += `<td class="out-in-col">${outScore || '-'}</td>`;
-                        fullHTML += `<td class="${cssClass}">${score}</td>`;
+
+                        if(h === 10) fullHTML += `<td class="out-in-col" style="border-color: #444;">${outScore || '-'}</td>`;
+                        fullHTML += `<td class="${cssClass}" style="border-color: #333;">${score}</td>`;
                     }
-                    fullHTML += `<td class="out-in-col">${inScore || '-'}</td><td class="out-in-col">${(outScore+inScore) || '-'}</td></tr>`;
+                    fullHTML += `<td class="out-in-col" style="border-color: #444;">${inScore || '-'}</td>
+                                 <td class="out-in-col" style="border-color: #444;">${(outScore+inScore) || '-'}</td></tr>`;
                 });
 
-                fullHTML += `</tbody></table></div>`;
+                fullHTML += `</tbody></table></div></div>`;
             });
             
             return fullHTML;
