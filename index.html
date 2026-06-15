@@ -28,7 +28,9 @@
         .screen.active { display: block; }
 
         label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
-        input[type="number"], input[type="text"], input[type="tel"], select {
+        
+        /* FIX: Removed tel from here so the score boxes stop stretching to 100%! */
+        input[type="number"], input[type="text"], select {
             width: 100%; padding: 12px; box-sizing: border-box;
             background: #2a2a2a; border: 1px solid #444; color: white;
             border-radius: 4px; font-size: 16px; margin-bottom: 10px;
@@ -62,11 +64,14 @@
         .team-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #555; }
         .team-header { border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; display: block;}
         
+        /* UNIFORM SCORING ROW STYLES */
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
-        .player-name { flex: 1; font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+        .player-name { flex: 1; font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 5px;}
         .par-indicator { font-size: 13px; font-weight: bold; width: 85px; text-align: right; text-transform: uppercase; flex-shrink: 0; }
-        .score-box { width: 65px; height: 45px; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 5px; border: 2px solid #555; color: white; border-radius: 6px; transition: all 0.2s ease; flex-shrink: 0; margin-bottom: 0 !important; }
-        .score-box:focus { border-color: var(--accent-gold); outline: none; background: #000; transform: scale(1.05); box-shadow: 0 0 10px var(--accent-gold); }
+        
+        /* FIX: Locked width and formatting for score inputs */
+        .score-box { width: 65px !important; height: 45px !important; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a !important; padding: 5px !important; border: 2px solid #555 !important; color: white !important; border-radius: 6px; transition: all 0.2s ease; flex-shrink: 0; margin-bottom: 0 !important; }
+        .score-box:focus { border-color: var(--accent-gold) !important; outline: none; background: #000 !important; transform: scale(1.05); box-shadow: 0 0 10px var(--accent-gold); }
 
         .standings-row { display: flex; justify-content: space-between; padding: 15px; background: #252525; margin-bottom: 10px; border-radius: 6px; border-left: 5px solid var(--accent-gold);}
         .standings-team { font-weight: bold; font-size: 18px; margin-bottom: 5px; }
@@ -88,7 +93,7 @@
         .par-setup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
         .par-setup-item { display: flex; align-items: center; justify-content: space-between; background: #222; padding: 8px; border-radius: 4px; border: 1px solid #444;}
         .par-setup-item label { margin: 0; font-size: 12px; }
-        .par-setup-item input { width: 50px; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
+        .par-setup-item input { width: 50px !important; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
 
         .payout-card { background: #252525; border-radius: 8px; border-left: 5px solid #28a745; padding: 15px; margin-bottom: 15px;}
         .payout-header { font-size: 1.2em; font-weight: bold; color: #28a745; margin-bottom: 10px; border-bottom: 1px solid #444; padding-bottom: 5px;}
@@ -297,6 +302,7 @@
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
         let allAvailableCourses = {}; 
+        let lastAdvanceTime = 0;
 
         // ==========================================
         // 3. CLOUD LISTENER
@@ -322,37 +328,33 @@
             }
 
             activeTournamentRef.onSnapshot((doc) => {
-                try {
-                    if (doc.exists) {
-                        const data = doc.data();
-                        roundData = data.roundData || roundData;
-                        scoresDb = data.scoresDb || {};
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
 
-                        if (!document.getElementById('step-3').classList.contains('active') && 
-                            !document.getElementById('step-4').classList.contains('active') && 
-                            !document.getElementById('step-5').classList.contains('active') && 
-                            !document.getElementById('step-6').classList.contains('active')) {
-                            
-                            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                            renderCaptainGrid();
-                            renderScoreEntry();
-                            document.getElementById('step-3').classList.add('active');
-                        } else {
-                            if (document.getElementById('step-3').classList.contains('active')) updateUIWithoutLosingFocus();
-                            if (document.getElementById('step-4').classList.contains('active')) viewStandings(); 
-                            if (document.getElementById('step-5').classList.contains('active')) viewSkins(); 
-                            if (document.getElementById('step-6').classList.contains('active')) viewFullCard(); 
-                        }
+                if (doc.exists) {
+                    const data = doc.data();
+                    roundData = data.roundData || roundData;
+                    scoresDb = data.scoresDb || {};
+
+                    if (!document.getElementById('step-3').classList.contains('active') && 
+                        !document.getElementById('step-4').classList.contains('active') && 
+                        !document.getElementById('step-5').classList.contains('active') && 
+                        !document.getElementById('step-6').classList.contains('active')) {
+                        
+                        renderCaptainGrid();
+                        renderScoreEntry();
+                        document.getElementById('step-3').classList.add('active');
                     } else {
-                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                        if (lockedTeamId !== null) {
-                            document.getElementById('step-dead-link').classList.add('active');
-                        } else {
-                            document.getElementById('step-1').classList.add('active');
-                        }
+                        if (document.getElementById('step-3').classList.contains('active')) updateUIWithoutLosingFocus();
+                        if (document.getElementById('step-4').classList.contains('active')) viewStandings(); 
+                        if (document.getElementById('step-5').classList.contains('active')) viewSkins(); 
+                        if (document.getElementById('step-6').classList.contains('active')) viewFullCard(); 
                     }
-                } catch (e) {
-                    console.error("Error processing real-time snapshot: ", e);
+                } else {
+                    if (lockedTeamId !== null) {
+                        document.getElementById('step-dead-link').classList.add('active');
+                    } else {
+                        document.getElementById('step-1').classList.add('active');
+                    }
                 }
             });
         };
@@ -548,10 +550,8 @@
             currentTeamFilter = "ALL";
             
             saveAppStateToCloud();
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             renderCaptainGrid();
             renderScoreEntry();
-            document.getElementById('step-3').classList.add('active');
         }
 
         function renderCaptainGrid() {
@@ -649,6 +649,7 @@
             document.getElementById('entry-container').innerHTML = html;
         }
 
+        // FIX: Clean, Debounced Auto-Advance Logic
         function handleInputAdvance(el, groupId, playerId, hole, par) {
             let val = el.value;
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`);
@@ -662,15 +663,25 @@
             } else {
                 if (scoresDb[groupId] && scoresDb[groupId][playerId]) delete scoresDb[groupId][playerId][hole]; 
             } 
-            saveAppStateToCloud();
+            
+            // Push to cloud silently in the background
+            setTimeout(() => { saveAppStateToCloud(); }, 10);
 
             if(val.length >= 1 && parsedVal > 1) {
+                let now = Date.now();
+                if (now - lastAdvanceTime < 250) return; // Prevent double-jumps
+                
                 let inputs = Array.from(document.querySelectorAll('.score-input-field'));
                 let idx = inputs.indexOf(el);
                 
                 if(idx > -1 && idx < inputs.length - 1) {
-                    setTimeout(() => { inputs[idx + 1].focus(); }, 60);
+                    lastAdvanceTime = now;
+                    setTimeout(() => { 
+                        inputs[idx + 1].focus(); 
+                        if(typeof inputs[idx + 1].select === 'function') inputs[idx + 1].select();
+                    }, 50); 
                 } else if (idx === inputs.length - 1) {
+                    lastAdvanceTime = now;
                     setTimeout(() => { changeHole(1); }, 400); 
                 }
             }
