@@ -122,13 +122,13 @@
         <p style="font-size: 0.9em; color: var(--accent-gold); cursor: pointer; text-decoration: underline; margin-top: 5px; display: inline-block;" onclick="switchScreen('step-1', 'step-add-course')">+ Create Custom Course</p>
 
         <div style="display: flex; gap: 15px; margin-top: 15px;">
-            <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric" onfocus="setTimeout(() => { this.select(); }, 50)"></div>
-            <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric" onfocus="setTimeout(() => { this.select(); }, 50)"></div>
+            <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric" onfocus="const el=this; setTimeout(() => { el.select(); }, 50);"></div>
+            <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric" onfocus="const el=this; setTimeout(() => { el.select(); }, 50);"></div>
         </div>
 
         <div style="display: flex; gap: 15px; margin-top: 5px;">
-            <div style="flex: 1;"><label>Per Bet ($/Player)</label><input type="number" id="bet-amount" min="0" value="50" inputmode="numeric" onfocus="setTimeout(() => { this.select(); }, 50)"></div>
-            <div style="flex: 1;"><label>Skins Buy-in ($/Player)</label><input type="number" id="skins-amount" min="0" value="50" inputmode="numeric" onfocus="setTimeout(() => { this.select(); }, 50)"></div>
+            <div style="flex: 1;"><label>Per Bet ($/Player)</label><input type="number" id="bet-amount" min="0" value="50" inputmode="numeric" onfocus="const el=this; setTimeout(() => { el.select(); }, 50);"></div>
+            <div style="flex: 1;"><label>Skins Buy-in ($/Player)</label><input type="number" id="skins-amount" min="0" value="50" inputmode="numeric" onfocus="const el=this; setTimeout(() => { el.select(); }, 50);"></div>
         </div>
 
         <label>Team Formats</label>
@@ -297,7 +297,6 @@
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
         let allAvailableCourses = {}; 
-        let lastAdvanceTime = 0;
 
         // ==========================================
         // 3. CLOUD LISTENER
@@ -323,54 +322,62 @@
             }
 
             activeTournamentRef.onSnapshot((doc) => {
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                try {
+                    if (doc.exists) {
+                        const data = doc.data();
+                        roundData = data.roundData || roundData;
+                        scoresDb = data.scoresDb || {};
 
-                if (doc.exists) {
-                    const data = doc.data();
-                    roundData = data.roundData;
-                    scoresDb = data.scoresDb;
-
-                    if (!document.getElementById('step-3').classList.contains('active') && 
-                        !document.getElementById('step-4').classList.contains('active') && 
-                        !document.getElementById('step-5').classList.contains('active') && 
-                        !document.getElementById('step-6').classList.contains('active')) {
-                        
-                        renderCaptainGrid();
-                        renderScoreEntry();
-                        document.getElementById('step-3').classList.add('active');
+                        if (!document.getElementById('step-3').classList.contains('active') && 
+                            !document.getElementById('step-4').classList.contains('active') && 
+                            !document.getElementById('step-5').classList.contains('active') && 
+                            !document.getElementById('step-6').classList.contains('active')) {
+                            
+                            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                            renderCaptainGrid();
+                            renderScoreEntry();
+                            document.getElementById('step-3').classList.add('active');
+                        } else {
+                            if (document.getElementById('step-3').classList.contains('active')) updateUIWithoutLosingFocus();
+                            if (document.getElementById('step-4').classList.contains('active')) viewStandings(); 
+                            if (document.getElementById('step-5').classList.contains('active')) viewSkins(); 
+                            if (document.getElementById('step-6').classList.contains('active')) viewFullCard(); 
+                        }
                     } else {
-                        if (document.getElementById('step-3').classList.contains('active')) updateUIWithoutLosingFocus();
-                        if (document.getElementById('step-4').classList.contains('active')) viewStandings(); 
-                        if (document.getElementById('step-5').classList.contains('active')) viewSkins(); 
-                        if (document.getElementById('step-6').classList.contains('active')) viewFullCard(); 
+                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                        if (lockedTeamId !== null) {
+                            document.getElementById('step-dead-link').classList.add('active');
+                        } else {
+                            document.getElementById('step-1').classList.add('active');
+                        }
                     }
-                } else {
-                    if (lockedTeamId !== null) {
-                        document.getElementById('step-dead-link').classList.add('active');
-                    } else {
-                        document.getElementById('step-1').classList.add('active');
-                    }
+                } catch (e) {
+                    console.error("Error processing real-time snapshot: ", e);
                 }
             });
         };
 
         function updateUIWithoutLosingFocus() {
-            let hole = roundData.currentHole;
-            let par = roundData.course.pars[hole-1];
-            roundData.groups.forEach(g => {
-                g.players.forEach(p => {
-                    let inputEl = document.getElementById(`score-input-${g.id}-${p.id}`);
-                    if (inputEl && document.activeElement !== inputEl) {
-                        let cloudVal = scoresDb[g.id][p.id][hole] || '';
-                        inputEl.value = cloudVal;
-                        let ind = document.getElementById(`par-ind-${g.id}-${p.id}`);
-                        if(ind) {
-                            ind.innerText = getParText(cloudVal, par);
-                            ind.style.color = getParColor(cloudVal, par);
+            try {
+                let hole = roundData.currentHole;
+                let par = roundData.course.pars[hole-1];
+                roundData.groups.forEach(g => {
+                    g.players.forEach(p => {
+                        let inputEl = document.getElementById(`score-input-${g.id}-${p.id}`);
+                        if (inputEl && document.activeElement !== inputEl) {
+                            let cloudVal = (scoresDb[g.id] && scoresDb[g.id][p.id]) ? (scoresDb[g.id][p.id][hole] || '') : '';
+                            inputEl.value = cloudVal;
+                            let ind = document.getElementById(`par-ind-${g.id}-${p.id}`);
+                            if(ind) {
+                                ind.innerText = getParText(cloudVal, par);
+                                ind.style.color = getParColor(cloudVal, par);
+                            }
                         }
-                    }
+                    });
                 });
-            });
+            } catch(err) {
+                console.error("UI Update error skipped to preserve layout: ", err);
+            }
         }
 
         function saveAppStateToCloud() {
@@ -464,7 +471,7 @@
         function validateAndFinalize() {
             let missingScores = false;
             roundData.groups.forEach(g => {
-                g.players.forEach(p => { for(let h = 1; h <= 18; h++) { if(!scoresDb[g.id][p.id][h]) missingScores = true; } });
+                g.players.forEach(p => { for(let h = 1; h <= 18; h++) { if(!scoresDb[g.id]?.[p.id]?.[h]) missingScores = true; } });
             });
             if(missingScores) { alert("⚠️ Cannot finalize!\n\nAll scores have not been entered for all groups yet."); return; }
             if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) {
@@ -541,8 +548,10 @@
             currentTeamFilter = "ALL";
             
             saveAppStateToCloud();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             renderCaptainGrid();
             renderScoreEntry();
+            document.getElementById('step-3').classList.add('active');
         }
 
         function renderCaptainGrid() {
@@ -623,7 +632,7 @@
                     </div>`;
                 
                 group.players.forEach(player => {
-                    let currentScore = scoresDb[group.id][player.id][hole] || '';
+                    let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
                     let indText = getParText(currentScore, par);
                     let indColor = getParColor(currentScore, par);
 
@@ -632,7 +641,7 @@
                         <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
                         <input type="tel" inputmode="numeric" pattern="[0-9]*" class="score-box score-input-field" 
                                id="score-input-${group.id}-${player.id}" value="${currentScore}" 
-                               onfocus="setTimeout(() => { this.select(); }, 50)"
+                               onfocus="const el=this; setTimeout(() => { el.select(); }, 50);"
                                oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})"></div>`;
                 });
                 html += `</div>`;
@@ -646,8 +655,13 @@
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
             let parsedVal = parseInt(val);
-            if(!isNaN(parsedVal) && parsedVal > 0) scoresDb[groupId][playerId][hole] = parsedVal;
-            else delete scoresDb[groupId][playerId][hole]; 
+            if(!isNaN(parsedVal) && parsedVal > 0) {
+                if (!scoresDb[groupId]) scoresDb[groupId] = {};
+                if (!scoresDb[groupId][playerId]) scoresDb[groupId][playerId] = {};
+                scoresDb[groupId][playerId][hole] = parsedVal;
+            } else {
+                if (scoresDb[groupId] && scoresDb[groupId][playerId]) delete scoresDb[groupId][playerId][hole]; 
+            } 
             saveAppStateToCloud();
 
             if(val.length >= 1 && parsedVal > 1) {
@@ -655,7 +669,7 @@
                 let idx = inputs.indexOf(el);
                 
                 if(idx > -1 && idx < inputs.length - 1) {
-                    inputs[idx + 1].focus();
+                    setTimeout(() => { inputs[idx + 1].focus(); }, 60);
                 } else if (idx === inputs.length - 1) {
                     setTimeout(() => { changeHole(1); }, 400); 
                 }
@@ -687,7 +701,7 @@
                 for(let h = 1; h <= roundData.currentHole; h++) {
                     let holeScores = [];
                     let par = roundData.course.pars[h-1];
-                    group.players.forEach(p => { if(scoresDb[group.id][p.id][h]) holeScores.push(scoresDb[group.id][p.id][h]); });
+                    group.players.forEach(p => { if(scoresDb[group.id]?.[p.id]?.[h]) holeScores.push(scoresDb[group.id][p.id][h]); });
                     holeScores.sort((a, b) => a - b);
                     roundData.formats.forEach(f => {
                         if(holeScores.length >= f) { teamTotals[f] += holeScores.slice(0, f).reduce((a, b) => a + b, 0); parsPlayed[f] += par * f; }
@@ -717,7 +731,7 @@
                 let par = rData.course.pars[h-1];
                 let holeScores = [];
                 rData.groups.forEach(g => {
-                    g.players.forEach(p => { let s = sDb[g.id][p.id][h]; if(s) holeScores.push({name: p.name, score: s, color: g.color}); });
+                    g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s) holeScores.push({name: p.name, score: s, color: g.color}); });
                 });
                 if(holeScores.length > 0) {
                     let minScore = Math.min(...holeScores.map(x => x.score));
@@ -753,7 +767,7 @@
                         for(let h=1; h<=18; h++) {
                             let par = rData.course.pars[h-1] * f;
                             let hs = [];
-                            g.players.forEach(p => { if(sDb[g.id][p.id][h]) hs.push(sDb[g.id][p.id][h]); });
+                            g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
                             hs.sort((a,b)=>a-b);
                             if(hs.length >= f) {
                                 let score = hs.slice(0,f).reduce((a,b)=>a+b,0);
@@ -807,7 +821,7 @@
                 let par = rData.course.pars[h-1];
                 let holeScores = [];
                 rData.groups.forEach(g => {
-                    g.players.forEach(p => { let s = sDb[g.id][p.id][h]; if(s) holeScores.push({name: p.name, score: s, color: g.color}); });
+                    g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s) holeScores.push({name: p.name, score: s, color: g.color}); });
                 });
 
                 if(holeScores.length > 0) {
@@ -874,7 +888,7 @@
                     let outScore = 0, inScore = 0;
 
                     for(let h=1; h<=18; h++) {
-                        let score = sDb[g.id][p.id][h] || '-';
+                        let score = sDb[g.id]?.[p.id]?.[h] || '-';
                         let cssClass = "score-cell";
                         
                         if(score !== '-') {
