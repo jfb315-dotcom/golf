@@ -61,8 +61,7 @@
         
         /* Team Scorecard UI */
         .team-card { background: #252525; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #555; }
-        .team-header { display: flex; justify-content: space-between; border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px;}
-        .team-header h3 { margin: 0; }
+        .team-header { border-bottom: 1px solid #444; padding-bottom: 10px; margin-bottom: 10px; display: block;}
         .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .player-row span { font-size: 18px; font-weight: bold;}
         .score-box { width: 60px; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a; padding: 10px; border: 2px solid #555; color: white; border-radius: 6px;}
@@ -107,6 +106,9 @@
             <label><input type="checkbox" id="fmt-3" value="3-best"> 3-Best Ball</label>
         </div>
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
+        
+        <hr style="border-color: #444; margin: 30px 0 20px 0;">
+        <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
     </div>
 
     <div id="step-2" class="screen card">
@@ -166,7 +168,9 @@
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px;">
             <button class="btn-secondary" onclick="switchScreen('step-6', 'step-3')">← Back to Scoring</button>
             <hr style="border-color: #444; width: 100%; margin: 20px 0;">
-            <button id="admin-finalize-btn" class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Reset App</button>
+            <button id="admin-finalize-btn" class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
+            <p style="color: #8b0000; font-size: 12px; text-align: center; margin-top: 0;">Applies safety lock before wiping memory.</p>
+            
             <button id="admin-override-btn" onclick="adminForceReset()" style="background: none; border: none; color: #555; text-decoration: underline; cursor: pointer; font-size: 12px; margin-top: 10px;">Admin Override Reset</button>
         </div>
     </div>
@@ -178,26 +182,47 @@
         <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
     </div>
 
+    <div id="step-8" class="screen card">
+        <h2>Archived Rounds</h2>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 0;">Select a past tournament to view the final results.</p>
+        <div id="archive-list-container"></div>
+        <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
+    </div>
+
+    <div id="step-9" class="screen card" style="max-width: 100%;">
+        <h2>Archived Scorecard</h2>
+        <div class="table-wrapper" id="archived-card-container"></div>
+        
+        <div style="margin-top: 30px;">
+            <h3 style="color: var(--accent-gold); border-bottom: 1px solid #444; padding-bottom: 10px;">Archived Skins</h3>
+            <div id="archived-skins-container"></div>
+        </div>
+
+        <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="margin-top: 30px; max-width: 400px;">← Back to Archives</button>
+    </div>
+
     <script>
         const courseDatabase = {
-            "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] }
+            "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] },
+            "chatata_valley": { name: "Chatata Valley (Cleveland, TN)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 5, 4, 3, 4, 3, 4, 5] },
+            "council_fire": { name: "Council Fire (Chattanooga, TN)", pars: [4, 5, 4, 3, 4, 5, 3, 4, 4, 4, 5, 3, 5, 3, 4, 4, 3, 5] },
+            "chattanooga_cc": { name: "Chattanooga Country Club", pars: [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4] },
+            "tennessee_national": { name: "Tennessee National (Loudon, TN)", pars: [4, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5, 4, 5, 3, 4] }
         };
+        
         const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493'];
 
         let roundData = { course: null, groups: [], formats: [], currentHole: 1 };
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
-        
-        // NEW: URL Locking Variable
         let lockedTeamId = null;
 
         window.onload = () => {
-            // 1. Check the URL for a magic link (e.g., ?team=2)
             const urlParams = new URLSearchParams(window.location.search);
             const teamParam = urlParams.get('team');
             if (teamParam) {
                 lockedTeamId = parseInt(teamParam);
-                currentTeamFilter = lockedTeamId; // Force the filter to their team
+                currentTeamFilter = lockedTeamId; 
             }
 
             const savedState = localStorage.getItem('tournamentAppMemory');
@@ -206,7 +231,6 @@
                 roundData = parsedState.roundData;
                 scoresDb = parsedState.scoresDb;
                 
-                // Only respect the saved filter if they ARE NOT using a magic link
                 if(!lockedTeamId && parsedState.currentTeamFilter) {
                     currentTeamFilter = parsedState.currentTeamFilter;
                 }
@@ -231,7 +255,49 @@
             }));
         }
 
-        // --- NEW: SHARE ENGINE ---
+        // --- NEW ARCHIVE ENGINE ---
+        function saveToArchive() {
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+            archive.push({
+                date: new Date().toLocaleString(),
+                course: roundData.course.name,
+                roundData: roundData,
+                scoresDb: scoresDb
+            });
+            localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+        }
+
+        function viewArchiveList() {
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+            let html = '';
+            
+            if(archive.length === 0) {
+                html = '<p style="text-align: center; padding: 20px; background: #222; border-radius: 6px;">No archived rounds found.</p>';
+            } else {
+                archive.forEach((arc, i) => {
+                    html += `
+                    <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold);">
+                        <div style="font-weight: bold; font-size: 18px;">${arc.course}</div>
+                        <div style="color: var(--text-muted); font-size: 14px; margin-bottom: 15px;">Played on: ${arc.date}</div>
+                        <button class="btn-secondary" style="padding: 10px; font-size: 14px;" onclick="showArchivedCard(${i})">View Scorecard</button>
+                    </div>`;
+                });
+            }
+            document.getElementById('archive-list-container').innerHTML = html;
+            switchScreen('step-1', 'step-8');
+        }
+
+        function showArchivedCard(index) {
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+            let arc = archive[index];
+            
+            document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(arc.roundData, arc.scoresDb);
+            document.getElementById('archived-skins-container').innerHTML = generateSkinsHTML(arc.roundData, arc.scoresDb);
+            
+            switchScreen('step-8', 'step-9');
+        }
+
+        // --- CORE LOGIC ---
         function openShareMenu() {
             let html = '';
             roundData.groups.forEach(g => {
@@ -242,15 +308,11 @@
         }
 
         function sendSMS(groupId, captainName) {
-            // Gets your website URL without any extra junk at the end
             const baseUrl = window.location.href.split('?')[0]; 
             const magicLink = `${baseUrl}?team=${groupId}`;
             const message = encodeURIComponent(`Hey ${captainName}, here is your live scorecard for Group ${groupId}. Click here to start scoring: ${magicLink}`);
-            
-            // This triggers the phone's native text messaging app
             window.location.href = `sms:?&body=${message}`;
         }
-
 
         function validateAndFinalize() {
             let missingScores = false;
@@ -267,17 +329,19 @@
                 return; 
             }
 
-            if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and clear the board?")) {
+            if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and clear the active board?")) {
+                saveToArchive();
                 localStorage.removeItem('tournamentAppMemory');
-                window.location.href = window.location.href.split('?')[0]; // Reset URL
+                window.location.href = window.location.href.split('?')[0]; 
             }
         }
 
         function adminForceReset() {
-            let pin = prompt("Admin Override: Enter PIN to force reset");
+            let pin = prompt("Admin Override: Enter PIN to force archive/reset");
             if (pin === "1234") {
+                saveToArchive();
                 localStorage.removeItem('tournamentAppMemory');
-                window.location.href = window.location.href.split('?')[0]; // Reset URL
+                window.location.href = window.location.href.split('?')[0]; 
             } else if (pin !== null && pin !== "") {
                 alert("Incorrect PIN. Reset aborted.");
             }
@@ -298,7 +362,7 @@
                 html += `<div style="padding:15px; background:#252525; border-radius:5px; margin-bottom: 15px;">`;
                 html += `<h3 style="margin-top:0; color:var(--accent-gold);">Group ${g}</h3>`;
                 for (let p = 1; p <= pCount; p++) {
-                    let placeholder = p === 1 ? "Player 1 (Captain)" : `Player ${p}`;
+                    let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} Full Name`;
                     html += `<input type="text" id="g${g}-p${p}" placeholder="${placeholder}">`;
                 }
                 html += `</div>`;
@@ -340,13 +404,12 @@
         }
 
         function renderCaptainGrid() {
-            // NEW: If they are using a magic link, completely hide the grid and admin buttons
             if(lockedTeamId) {
                 document.getElementById('captain-grid-container').style.display = 'none';
                 document.getElementById('admin-share-btn').style.display = 'none';
                 document.getElementById('admin-finalize-btn').style.display = 'none';
                 document.getElementById('admin-override-btn').style.display = 'none';
-                return; // Stop drawing the grid entirely
+                return; 
             }
 
             let container = document.getElementById('captain-grid-container');
@@ -401,8 +464,8 @@
 
                 html += `<div class="team-card" style="border-left-color: ${group.color};">
                     <div class="team-header">
-                        <h3 style="color: ${group.color};">Group ${group.id}</h3>
-                        <span style="color: var(--text-muted); font-size: 14px;">Capt: ${group.captain}</span>
+                        <h3 style="color: ${group.color}; margin: 0 0 5px 0; font-size: 1.5em;">Group ${group.id}</h3>
+                        <div style="color: ${group.color}; filter: brightness(0.65); font-size: 1.25em; font-weight: bold; text-transform: uppercase;">Capt: ${group.captain}</div>
                     </div>`;
                 
                 group.players.forEach(player => {
@@ -463,15 +526,16 @@
             switchScreen('step-3', 'step-4');
         }
 
-        function generateSkinsHTML() {
+        // --- REUSABLE DISPLAY ENGINES ---
+        function generateSkinsHTML(rData, sDb) {
             let html = '';
             let skinsCount = 0;
             for(let h=1; h<=18; h++) {
-                let par = roundData.course.pars[h-1];
+                let par = rData.course.pars[h-1];
                 let holeScores = [];
-                roundData.groups.forEach(g => {
+                rData.groups.forEach(g => {
                     g.players.forEach(p => {
-                        let s = scoresDb[g.id][p.id][h];
+                        let s = sDb[g.id][p.id][h];
                         if(s) holeScores.push({name: p.name, score: s, color: g.color});
                     });
                 });
@@ -500,39 +564,34 @@
             return html;
         }
 
-        function viewSkins() {
-            document.getElementById('skins-container').innerHTML = generateSkinsHTML();
-            switchScreen('step-3', 'step-5');
-        }
-
-        function viewFullCard() {
+        function generateScorecardHTML(rData, sDb) {
             let tableHTML = `<table><thead><tr><th style="text-align:left;">Player</th>`;
             for(let i=1; i<=9; i++) tableHTML += `<th>${i}</th>`;
             tableHTML += `<th class="out-in-col">OUT</th>`;
             for(let i=10; i<=18; i++) tableHTML += `<th>${i}</th>`;
             tableHTML += `<th class="out-in-col">IN</th><th class="out-in-col">TOT</th></tr></thead><tbody>`;
 
-            let outPar = roundData.course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
-            let inPar = roundData.course.pars.slice(9, 18).reduce((a, b) => a + b, 0);
+            let outPar = rData.course.pars.slice(0, 9).reduce((a, b) => a + b, 0);
+            let inPar = rData.course.pars.slice(9, 18).reduce((a, b) => a + b, 0);
             
             tableHTML += `<tr class="par-row"><td style="text-align:left;">PAR</td>`;
-            roundData.course.pars.slice(0,9).forEach(par => tableHTML += `<td>${par}</td>`);
+            rData.course.pars.slice(0,9).forEach(par => tableHTML += `<td>${par}</td>`);
             tableHTML += `<td class="out-in-col">${outPar}</td>`;
-            roundData.course.pars.slice(9,18).forEach(par => tableHTML += `<td>${par}</td>`);
+            rData.course.pars.slice(9,18).forEach(par => tableHTML += `<td>${par}</td>`);
             tableHTML += `<td class="out-in-col">${inPar}</td><td class="out-in-col">${outPar+inPar}</td></tr>`;
 
-            roundData.groups.forEach(g => {
+            rData.groups.forEach(g => {
                 g.players.forEach(p => {
                     tableHTML += `<tr><td style="text-align:left; white-space:nowrap;"><b>${p.name}</b> <span style="font-size:10px; color:${g.color};">(G${g.id})</span></td>`;
                     let outScore = 0, inScore = 0;
 
                     for(let h=1; h<=18; h++) {
-                        let score = scoresDb[g.id][p.id][h] || '-';
+                        let score = sDb[g.id][p.id][h] || '-';
                         let cssClass = "score-cell";
                         
                         if(score !== '-') {
                             if(h <= 9) outScore += score; else inScore += score;
-                            let par = roundData.course.pars[h-1];
+                            let par = rData.course.pars[h-1];
                             if(score < par) cssClass += " under-par";
                             else if(score > par) cssClass += " over-par";
                         }
@@ -545,8 +604,17 @@
             });
 
             tableHTML += `</tbody></table>`;
-            document.getElementById('full-card-container').innerHTML = tableHTML;
-            document.getElementById('final-skins-container').innerHTML = generateSkinsHTML();
+            return tableHTML;
+        }
+
+        function viewSkins() {
+            document.getElementById('skins-container').innerHTML = generateSkinsHTML(roundData, scoresDb);
+            switchScreen('step-3', 'step-5');
+        }
+
+        function viewFullCard() {
+            document.getElementById('full-card-container').innerHTML = generateScorecardHTML(roundData, scoresDb);
+            document.getElementById('final-skins-container').innerHTML = generateSkinsHTML(roundData, scoresDb);
             switchScreen('step-3', 'step-6');
         }
 
