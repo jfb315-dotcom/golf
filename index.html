@@ -125,9 +125,9 @@
 
         <label>Team Formats</label>
         <div class="checkbox-group">
-           <label><input type="checkbox" id="fmt-1" value="1-ball" checked> 1-Ball</label>
-<label><input type="checkbox" id="fmt-2" value="2-ball" checked> 2-Ball</label>
-<label><input type="checkbox" id="fmt-3" value="3-ball"> 3-Ball</label>
+            <label><input type="checkbox" id="fmt-1" value="1-ball" checked> 1-Ball</label>
+            <label><input type="checkbox" id="fmt-2" value="2-ball" checked> 2-Ball</label>
+            <label><input type="checkbox" id="fmt-3" value="3-ball"> 3-Ball</label>
         </div>
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
         <hr style="border-color: #444; margin: 30px 0 20px 0;">
@@ -152,7 +152,6 @@
     </div>
 
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
-        
         <div class="sticky-top">
             <div id="pill-nav-container" class="pill-nav"></div>
             
@@ -190,6 +189,8 @@
             <div id="admin-finalize-container">
                 <hr style="border-color: #444; width: 100%; margin: 20px 0;">
                 
+                <button class="btn-secondary" onclick="openBlindDrawModal()" style="border-color: #d4af37; color: #d4af37; margin-bottom: 20px;">🔀 Assign Blind Draw</button>
+
                 <div id="admin-unlock-section" style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <input type="password" id="adminPin" placeholder="Admin PIN" style="flex: 1; margin: 0;" inputmode="numeric">
                     <button class="btn-secondary" onclick="unlockAdmin()" style="margin: 0; width: auto; padding: 10px 20px;">Unlock</button>
@@ -248,6 +249,22 @@
         </div>
     </div>
 
+    <div id="blind-draw-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: #fff; text-align: center;">🔀 Assign Blind Draw</h2>
+            <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Mirror a player's score to act as a ghost 4th man for a short team. (Their winnings will be divided among the actual players).</p>
+            
+            <label>1. Team Receiving the Blind Draw:</label>
+            <select id="bd-target-team"></select>
+
+            <label>2. Player to Mirror (Source):</label>
+            <select id="bd-source-player"></select>
+
+            <button class="btn-primary" onclick="applyBlindDraw()" style="background-color: #d4af37; color: black;">➕ Add Ghost Player</button>
+            <button class="btn-secondary" onclick="closeBlindDrawModal()">Cancel</button>
+        </div>
+    </div>
+
     <script>
         // ==========================================
         // 1. FIREBASE CONFIGURATION
@@ -285,8 +302,7 @@
         
         let activeViewRoundData = null; 
         let activeViewScoresDb = null;
-        
-        let isAdminUnlocked = false; // Tracks if Admin PIN is entered
+        let isAdminUnlocked = false; 
 
         // ==========================================
         // 3. STARTUP & CLOUD LISTENER
@@ -426,7 +442,7 @@
                 html += `<div style="padding:15px; background:#252525; border-radius:5px; margin-bottom: 15px;">`;
                 html += `<h3 style="margin-top:0; color:var(--accent-gold);">Group ${g}</h3>`;
                 for (let p = 1; p <= pCount; p++) {
-                    let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} Full Name`;
+                    let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} (Leave blank for uneven team)`;
                     html += `<input type="text" id="g${g}-p${p}" placeholder="${placeholder}">`;
                 }
                 html += `</div>`;
@@ -449,13 +465,18 @@
             for (let g = 1; g <= gCount; g++) {
                 let teamPlayers = [];
                 scoresDb[g] = {};
+                
+                let validPlayerId = 1;
                 for (let p = 1; p <= pCount; p++) {
-                    let name = document.getElementById(`g${g}-p${p}`).value || `Golfer ${g}-${p}`;
-                    teamPlayers.push({ id: p, name: name });
-                    scoresDb[g][p] = {}; 
+                    let name = document.getElementById(`g${g}-p${p}`).value.trim();
+                    if (name === "") continue;
+
+                    teamPlayers.push({ id: validPlayerId, name: name });
+                    scoresDb[g][validPlayerId] = {}; 
+                    validPlayerId++;
                 }
                 let teamColor = curatedColors[(g - 1) % curatedColors.length];
-                roundData.groups.push({ id: g, captain: teamPlayers[0].name, players: teamPlayers, color: teamColor });
+                roundData.groups.push({ id: g, captain: teamPlayers[0] ? teamPlayers[0].name : "Captain", players: teamPlayers, color: teamColor });
             }
 
             roundData.currentHole = roundData.startHole;
@@ -545,10 +566,14 @@
                     let indText = getParText(currentScore, par);
                     let indColor = getParColor(currentScore, par);
 
+                    let isGhostStyle = player.isGhost ? `background: #444 !important; pointer-events: none; color: #aaa !important;` : ``;
+                    let isGhostReadonly = player.isGhost ? `readonly tabindex="-1"` : ``;
+                    let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field"; 
+
                     html += `<div class="player-row">
                         <span class="player-name">${player.name}</span>
                         <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" class="score-box score-input-field" 
+                        <input type="tel" inputmode="numeric" pattern="[0-9]*" class="${inputClass}" style="${isGhostStyle}" ${isGhostReadonly}
                                id="score-input-${group.id}-${player.id}" value="${currentScore}" 
                                autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
                                onfocus="this.select()" onclick="this.select()"
@@ -591,33 +616,22 @@
         function handleInputAdvance(el, groupId, playerId, hole, par) {
             let val = el.value.trim();
             if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; }
-            
             let parsedVal = parseInt(val);
             
-            // ==========================================
-            // NEW: STRICT MID-ROUND SKIP CHECK
-            // ==========================================
+            // STRICT MID-ROUND SKIP CHECK
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let missedHole = null;
-                
-                // Scan backwards from the start hole up to the hole they are currently on
                 for (let h = roundData.startHole; h < hole; h++) {
-                    if (!scoresDb[groupId]?.[playerId]?.[h]) {
-                        missedHole = h;
-                        break; // Stop at the first blank hole we find
-                    }
+                    if (!scoresDb[groupId]?.[playerId]?.[h]) { missedHole = h; break; }
                 }
-                
-                // If a blank hole was found, block the entry and alert them
                 if (missedHole) {
-                    el.value = ''; // Erase the number they just typed
+                    el.value = ''; 
                     alert(`⚠️ Wait! You skipped Hole ${missedHole}.\n\nPlease use the 'Prev' button to go back and enter that score before continuing.`);
-                    return; // Stop the script so it doesn't save or auto-advance
+                    return; 
                 }
             }
-            // ==========================================
 
-            // Standard Save Logic
+            // Save Standard Score
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 if (!scoresDb[groupId]) scoresDb[groupId] = {};
                 if (!scoresDb[groupId][playerId]) scoresDb[groupId][playerId] = {};
@@ -629,6 +643,23 @@
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`);
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
+            // GHOST SYNC LOOP
+            roundData.groups.forEach(ghostGroup => {
+                ghostGroup.players.forEach(ghostPlayer => {
+                    if (ghostPlayer.isGhost && ghostPlayer.sourceG === groupId && ghostPlayer.sourceP === playerId) {
+                        if (!scoresDb[ghostGroup.id]) scoresDb[ghostGroup.id] = {};
+                        if (!scoresDb[ghostGroup.id][ghostPlayer.id]) scoresDb[ghostGroup.id][ghostPlayer.id] = {};
+                        if (!isNaN(parsedVal) && parsedVal > 0) { scoresDb[ghostGroup.id][ghostPlayer.id][hole] = parsedVal; } 
+                        else { delete scoresDb[ghostGroup.id][ghostPlayer.id][hole]; }
+
+                        let ghostInput = document.getElementById(`score-input-${ghostGroup.id}-${ghostPlayer.id}`);
+                        if (ghostInput) ghostInput.value = (isNaN(parsedVal) || parsedVal <= 0) ? '' : parsedVal;
+                        let ghostInd = document.getElementById(`par-ind-${ghostGroup.id}-${ghostPlayer.id}`);
+                        if (ghostInd) { ghostInd.innerText = getParText(val, par); ghostInd.style.color = getParColor(val, par); }
+                    }
+                });
+            });
+
             setTimeout(() => { saveAppStateToCloud(); }, 10);
 
             // Auto-Advance Logic
@@ -641,15 +672,14 @@
                     nextInput.focus();
                     nextInput.select();
                 } else if (idx === inputs.length - 1) {
-                    // FINAL HOLE CHECK
                     if (hole === roundData.endHole) {
                         let missingScores = false;
                         let firstMissingHole = null;
 
                         roundData.groups.forEach(g => {
                             if (currentTeamFilter !== "ALL" && currentTeamFilter != g.id) return;
-                            
                             g.players.forEach(p => { 
+                                if(p.isGhost) return;
                                 for(let h = roundData.startHole; h <= roundData.endHole; h++) { 
                                     if(!scoresDb[g.id]?.[p.id]?.[h]) {
                                         missingScores = true;
@@ -661,11 +691,7 @@
 
                         if (missingScores) {
                             alert(`⚠️ Missing Scores!\n\nYou skipped entering scores on Hole ${firstMissingHole}. Please use the 'Prev' button to go back and complete your scorecard.`);
-                        } else {
-                            // Perfect scorecard: jump to dashboard
-                            viewDashboard();
-                        }
-
+                        } else { viewDashboard(); }
                     } else {
                         setTimeout(() => { changeHole(1); }, 300); 
                     }
@@ -789,33 +815,24 @@
 
                 fullHTML += `<tr><td colspan="${(segs.total.e - segs.total.s + 1) + 4}" style="padding:0; border:none; height:4px; background:#666;"></td></tr>`;
 
-                // TEAM SCORE ROWS (Cumulative + All Birdies Count Math)
+                // TEAM SCORE ROWS
                 rData.formats.forEach(f => {
                     fullHTML += `<tr class="team-math-row"><td style="text-align:left; border-color: #333; color:${g.color};">Team ${f}-Ball</td>`;
 
                     let renderTeamSegment = (start, end, segmentNetObj) => {
-                        let runningNet = 0; // NEW: Resets to 0 at the start of every 9-hole segment
-
+                        let runningNet = 0; 
                         for(let h=start; h<=end; h++) {
                             let par = rData.course.pars[h-1];
                             let hs = [];
                             g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
                             
                             if(hs.length >= f) {
-                                // 1. Translate scores to relation to par and sort best to worst
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
-                                
-                                // 2. Take the base format scores (e.g. the 1 best, or 2 best)
                                 let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                
-                                // 3. ALL BIRDIES COUNT: Check remaining balls and add any extra negatives
                                 nets.slice(f).forEach(n => { if(n < 0) holeNet += n; });
 
-                                // Update running totals
                                 runningNet += holeNet;
                                 segmentNetObj.val += holeNet;
-                                
-                                // Print the cumulative score as we go for this segment
                                 fullHTML += `<td class="${formatNetToParCSS(runningNet)}" style="border-color:#333;">${formatNetToPar(runningNet)}</td>`;
                             } else {
                                 fullHTML += `<td style="border-color:#333; color:#555;">-</td>`;
@@ -823,15 +840,12 @@
                         }
                     };
 
-                    // Process Front 9
                     let tfObj = {val: 0}; renderTeamSegment(segs.front.s, segs.front.e, tfObj);
                     fullHTML += `<td class="out-in-col ${formatNetToParCSS(tfObj.val)}" style="border-color:#444;">${formatNetToPar(tfObj.val)}</td>`;
                     
-                    // Process Back 9 (RunningNet starts fresh at 0 here!)
                     let tbObj = {val: 0}; renderTeamSegment(segs.back.s, segs.back.e, tbObj);
                     fullHTML += `<td class="out-in-col ${formatNetToParCSS(tbObj.val)}" style="border-color:#444;">${formatNetToPar(tbObj.val)}</td>`;
                     
-                    // Overall Total
                     let overallNet = tfObj.val + tbObj.val;
                     fullHTML += `<td class="out-in-col ${formatNetToParCSS(overallNet)}" style="border-color:#444;">${formatNetToPar(overallNet)}</td></tr>`;
                 });
@@ -846,7 +860,6 @@
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
             if(totalPlayers === 0) return "<p>No data.</p>";
 
-            // 1. SKINS (Aggregated)
             let skinsHTML = `<div class="payout-header">🔥 Skins Payout</div>`;
             let skinsPot = totalPlayers * rData.skinsAmount;
             let playerSkins = {}; 
@@ -884,13 +897,13 @@
                 skinsHTML += `<div class="payout-row">No skins won / No skins pot.</div>`;
             }
 
-            // 2. TEAM BETS (With All Birdies Count Math)
             let teamHTML = `<div class="payout-header" style="margin-top:25px;">💰 Team Bet Payouts</div>`;
             let potPerBet = totalPlayers * rData.betAmount;
             
             if(potPerBet > 0) {
                 let teamPayouts = {};
-                rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: g.color, n: g.captain.split(' ')[0], count: g.players.length }; });
+                // filter(p => !p.isGhost) ensures Ghost players aren't included in the split math
+                rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: g.color, n: g.captain.split(' ')[0], count: g.players.filter(p => !p.isGhost).length }; });
 
                 rData.formats.forEach(f => {
                     let f9Data = [], b9Data = [], totData = [];
@@ -902,7 +915,6 @@
                             g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
                             
                             if(hs.length >= f) {
-                                // Updated Math for Payouts
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
                                 let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
                                 nets.slice(f).forEach(n => { if(n < 0) net += n; });
@@ -934,13 +946,13 @@
                     processBet(totData, "Overall");
                 });
 
-                teamHTML += `<div class="payout-header" style="margin-top:20px; font-size:1em;">Final Team Totals (Split Per Player)</div>`;
+                teamHTML += `<div class="payout-header" style="margin-top:20px; font-size:1em;">Final Team Totals</div>`;
                 Object.keys(teamPayouts).forEach(tid => {
                     let tp = teamPayouts[tid];
                     if(tp.total > 0) {
                         let perPlayer = tp.total / tp.count;
-                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.c}; font-size:16px;">Capt: ${tp.n} Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
-                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); padding-left:10px;"><span>Payout per teammate:</span><span>$${perPlayer.toFixed(2)}</span></div>`;
+                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.c}; font-size:16px;">Capt: ${tp.n} Team Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
+                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); padding-left:10px;"><span>Per Player (${tp.count} players):</span><span>$${perPlayer.toFixed(2)}</span></div>`;
                     }
                 });
             } else {
@@ -963,11 +975,9 @@
             let totalTeamPot = totalPlayers * rData.betAmount * totalBets;
             let skinsPot = totalPlayers * rData.skinsAmount;
             
-            // Calculate individual player buy-ins for the header
             let perPlayerBet = rData.betAmount * totalBets;
             let perPlayerSkins = rData.skinsAmount;
 
-            // 1. Updated Title with Date & Individual Buy-ins
             let today = new Date().toLocaleDateString();
             let st = `⛳ Choose-UP ${today} ⛳\n`;
             st += `Course: ${rData.course.name}\n\n`;
@@ -975,7 +985,6 @@
             st += `Team Pot: $${totalTeamPot} | Skins Pot: $${skinsPot}\n`;
             st += `Team Entry: $${perPlayerBet}/player | Skins: $${perPlayerSkins}/player\n\n`;
 
-            // 2. Updated Standings Breakdown (F9, B9, Overall)
             st += `🏆 TEAM STANDINGS (To Par):\n`;
             rData.groups.forEach(g => {
                 st += `Group ${g.id} (Capt: ${g.captain.split(' ')[0]}):\n`;
@@ -1039,7 +1048,7 @@
             }
 
             st += `\n💸 TEAM PAYOUTS:\n`;
-            let tp = {}; rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.length});
+            let tp = {}; rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.filter(p => !p.isGhost).length});
             
             if(potPerBet = totalPlayers * rData.betAmount > 0) {
                 let pot = totalPlayers * rData.betAmount;
@@ -1082,7 +1091,6 @@
                 });
             }
 
-            // 3. Updated Final Formatting to match request exactly
             st += `\n💰 FINAL TOTALS:\n`;
             Object.values(tp).forEach(team => {
                 if(team.t > 0) {
@@ -1105,10 +1113,9 @@
         }
         function closeShareModal() { document.getElementById('share-modal').classList.remove('active'); }
 
-       function openShareMenu() {
+        function openShareMenu() {
             let html = '';
             roundData.groups.forEach(g => {
-                // We now pass ONLY the group ID to avoid code-breaking names
                 html += `<button class="btn-secondary" style="border-color: ${g.color}; color: ${g.color};" onclick="sendSMS(${g.id})">📱 Text Group ${g.id} (Capt: ${g.captain.split(' ')[0]})</button>`;
             });
             document.getElementById('share-buttons-container').innerHTML = html;
@@ -1116,7 +1123,6 @@
         }
 
         function sendSMS(groupId) {
-            // Find the captain's name safely inside the function instead of the HTML
             let group = roundData.groups.find(g => g.id === groupId);
             let captainName = group ? group.captain.split(' ')[0] : "Captain";
             
@@ -1124,18 +1130,13 @@
             const magicLink = `${baseUrl}?team=${groupId}`;
             const message = encodeURIComponent(`Hey ${captainName}, here is your live scorecard for Group ${groupId}. Click here to start scoring: ${magicLink}`);
             
-            // Check if the user is on an Apple or Android device to format the link perfectly
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            
-            if (isIOS) {
-                window.location.href = `sms:&body=${message}`; // iOS specific format
-            } else {
-                window.location.href = `sms:?body=${message}`; // Android/Standard format
-            }
+            if (isIOS) { window.location.href = `sms:&body=${message}`; } 
+            else { window.location.href = `sms:?body=${message}`; }
         }
 
         // ==========================================
-        // ADMIN UNLOCK LOGIC
+        // ADMIN UNLOCK & GHOST MODAL
         // ==========================================
         function unlockAdmin() {
             const pin = document.getElementById('adminPin').value;
@@ -1149,58 +1150,102 @@
             }
         }
 
+        function openBlindDrawModal() {
+            let targetHtml = '';
+            let sourceHtml = '';
+            roundData.groups.forEach(g => {
+                targetHtml += `<option value="${g.id}">Group ${g.id} (Capt: ${g.captain.split(' ')[0]})</option>`;
+                g.players.forEach(p => {
+                    if(!p.isGhost) sourceHtml += `<option value="${g.id}-${p.id}">Group ${g.id}: ${p.name.split(' ')[0]}</option>`;
+                });
+            });
+            document.getElementById('bd-target-team').innerHTML = targetHtml;
+            document.getElementById('bd-source-player').innerHTML = sourceHtml;
+            document.getElementById('blind-draw-modal').classList.add('active');
+        }
+
+        function closeBlindDrawModal() { document.getElementById('blind-draw-modal').classList.remove('active'); }
+
+        function applyBlindDraw() {
+            let targetG = parseInt(document.getElementById('bd-target-team').value);
+            let sourceInfo = document.getElementById('bd-source-player').value.split('-');
+            let sourceG = parseInt(sourceInfo[0]);
+            let sourceP = parseInt(sourceInfo[1]);
+
+            let targetGroup = roundData.groups.find(g => g.id === targetG);
+            let sourceGroup = roundData.groups.find(g => g.id === sourceG);
+            let sourcePlayer = sourceGroup.players.find(p => p.id === sourceP);
+
+            let newGhostId = 99 + targetGroup.players.length; 
+
+            let ghostPlayer = {
+                id: newGhostId,
+                name: sourcePlayer.name.split(' ')[0] + " (Blind)",
+                isGhost: true,
+                sourceG: sourceG,
+                sourceP: sourceP
+            };
+
+            targetGroup.players.push(ghostPlayer);
+
+            if(!scoresDb[targetG]) scoresDb[targetG] = {};
+            scoresDb[targetG][newGhostId] = {};
+            if(scoresDb[sourceG] && scoresDb[sourceG][sourceP]) {
+                for(let h=1; h<=18; h++) {
+                    if(scoresDb[sourceG][sourceP][h]) scoresDb[targetG][newGhostId][h] = scoresDb[sourceG][sourceP][h];
+                }
+            }
+
+            saveAppStateToCloud();
+            closeBlindDrawModal();
+            viewDashboard(); 
+        }
+
         // ==========================================
-        // UPDATED VALIDATE AND FINALIZE LOGIC
+        // 8. ARCHIVING ENGINE
         // ==========================================
         function validateAndFinalize(forceArchive = false) {
             let missingScores = false;
             let segs = getSegments(roundData);
-            roundData.groups.forEach(g => {
-                g.players.forEach(p => { for(let h = segs.total.s; h <= segs.total.e; h++) { if(!scoresDb[g.id]?.[p.id]?.[h]) missingScores = true; } });
-            });
             
-            if(missingScores) { 
+            roundData.groups.forEach(g => {
+                g.players.forEach(p => { 
+                    if(p.isGhost) return;
+                    for(let h = segs.total.s; h <= segs.total.e; h++) { 
+                        if(!scoresDb[g.id]?.[p.id]?.[h]) missingScores = true; 
+                    } 
+                });
+            });
+
+            if(missingScores) {
                 if (forceArchive && isAdminUnlocked) {
                     if(!confirm("⚠️ The round isn't finished yet. Are you sure you want to FORCE archive it?")) return;
                 } else {
-                    alert("⚠️ Cannot finalize!\n\nAll scores have not been entered yet. Use Admin Unlock to bypass."); 
-                    return; 
+                    alert("⚠️ Cannot finalize!\n\nAll scores have not been entered yet. Use Admin Unlock to bypass.");
+                    return;
                 }
             } else {
                 if(!confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) return;
             }
 
             saveToArchive();
-            activeTournamentRef.delete().then(() => {
-                if(confirm("Round Finalized. Send text results to captains?")) openResultsShareModal();
-                else {
-                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                    document.getElementById('step-1').classList.add('active');
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-1').classList.add('active');
+            window.scrollTo(0,0);
+
+            activeTournamentRef.delete().catch(err => console.error("Cloud delete delayed/failed: ", err));
+
+            setTimeout(() => {
+                if(confirm("Round Finalized successfully! Generate text results to copy/share?")) {
+                    openResultsShareModal();
                 }
-            });
+            }, 150);
         }
 
-        function adminForceReset() {
-            if (prompt("Admin Override: Enter PIN to force archive/reset") === "1234") {
-                saveToArchive();
-                activeTournamentRef.delete().then(() => {
-                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                    document.getElementById('step-1').classList.add('active');
-                });
-            }
-        }
-
-        // ==========================================
-        // 8. ARCHIVE VIEW & BULK DELETE
-        // ==========================================
         function saveToArchive() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
-            archive.push({
-                date: new Date().toLocaleDateString(),
-                course: roundData.course,
-                roundData: roundData,
-                scoresDb: scoresDb
-            });
+            archive.push({ date: new Date().toLocaleDateString(), course: roundData.course, roundData: roundData, scoresDb: scoresDb });
             localStorage.setItem('tournamentArchive', JSON.stringify(archive));
         }
 
@@ -1233,30 +1278,31 @@
             if(checkboxes.length === 0) { alert("Please select at least one round to delete."); return; }
             if (prompt("Enter Admin PIN (1234) to delete selected rounds:") === "1234") {
                 let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
-                // Sort descending to avoid index shifting issues
                 let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a,b) => b-a);
                 indices.forEach(idx => archive.splice(idx, 1));
                 localStorage.setItem('tournamentArchive', JSON.stringify(archive));
                 viewArchiveList();
-            } else {
-                alert("Incorrect PIN. Deletion aborted.");
-            }
+            } else { alert("Incorrect PIN. Deletion aborted."); }
         }
 
         function showArchivedCard(index) {
             let arc = (JSON.parse(localStorage.getItem('tournamentArchive')) || [])[index];
-            activeViewRoundData = arc.roundData;
-            activeViewScoresDb = arc.scoresDb;
+            activeViewRoundData = arc.roundData || { course: arc.course, groups: arc.groups || [], formats: arc.formats || [1, 2], betAmount: arc.betAmount || 0, skinsAmount: arc.skinsAmount || 0 };
+            activeViewScoresDb = arc.scoresDb || arc.scores || {};
             
-            // Format fallback handling for older archives
-            if(typeof activeViewRoundData.course === 'string') activeViewRoundData.course = allAvailableCourses[activeViewRoundData.course];
+            if(typeof activeViewRoundData.course === 'string') { activeViewRoundData.course = allAvailableCourses[activeViewRoundData.course] || { name: "Archived Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; }
             if(!activeViewRoundData.playMode) { activeViewRoundData.playMode = '18'; activeViewRoundData.startHole = 1; activeViewRoundData.endHole = 18; }
-            
-            document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb);
-            document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb);
-            switchScreen('step-8', 'step-9');
-        }
+            if(!activeViewRoundData.formats) { activeViewRoundData.formats = [1, 2]; }
 
+            try {
+                document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb);
+                document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb);
+                switchScreen('step-8', 'step-9');
+            } catch (error) {
+                console.error("Archive Rendering Error:", error);
+                alert("⚠️ This specific round is from an older version of the app and is missing the data required to draw the new scorecard layout.");
+            }
+        }
     </script>
 </body>
 </html>
