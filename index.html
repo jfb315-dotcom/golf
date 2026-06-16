@@ -18,7 +18,7 @@
         .screen { display: none; } .screen.active { display: block; }
         
         label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
-        input[type="number"], input[type="text"], input[type="tel"], select { width: 100%; padding: 12px; box-sizing: border-box; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
+        input[type="number"], input[type="text"], input[type="tel"], select, input[type="password"] { width: 100%; padding: 12px; box-sizing: border-box; background: #2a2a2a; border: 1px solid #444; color: white; border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
         
         button { font-family: 'Segoe UI', Tahoma, sans-serif; }
         .btn-primary { background-color: var(--accent-gold); color: #000; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 15px; }
@@ -189,7 +189,15 @@
             
             <div id="admin-finalize-container">
                 <hr style="border-color: #444; width: 100%; margin: 20px 0;">
-                <button class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
+                
+                <div id="admin-unlock-section" style="display: flex; gap: 10px; margin-bottom: 10px;">
+                    <input type="password" id="adminPin" placeholder="Admin PIN" style="flex: 1; margin: 0;" inputmode="numeric">
+                    <button class="btn-secondary" onclick="unlockAdmin()" style="margin: 0; width: auto; padding: 10px 20px;">Unlock</button>
+                </div>
+
+                <button class="btn-primary" onclick="validateAndFinalize(false)" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
+                
+                <button id="forceArchiveBtn" class="btn-danger" onclick="validateAndFinalize(true)" style="display: none; background-color: #ff4444; margin-top: 10px;">⚠️ Archive Round Early (Admin)</button>
             </div>
         </div>
     </div>
@@ -206,6 +214,13 @@
         <div id="archive-list-container"></div>
         <button id="bulk-delete-btn" class="btn-danger" style="display:none;" onclick="deleteSelectedArchives()">🗑️ Delete Selected Rounds</button>
         <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
+    </div>
+    
+    <div id="step-9" class="screen" style="max-width: 1000px; margin: 0 auto;">
+        <h2 style="text-align: center; color: white; margin-bottom: 25px;">Archived Round Results</h2>
+        <div id="archived-card-container"></div>
+        <div id="archived-payout-summary-container" class="card" style="max-width:100%;"></div>
+        <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 20px auto; display: block;">← Back to Archives</button>
     </div>
 
     <div id="step-dead-link" class="screen card" style="text-align: center; padding: 40px 20px;">
@@ -270,6 +285,8 @@
         
         let activeViewRoundData = null; 
         let activeViewScoresDb = null;
+        
+        let isAdminUnlocked = false; // Tracks if Admin PIN is entered
 
         // ==========================================
         // 3. STARTUP & CLOUD LISTENER
@@ -277,7 +294,6 @@
         window.onload = () => {
             let parGridHTML = '';
             for(let i=1; i<=18; i++) {
-                // BLANK DEFAULTS FOR CUSTOM COURSE WITH INSTANT JUMP
                 parGridHTML += `<div class="par-setup-item"><label>Hole ${i}</label>
                 <input type="tel" id="custom-par-${i}" placeholder="4" class="custom-par-input" inputmode="numeric" 
                 autocomplete="off" autocorrect="off" onfocus="this.select()" onclick="this.select()" oninput="handleParAdvance(this)"></div>`;
@@ -306,7 +322,6 @@
                         roundData = data.roundData || roundData;
                         scoresDb = data.scoresDb || {};
 
-                        // Backwards compatibility for older rounds before 9-hole logic
                         if(!roundData.playMode) { roundData.playMode = '18'; roundData.startHole = 1; roundData.endHole = 18; }
 
                         if (!document.getElementById('step-3').classList.contains('active') && 
@@ -375,7 +390,7 @@
             let pars = [];
             for(let i=1; i<=18; i++) {
                 let val = parseInt(document.getElementById(`custom-par-${i}`).value);
-                pars.push(isNaN(val) ? 4 : val); // Default to 4 if left blank
+                pars.push(isNaN(val) ? 4 : val); 
             }
             let courseKey = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, '');
             let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
@@ -768,7 +783,7 @@
             // 1. SKINS (Aggregated)
             let skinsHTML = `<div class="payout-header">🔥 Skins Payout</div>`;
             let skinsPot = totalPlayers * rData.skinsAmount;
-            let playerSkins = {}; // id: {name, color, holes: []}
+            let playerSkins = {}; 
             let totalSkinsWon = 0;
 
             for(let h=segs.total.s; h<=segs.total.e; h++) {
@@ -1001,30 +1016,50 @@
             switchScreen('step-3', 'step-7');
         }
 
-        function sendSMS(groupId, captainName) {
-            const baseUrl = window.location.href.split('?')[0]; 
-            const magicLink = `${baseUrl}?team=${groupId}`;
-            const message = encodeURIComponent(`Hey ${captainName}, here is your live scorecard for Group ${groupId}. Click here to start scoring: ${magicLink}`);
-            window.location.href = `sms:?&body=${message}`;
+        // ==========================================
+        // ADMIN UNLOCK LOGIC
+        // ==========================================
+        function unlockAdmin() {
+            const pin = document.getElementById('adminPin').value;
+            if (pin === '1234') {
+                isAdminUnlocked = true;
+                document.getElementById('admin-unlock-section').style.display = 'none';
+                document.getElementById('forceArchiveBtn').style.display = 'block';
+                alert("Admin unlocked! You can now archive rounds early.");
+            } else {
+                alert("Incorrect PIN.");
+            }
         }
 
-        function validateAndFinalize() {
+        // ==========================================
+        // UPDATED VALIDATE AND FINALIZE LOGIC
+        // ==========================================
+        function validateAndFinalize(forceArchive = false) {
             let missingScores = false;
             let segs = getSegments(roundData);
             roundData.groups.forEach(g => {
                 g.players.forEach(p => { for(let h = segs.total.s; h <= segs.total.e; h++) { if(!scoresDb[g.id]?.[p.id]?.[h]) missingScores = true; } });
             });
-            if(missingScores) { alert("⚠️ Cannot finalize!\n\nAll scores have not been entered yet."); return; }
-            if(confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) {
-                saveToArchive();
-                activeTournamentRef.delete().then(() => {
-                    if(confirm("Round Finalized. Send text results to captains?")) openResultsShareModal();
-                    else {
-                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                        document.getElementById('step-1').classList.add('active');
-                    }
-                });
+            
+            if(missingScores) { 
+                if (forceArchive && isAdminUnlocked) {
+                    if(!confirm("⚠️ The round isn't finished yet. Are you sure you want to FORCE archive it?")) return;
+                } else {
+                    alert("⚠️ Cannot finalize!\n\nAll scores have not been entered yet. Use Admin Unlock to bypass."); 
+                    return; 
+                }
+            } else {
+                if(!confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) return;
             }
+
+            saveToArchive();
+            activeTournamentRef.delete().then(() => {
+                if(confirm("Round Finalized. Send text results to captains?")) openResultsShareModal();
+                else {
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                    document.getElementById('step-1').classList.add('active');
+                }
+            });
         }
 
         function adminForceReset() {
@@ -1040,6 +1075,17 @@
         // ==========================================
         // 8. ARCHIVE VIEW & BULK DELETE
         // ==========================================
+        function saveToArchive() {
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+            archive.push({
+                date: new Date().toLocaleDateString(),
+                course: roundData.course,
+                roundData: roundData,
+                scoresDb: scoresDb
+            });
+            localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+        }
+
         function viewArchiveList() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
             let html = '';
