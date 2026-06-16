@@ -125,9 +125,9 @@
 
         <label>Team Formats</label>
         <div class="checkbox-group">
-            <label><input type="checkbox" id="fmt-1" value="1-best" checked> 1-Best</label>
-            <label><input type="checkbox" id="fmt-2" value="2-best" checked> 2-Best</label>
-            <label><input type="checkbox" id="fmt-3" value="3-best"> 3-Best</label>
+           <label><input type="checkbox" id="fmt-1" value="1-ball" checked> 1-Ball</label>
+<label><input type="checkbox" id="fmt-2" value="2-ball" checked> 2-Ball</label>
+<label><input type="checkbox" id="fmt-3" value="3-ball"> 3-Ball</label>
         </div>
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
         <hr style="border-color: #444; margin: 30px 0 20px 0;">
@@ -688,7 +688,7 @@
             for(let i=segs.back.s; i<=segs.back.e; i++) bPar += rData.course.pars[i-1];
 
             rData.groups.forEach(g => {
-                if(lockedTeamId && g.id !== lockedTeamId) return; // Hide other groups if mobile client
+                if(lockedTeamId && g.id !== lockedTeamId) return; 
                 
                 fullHTML += `
                 <div style="background: #1e1e1e; border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
@@ -738,24 +738,33 @@
                     fullHTML += `<td class="out-in-col" style="border-color:#444;">${tPlayed ? (fObj.val+bObj.val) : '-'}</td></tr>`;
                 });
 
-                // TEAM MATH TO PAR ROW (Thick Divider)
                 fullHTML += `<tr><td colspan="${(segs.total.e - segs.total.s + 1) + 4}" style="padding:0; border:none; height:4px; background:#666;"></td></tr>`;
 
+                // TEAM SCORE ROWS (Cumulative + All Birdies Count Math)
                 rData.formats.forEach(f => {
-                    fullHTML += `<tr class="team-math-row"><td style="text-align:left; border-color: #333; color:${g.color};">Team ${f}-Best</td>`;
-                    let fNet=0, bNet=0;
+                    fullHTML += `<tr class="team-math-row"><td style="text-align:left; border-color: #333; color:${g.color};">Team ${f}-Ball</td>`;
+                    let runningNet = 0; // Tracks the cumulative score left-to-right
 
                     let renderTeamSegment = (start, end, segmentNetObj) => {
                         for(let h=start; h<=end; h++) {
                             let par = rData.course.pars[h-1];
                             let hs = [];
                             g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
+                            
                             if(hs.length >= f) {
-                                hs.sort((a,b)=>a-b);
-                                let scoreSum = hs.slice(0,f).reduce((a,b)=>a+b,0);
-                                let net = scoreSum - (par * f);
-                                segmentNetObj.val += net;
-                                fullHTML += `<td class="${formatNetToParCSS(net)}" style="border-color:#333;">${formatNetToPar(net)}</td>`;
+                                // 1. Translate all scores to net par and sort lowest to highest
+                                let nets = hs.map(s => s - par).sort((a,b) => a-b);
+                                // 2. Take the top F scores and sum them
+                                let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
+                                // 3. ALL BIRDIES COUNT RULE: Loop through the remaining scores and add any negative numbers
+                                nets.slice(f).forEach(n => { if(n < 0) holeNet += n; });
+
+                                // Update running totals
+                                runningNet += holeNet;
+                                segmentNetObj.val += holeNet;
+                                
+                                // Print the cumulative score in the cell
+                                fullHTML += `<td class="${formatNetToParCSS(runningNet)}" style="border-color:#333;">${formatNetToPar(runningNet)}</td>`;
                             } else {
                                 fullHTML += `<td style="border-color:#333; color:#555;">-</td>`;
                             }
@@ -818,7 +827,7 @@
                 skinsHTML += `<div class="payout-row">No skins won / No skins pot.</div>`;
             }
 
-            // 2. TEAM BETS
+            // 2. TEAM BETS (With All Birdies Count Math)
             let teamHTML = `<div class="payout-header" style="margin-top:25px;">💰 Team Bet Payouts</div>`;
             let potPerBet = totalPlayers * rData.betAmount;
             
@@ -831,13 +840,16 @@
                     rData.groups.forEach(g => {
                         let f9=0, b9=0, tot=0, fPlayed=0, bPlayed=0;
                         for(let h=segs.total.s; h<=segs.total.e; h++) {
-                            let par = rData.course.pars[h-1] * f;
+                            let par = rData.course.pars[h-1];
                             let hs = [];
                             g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
-                            hs.sort((a,b)=>a-b);
+                            
                             if(hs.length >= f) {
-                                let score = hs.slice(0,f).reduce((a,b)=>a+b,0);
-                                let net = score - par;
+                                // Updated Math for Payouts
+                                let nets = hs.map(s => s - par).sort((a,b) => a-b);
+                                let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
+                                nets.slice(f).forEach(n => { if(n < 0) net += n; });
+
                                 tot += net;
                                 if(h >= segs.front.s && h <= segs.front.e) { f9+=net; fPlayed++; }
                                 if(h >= segs.back.s && h <= segs.back.e) { b9+=net; bPlayed++; }
@@ -853,7 +865,7 @@
                         let minNet = Math.min(...data.map(d => d.net));
                         let winners = data.filter(d => d.net === minNet);
                         let split = potPerBet / winners.length;
-                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Best Ball: ${title} ($${potPerBet} Pot)</div>`;
+                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: ${title} ($${potPerBet} Pot)</div>`;
                         winners.forEach(w => {
                             teamPayouts[w.id].total += split;
                             teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Capt: ${teamPayouts[w.id].n} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`;
@@ -907,9 +919,14 @@
                     let par = rData.course.pars[h-1];
                     let hs = [];
                     g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
-                    hs.sort((a,b)=>a-b);
+                    
                     rData.formats.forEach(f => {
-                        if(hs.length >= f) { teamTotals[f] += hs.slice(0,f).reduce((a,b)=>a+b,0) - (par * f); }
+                        if(hs.length >= f) {
+                            let nets = hs.map(s => s - par).sort((a,b) => a-b);
+                            let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
+                            nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                            teamTotals[f] += net;
+                        }
                     });
                 }
                 rData.formats.forEach(f => {
@@ -959,11 +976,14 @@
                     rData.groups.forEach(g => {
                         let f9=0, b9=0, tot=0, fp=0, bp=0;
                         for(let h=segs.total.s; h<=segs.total.e; h++) {
-                            let par = rData.course.pars[h-1] * f;
+                            let par = rData.course.pars[h-1];
                             let hs=[]; g.players.forEach(p=>{if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]);});
-                            hs.sort((a,b)=>a-b);
+                            
                             if(hs.length>=f) {
-                                let net = hs.slice(0,f).reduce((a,b)=>a+b,0) - par;
+                                let nets = hs.map(s => s - par).sort((a,b) => a-b);
+                                let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
+                                nets.slice(f).forEach(n => { if(n < 0) net += n; });
+
                                 tot+=net;
                                 if(h>=segs.front.s && h<=segs.front.e){f9+=net; fp++;}
                                 if(h>=segs.back.s && h<=segs.back.e){b9+=net; bp++;}
