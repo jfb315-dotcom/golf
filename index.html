@@ -962,16 +962,27 @@
             let totalBets = rData.formats.length * 3;
             let totalTeamPot = totalPlayers * rData.betAmount * totalBets;
             let skinsPot = totalPlayers * rData.skinsAmount;
+            
+            // Calculate individual player buy-ins for the header
+            let perPlayerBet = rData.betAmount * totalBets;
+            let perPlayerSkins = rData.skinsAmount;
 
-            let st = `⛳ GOLF TOURNAMENT RESULTS ⛳\n`;
+            // 1. Updated Title with Date & Individual Buy-ins
+            let today = new Date().toLocaleDateString();
+            let st = `⛳ Choose-UP ${today} ⛳\n`;
             st += `Course: ${rData.course.name}\n\n`;
             st += `💰 TOTAL PURSE: $${totalTeamPot + skinsPot}\n`;
-            st += `Team Pot: $${totalTeamPot} | Skins Pot: $${skinsPot}\n\n`;
+            st += `Team Pot: $${totalTeamPot} | Skins Pot: $${skinsPot}\n`;
+            st += `Team Entry: $${perPlayerBet}/player | Skins: $${perPlayerSkins}/player\n\n`;
 
+            // 2. Updated Standings Breakdown (F9, B9, Overall)
             st += `🏆 TEAM STANDINGS (To Par):\n`;
             rData.groups.forEach(g => {
                 st += `Group ${g.id} (Capt: ${g.captain.split(' ')[0]}):\n`;
                 let teamTotals = { 1: 0, 2: 0, 3: 0 };
+                let teamFront = { 1: 0, 2: 0, 3: 0 };
+                let teamBack = { 1: 0, 2: 0, 3: 0 };
+                
                 for(let h=segs.total.s; h<=segs.total.e; h++) {
                     let par = rData.course.pars[h-1];
                     let hs = [];
@@ -982,12 +993,16 @@
                             let nets = hs.map(s => s - par).sort((a,b) => a-b);
                             let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
                             nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                            
                             teamTotals[f] += net;
+                            if(h >= segs.front.s && h <= segs.front.e) teamFront[f] += net;
+                            if(h >= segs.back.s && h <= segs.back.e) teamBack[f] += net;
                         }
                     });
                 }
                 rData.formats.forEach(f => {
-                    st += `  ${f}-Ball: ${formatNetToPar(teamTotals[f])}\n`;
+                    st += `  ${f}-Ball:\n`;
+                    st += `    F9: [${formatNetToPar(teamFront[f])}] B9: [${formatNetToPar(teamBack[f])}] Tot: [${formatNetToPar(teamTotals[f])}]\n`;
                 });
                 st += `\n`;
             });
@@ -1024,9 +1039,10 @@
             }
 
             st += `\n💸 TEAM PAYOUTS:\n`;
+            let tp = {}; rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.length});
+            
             if(potPerBet = totalPlayers * rData.betAmount > 0) {
                 let pot = totalPlayers * rData.betAmount;
-                let tp = {}; rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.length});
                 
                 rData.formats.forEach(f => {
                     let fD=[], bD=[], tD=[];
@@ -1064,12 +1080,17 @@
                     };
                     calc(fD, "Front 9"); calc(bD, "Back 9"); calc(tD, "Overall");
                 });
-
-                st += `\nFinal Per-Player Payouts:\n`;
-                Object.values(tp).forEach(team => {
-                    if(team.t > 0) st += `  Capt ${team.n} Team: $${(team.t/team.c).toFixed(2)} / player\n`;
-                });
             }
+
+            // 3. Updated Final Formatting to match request exactly
+            st += `\n💰 FINAL TOTALS:\n`;
+            Object.values(tp).forEach(team => {
+                if(team.t > 0) {
+                    st += `Capt ${team.n} Team:\n`;
+                    st += `  Team Total: $${team.t.toFixed(2)}\n`;
+                    st += `  Per Player: $${(team.t/team.c).toFixed(2)}\n`;
+                }
+            });
 
             document.getElementById('share-text-content').value = st;
             document.getElementById('share-modal').classList.add('active');
