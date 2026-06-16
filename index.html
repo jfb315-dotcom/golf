@@ -95,14 +95,15 @@
 </head>
 <body>
 
-    <div id="step-1" class="screen card active">
+   <div id="step-1" class="screen card active">
         <h2>Tournament Setup</h2>
         <label>Select Course</label>
         <select id="course-selector"></select>
         <p style="font-size: 0.9em; color: var(--accent-gold); cursor: pointer; text-decoration: underline; margin-top: 5px; display: inline-block;" onclick="switchScreen('step-1', 'step-add-course')">+ Create Custom Course</p>
 
         <div style="display: flex; gap: 15px; margin-top: 15px;">
-            <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="3" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
+            <!-- UPDATED: Default groups changed from 3 to 2 -->
+            <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="2" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
             <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
         </div>
 
@@ -124,23 +125,25 @@
         </div>
 
         <div style="display: flex; gap: 15px; margin-top: 5px;">
-            <div style="flex: 1;"><label>Per Bet ($)</label><input type="number" id="bet-amount" min="0" value="50" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
-            <div style="flex: 1;"><label>Skins Buy-in ($)</label><input type="number" id="skins-amount" min="0" value="50" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
+            <!-- UPDATED: Per Bet changed to 20, Skins changed to 10 -->
+            <div style="flex: 1;"><label>Per Bet ($)</label><input type="number" id="bet-amount" min="0" value="20" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
+            <div style="flex: 1;"><label>Skins Buy-in ($)</label><input type="number" id="skins-amount" min="0" value="10" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
         </div>
 
         <label>Team Formats & Custom Rules</label>
         <div class="format-container">
+            <!-- UPDATED: 1-Ball unchecked, 2-Ball & 3-Ball checked along with their Birdie rules -->
             <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball" checked> 1-Ball</label>
-                <label class="birdie-label"><input type="checkbox" id="fmt-1-birdies" checked> All Birdies Count</label>
+                <label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball"> 1-Ball</label>
+                <label class="birdie-label"><input type="checkbox" id="fmt-1-birdies"> All Birdies Count</label>
             </div>
             <div class="format-row">
                 <label class="format-label"><input type="checkbox" id="fmt-2" value="2-ball" checked> 2-Ball</label>
                 <label class="birdie-label"><input type="checkbox" id="fmt-2-birdies" checked> All Birdies Count</label>
             </div>
             <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball"> 3-Ball</label>
-                <label class="birdie-label"><input type="checkbox" id="fmt-3-birdies"> All Birdies Count</label>
+                <label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball" checked> 3-Ball</label>
+                <label class="birdie-label"><input type="checkbox" id="fmt-3-birdies" checked> All Birdies Count</label>
             </div>
         </div>
 
