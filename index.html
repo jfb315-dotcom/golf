@@ -26,7 +26,6 @@
         .btn-success { background-color: #28a745; color: white; width: 100%; padding: 18px; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4); }
         .btn-danger { background-color: #dc3545; color: white; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
 
-        /* NEW FORMAT RULES UI */
         .format-container { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; background: #222; padding: 15px; border-radius: 6px; border: 1px solid #444; }
         .format-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; }
         .format-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -34,7 +33,6 @@
         .birdie-label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); font-weight: normal; text-transform: none; margin: 0; }
         .format-container input { width: 18px; height: 18px; accent-color: var(--accent-gold); margin: 0;}
 
-        /* STICKY TOP NAVIGATION */
         .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 10px 0; border-bottom: 1px solid #333; margin-bottom: 15px; }
         .pill-nav { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; scrollbar-width: none; }
         .pill-nav::-webkit-scrollbar { display: none; }
@@ -53,6 +51,10 @@
         .par-indicator { font-size: 13px; font-weight: bold; width: 85px; text-align: right; text-transform: uppercase; flex-shrink: 0; }
         .score-box { width: 65px !important; height: 45px !important; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #1a1a1a !important; padding: 5px !important; border: 2px solid #555 !important; color: white !important; border-radius: 6px; flex-shrink: 0; margin-bottom: 0 !important; }
         .score-box:focus { border-color: var(--accent-gold) !important; outline: none; background: #000 !important; box-shadow: 0 0 10px var(--accent-gold); }
+
+        .roster-player-block { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .roster-name-input { flex: 2; margin-bottom: 0 !important; }
+        .roster-stroke-input { flex: 1; text-align: center; margin-bottom: 0 !important; padding: 12px 5px !important; }
 
         .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 0px; }
         table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; }
@@ -80,7 +82,6 @@
         .archive-checkbox { width: 22px; height: 22px; accent-color: #dc3545; }
         .archive-info { flex: 1; }
 
-        /* MODALS */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
@@ -159,7 +160,11 @@
     </div>
 
     <div id="step-2" class="screen card">
-        <h2>Enter Player Names</h2>
+        <h2>Enter Player Names & Strokes</h2>
+        <div style="display: flex; font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; padding-left: 5px;">
+            <div style="flex: 2;">Player Name</div>
+            <div style="flex: 1; text-align: center;">Stroke Holes (e.g. 4, 12)</div>
+        </div>
         <div id="roster-container"></div>
         <button class="btn-secondary" onclick="switchScreen('step-2', 'step-1')">← Back</button>
         <button class="btn-primary" onclick="goToStep3()">Start Round & Sync to Cloud</button>
@@ -280,7 +285,7 @@
 
     <script>
         // ==========================================
-        // 1. FIREBASE CONFIGURATION
+        // 1. FIREBASE CONFIGURATION (WITH OFFLINE SAFETY)
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
@@ -292,6 +297,11 @@
         };
 
         firebase.initializeApp(firebaseConfig);
+        
+        firebase.firestore().enablePersistence().catch(err => {
+            console.log("Firebase offline mode skipped (normal behavior when testing locally on computer):", err.code);
+        });
+
         const db = firebase.firestore();
         const activeTournamentRef = db.collection("tournaments").doc("active_round");
 
@@ -307,7 +317,6 @@
         };
         const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493'];
 
-        // NEW: added birdieRules to state tracker
         let roundData = { course: null, groups: [], formats: [], birdieRules: {}, currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startHole: 1, endHole: 18 };
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
@@ -386,7 +395,7 @@
         }
 
         // ==========================================
-        // 4. SETUP LOGIC
+        // 4. SETUP LOGIC & EXPLICIT HOLE STROKES
         // ==========================================
         function toggleNineHoleOptions() {
             let mode = document.getElementById('hole-format').value;
@@ -456,8 +465,11 @@
                 html += `<div style="padding:15px; background:#252525; border-radius:5px; margin-bottom: 15px;">`;
                 html += `<h3 style="margin-top:0; color:var(--accent-gold);">Group ${g}</h3>`;
                 for (let p = 1; p <= pCount; p++) {
-                    let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} (Leave blank for uneven team)`;
-                    html += `<input type="text" id="g${g}-p${p}" placeholder="${placeholder}">`;
+                    html += `
+                    <div class="roster-player-block">
+                        <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${p === 1 ? 'Captain Name' : 'Player (or blank)'}">
+                        <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="e.g. 4, 12" autocomplete="off">
+                    </div>`;
                 }
                 html += `</div>`;
             }
@@ -467,7 +479,7 @@
 
         function goToStep3() {
             roundData.formats = [];
-            roundData.birdieRules = {}; // NEW: Capture the specific rules
+            roundData.birdieRules = {}; 
             
             [1, 2, 3].forEach(f => {
                 if(document.getElementById(`fmt-${f}`).checked) {
@@ -487,10 +499,21 @@
                 
                 let validPlayerId = 1;
                 for (let p = 1; p <= pCount; p++) {
-                    let name = document.getElementById(`g${g}-p${p}`).value.trim();
+                    let name = document.getElementById(`g${g}-p${p}-name`).value.trim();
                     if (name === "") continue;
 
-                    teamPlayers.push({ id: validPlayerId, name: name });
+                    let strokesInput = document.getElementById(`g${g}-p${p}-strokes`).value.trim();
+                    let strokeHoles = [];
+                    if (strokesInput) {
+                        let matches = strokesInput.match(/\d+/g);
+                        if (matches) strokeHoles = matches.map(Number);
+                    }
+
+                    teamPlayers.push({ 
+                        id: validPlayerId, 
+                        name: name,
+                        strokeHoles: strokeHoles
+                    });
                     scoresDb[g][validPlayerId] = {}; 
                     validPlayerId++;
                 }
@@ -589,8 +612,14 @@
                     let isGhostReadonly = player.isGhost ? `readonly tabindex="-1"` : ``;
                     let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field"; 
 
+                    let netDot = "";
+                    if (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) {
+                        let strokesOnHole = player.strokeHoles.filter(h => h === hole).length;
+                        netDot = " " + "🔴".repeat(strokesOnHole);
+                    }
+
                     html += `<div class="player-row">
-                        <span class="player-name">${player.name}</span>
+                        <span class="player-name">${player.name}${netDot}</span>
                         <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
                         <input type="tel" inputmode="numeric" pattern="[0-9]*" class="${inputClass}" style="${isGhostStyle}" ${isGhostReadonly}
                                id="score-input-${group.id}-${player.id}" value="${currentScore}" 
@@ -629,7 +658,7 @@
             if(status) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
             activeTournamentRef.set({ roundData: roundData, scoresDb: scoresDb })
                 .then(() => { if(status) { status.innerText = "● Synced"; status.style.color = "#00ff00"; } })
-                .catch((error) => { if(status) { status.innerText = "⚠ Sync Error"; status.style.color = "#ff3333"; } });
+                .catch((error) => { if(status) { status.innerText = "↻ Queued (Offline)"; status.style.color = "var(--text-muted)"; } });
         }
 
         function handleInputAdvance(el, groupId, playerId, hole, par) {
@@ -722,6 +751,20 @@
         // ==========================================
         // 6. DASHBOARD & PAYOUT ENGINE
         // ==========================================
+        function getPlayerNetScore(player, hole, grossScore) {
+            if (!grossScore) return 0;
+            if (player.isGhost) {
+                let srcGroup = roundData.groups.find(g => g.id === player.sourceG);
+                let srcPlayer = srcGroup ? srcGroup.players.find(p => p.id === player.sourceP) : null;
+                if (srcPlayer) return getPlayerNetScore(srcPlayer, hole, grossScore);
+            }
+            let strokesOnHole = 0;
+            if (player.strokeHoles) {
+                strokesOnHole = player.strokeHoles.filter(h => h === hole).length;
+            }
+            return grossScore - strokesOnHole;
+        }
+
         function getSegments(rData) {
             let fStart=1, fEnd=9, bStart=10, bEnd=18;
             if(rData.playMode === '9') {
@@ -752,7 +795,6 @@
             let totalTeamPot = totalPlayers * roundData.betAmount * totalBets;
             let skinsPot = totalPlayers * roundData.skinsAmount;
             
-            // Build the dynamic rules breakdown string
             let rulesHTML = '';
             roundData.formats.forEach(f => {
                 let ruleStatus = (roundData.birdieRules && roundData.birdieRules[f]) ? 
@@ -777,7 +819,6 @@
                     <span style="color: var(--accent-gold); font-size: 16px;">$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</span>
                 </div>
                 
-                <!-- NEW: Individual Bet Cost Layout -->
                 <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding-left: 5px;">
                     <span>Individual Bet (Per Segment):</span> <span>$${roundData.betAmount}</span>
                 </div>
@@ -785,13 +826,11 @@
                     <span>Skins Buy-in:</span> <span>$${roundData.skinsAmount}</span>
                 </div>
 
-                <!-- NEW: Live Birdie Rule Status Display -->
-                <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px id #333; padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px solid #333; padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>
                 ${rulesHTML}
             </div>`;
             
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML;
-
             document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb);
             document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
             
@@ -832,20 +871,19 @@
                 fullHTML += `<td class="out-in-col" style="border-color:#444;">${bPar}</td>
                              <td class="out-in-col" style="border-color:#444;">${fPar+bPar}</td></tr>`;
 
-                // INDIVIDUAL PLAYERS
                 g.players.forEach(p => {
                     fullHTML += `<tr><td style="text-align:left; white-space:nowrap; font-size: 15px; border-color: #333;"><b>${p.name.split(' ')[0]}</b></td>`;
-                    let fScore=0, bScore=0, fPlayed=true, bPlayed=true, tPlayed=true;
-
+                    
                     let renderSegment = (start, end, segmentScoreObj, segmentPlayedFlag) => {
                         for(let h=start; h<=end; h++) {
                             let score = sDb[g.id]?.[p.id]?.[h];
                             if(score) {
                                 segmentScoreObj.val += score;
-                                let cssClass = "score-cell " + formatNetToParCSS(score - rData.course.pars[h-1]);
+                                let net = getPlayerNetScore(p, h, score);
+                                let cssClass = "score-cell " + formatNetToParCSS(net - rData.course.pars[h-1]);
                                 fullHTML += `<td class="${cssClass}" style="border-color:#333;">${score}</td>`;
                             } else {
-                                segmentPlayedFlag.flag = false; tPlayed = false;
+                                segmentPlayedFlag.flag = false;
                                 fullHTML += `<td class="score-cell" style="border-color:#333;">-</td>`;
                             }
                         }
@@ -855,12 +893,11 @@
                     fullHTML += `<td class="out-in-col" style="border-color:#444;">${fFlag.flag ? fObj.val : '-'}</td>`;
                     let bObj = {val: 0}; let bFlag = {flag: true}; renderSegment(segs.back.s, segs.back.e, bObj, bFlag);
                     fullHTML += `<td class="out-in-col" style="border-color:#444;">${bFlag.flag ? bObj.val : '-'}</td>`;
-                    fullHTML += `<td class="out-in-col" style="border-color:#444;">${tPlayed ? (fObj.val+bObj.val) : '-'}</td></tr>`;
+                    fullHTML += `<td class="out-in-col" style="border-color:#444;">${(fFlag.flag && bFlag.flag) ? (fObj.val+bObj.val) : '-'}</td></tr>`;
                 });
 
                 fullHTML += `<tr><td colspan="${(segs.total.e - segs.total.s + 1) + 4}" style="padding:0; border:none; height:4px; background:#666;"></td></tr>`;
 
-                // TEAM SCORE ROWS (With Configurable Birdie Math)
                 rData.formats.forEach(f => {
                     fullHTML += `<tr class="team-math-row"><td style="text-align:left; border-color: #333; color:${g.color};">Team ${f}-Ball</td>`;
 
@@ -869,13 +906,15 @@
                         for(let h=start; h<=end; h++) {
                             let par = rData.course.pars[h-1];
                             let hs = [];
-                            g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
+                            g.players.forEach(p => { 
+                                let score = sDb[g.id]?.[p.id]?.[h];
+                                if(score) hs.push(getPlayerNetScore(p, h, score)); 
+                            });
                             
                             if(hs.length >= f) {
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
                                 let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
                                 
-                                // NEW: Only apply extra birdies if the rule is checked for this format
                                 if (rData.birdieRules && rData.birdieRules[f]) {
                                     nets.slice(f).forEach(n => { if(n < 0) holeNet += n; });
                                 }
@@ -909,7 +948,8 @@
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
             if(totalPlayers === 0) return "<p>No data.</p>";
 
-            let skinsHTML = `<div class="payout-header">🔥 Skins Payout</div>`;
+            // 1. GROSS SKINS (Calculated entirely on Gross, Ghosts excluded so they don't cancel real players)
+            let skinsHTML = `<div class="payout-header">🔥 Gross Skins Payout</div>`;
             let skinsPot = totalPlayers * rData.skinsAmount;
             let playerSkins = {}; 
             let totalSkinsWon = 0;
@@ -918,7 +958,13 @@
                 let par = rData.course.pars[h-1];
                 let hs = [];
                 rData.groups.forEach(g => {
-                    g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s) hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); });
+                    g.players.forEach(p => { 
+                        let s = sDb[g.id]?.[p.id]?.[h]; 
+                        // ONLY check valid scores from NON-GHOST players for skins
+                        if(s && !p.isGhost) {
+                            hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); // Gross score used here
+                        }
+                    });
                 });
                 if(hs.length > 0) {
                     let min = Math.min(...hs.map(x=>x.s));
@@ -943,9 +989,10 @@
                     skinsHTML += `<div class="payout-row"><span class="payout-winner" style="color:${ps.color}">${ps.name.split(' ')[0]} (Holes: ${ps.holes.join(', ')})</span><span class="payout-amount">$${totalWon.toFixed(2)}</span></div>`;
                 });
             } else {
-                skinsHTML += `<div class="payout-row">No skins won / No skins pot.</div>`;
+                skinsHTML += `<div class="payout-row">No gross skins won / No skins pot.</div>`;
             }
 
+            // 2. TEAM BETS
             let teamHTML = `<div class="payout-header" style="margin-top:25px;">💰 Team Bet Payouts</div>`;
             let potPerBet = totalPlayers * rData.betAmount;
             
@@ -960,13 +1007,14 @@
                         for(let h=segs.total.s; h<=segs.total.e; h++) {
                             let par = rData.course.pars[h-1];
                             let hs = [];
-                            g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
+                            g.players.forEach(p => { 
+                                let score = sDb[g.id]?.[p.id]?.[h];
+                                if(score) hs.push(getPlayerNetScore(p, h, score)); 
+                            });
                             
                             if(hs.length >= f) {
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
                                 let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                
-                                // NEW: Configurable Birdie Rule
                                 if (rData.birdieRules && rData.birdieRules[f]) {
                                     nets.slice(f).forEach(n => { if(n < 0) net += n; });
                                 }
@@ -1015,7 +1063,7 @@
         }
 
         // ==========================================
-        // 7. SHARING & ARCHIVING ENGINE
+        // 7. SHARING ENGINE
         // ==========================================
         function openResultsShareModal() {
             let rData = activeViewRoundData;
@@ -1047,7 +1095,10 @@
                 for(let h=segs.total.s; h<=segs.total.e; h++) {
                     let par = rData.course.pars[h-1];
                     let hs = [];
-                    g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
+                    g.players.forEach(p => { 
+                        let score = sDb[g.id]?.[p.id]?.[h];
+                        if(score) hs.push(getPlayerNetScore(p, h, score)); 
+                    });
                     
                     rData.formats.forEach(f => {
                         if(hs.length >= f) {
@@ -1071,13 +1122,16 @@
                 st += `\n`;
             });
 
-            st += `🔥 SKINS WON:\n`;
+            st += `🔥 GROSS SKINS WON:\n`;
             let playerSkins = {}; let totalSkins = 0;
             for(let h=segs.total.s; h<=segs.total.e; h++) {
                 let par = rData.course.pars[h-1];
                 let hs = [];
                 rData.groups.forEach(g => {
-                    g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s) hs.push({id: p.id, gid: g.id, n: p.name, s: s}); });
+                    g.players.forEach(p => { 
+                        let s = sDb[g.id]?.[p.id]?.[h]; 
+                        if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, n: p.name, s: s}); // Gross score used
+                    });
                 });
                 if(hs.length > 0) {
                     let min = Math.min(...hs.map(x=>x.s));
@@ -1099,7 +1153,7 @@
                     st += `  ${ps.n} | $${(ps.holes.length * perSkin).toFixed(2)} | Holes: ${ps.holes.join(', ')}\n`;
                 });
             } else {
-                st += `  No skins won.\n`;
+                st += `  No gross skins won.\n`;
             }
 
             st += `\n💸 TEAM PAYOUTS:\n`;
@@ -1114,12 +1168,14 @@
                         let f9=0, b9=0, tot=0, fp=0, bp=0;
                         for(let h=segs.total.s; h<=segs.total.e; h++) {
                             let par = rData.course.pars[h-1];
-                            let hs=[]; g.players.forEach(p=>{if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]);});
+                            let hs=[]; g.players.forEach(p=>{
+                                let score = sDb[g.id]?.[p.id]?.[h];
+                                if(score) hs.push(getPlayerNetScore(p, h, score));
+                            });
                             
                             if(hs.length>=f) {
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
                                 let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                
                                 if (rData.birdieRules && rData.birdieRules[f]) {
                                     nets.slice(f).forEach(n => { if(n < 0) net += n; });
                                 }
@@ -1183,14 +1239,11 @@
         function sendSMS(groupId) {
             let group = roundData.groups.find(g => g.id === groupId);
             let captainName = group ? group.captain.split(' ')[0] : "Captain";
-            
             const baseUrl = window.location.href.split('?')[0]; 
             const magicLink = `${baseUrl}?team=${groupId}`;
             const message = encodeURIComponent(`Hey ${captainName}, here is your live scorecard for Group ${groupId}. Click here to start scoring: ${magicLink}`);
-            
             const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            if (isIOS) { window.location.href = `sms:&body=${message}`; } 
-            else { window.location.href = `sms:?body=${message}`; }
+            if (isIOS) { window.location.href = `sms:&body=${message}`; } else { window.location.href = `sms:?body=${message}`; }
         }
 
         // ==========================================
@@ -1203,9 +1256,7 @@
                 document.getElementById('admin-unlock-section').style.display = 'none';
                 document.getElementById('forceArchiveBtn').style.display = 'block';
                 alert("Admin unlocked! You can now archive rounds early.");
-            } else {
-                alert("Incorrect PIN.");
-            }
+            } else { alert("Incorrect PIN."); }
         }
 
         function openBlindDrawModal() {
@@ -1259,9 +1310,6 @@
             viewDashboard(); 
         }
 
-        // ==========================================
-        // 8. ARCHIVING ENGINE
-        // ==========================================
         function validateAndFinalize(forceArchive = false) {
             let missingScores = false;
             let segs = getSegments(roundData);
@@ -1287,20 +1335,20 @@
             }
 
             saveToArchive();
-
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
             window.scrollTo(0,0);
 
-            activeTournamentRef.delete().catch(err => console.error("Cloud delete delayed/failed: ", err));
+            activeTournamentRef.delete().catch(err => console.error("Cloud delete failed: ", err));
 
             setTimeout(() => {
-                if(confirm("Round Finalized successfully! Generate text results to copy/share?")) {
-                    openResultsShareModal();
-                }
+                if(confirm("Round Finalized successfully! Generate text results to copy/share?")) { openResultsShareModal(); }
             }, 150);
         }
 
+        // ==========================================
+        // 8. ARCHIVE HISTORY ENGINE
+        // ==========================================
         function saveToArchive() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
             archive.push({ date: new Date().toLocaleDateString(), course: roundData.course, roundData: roundData, scoresDb: scoresDb });
@@ -1351,7 +1399,6 @@
             if(typeof activeViewRoundData.course === 'string') { activeViewRoundData.course = allAvailableCourses[activeViewRoundData.course] || { name: "Archived Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; }
             if(!activeViewRoundData.playMode) { activeViewRoundData.playMode = '18'; activeViewRoundData.startHole = 1; activeViewRoundData.endHole = 18; }
             if(!activeViewRoundData.formats) { activeViewRoundData.formats = [1, 2]; }
-            // NEW: Fallback for older archives that didn't have configurable rules
             if(!activeViewRoundData.birdieRules) { activeViewRoundData.birdieRules = {1:true, 2:true, 3:false}; }
 
             try {
