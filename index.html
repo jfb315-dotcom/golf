@@ -1007,13 +1007,33 @@
         }
         function closeShareModal() { document.getElementById('share-modal').classList.remove('active'); }
 
-        function openShareMenu() {
+       function openShareMenu() {
             let html = '';
             roundData.groups.forEach(g => {
-                html += `<button class="btn-secondary" style="border-color: ${g.color}; color: ${g.color};" onclick="sendSMS(${g.id}, '${g.captain.split(' ')[0]}')">📱 Text Group ${g.id} (Capt: ${g.captain.split(' ')[0]})</button>`;
+                // We now pass ONLY the group ID to avoid code-breaking names
+                html += `<button class="btn-secondary" style="border-color: ${g.color}; color: ${g.color};" onclick="sendSMS(${g.id})">📱 Text Group ${g.id} (Capt: ${g.captain.split(' ')[0]})</button>`;
             });
             document.getElementById('share-buttons-container').innerHTML = html;
             switchScreen('step-3', 'step-7');
+        }
+
+        function sendSMS(groupId) {
+            // Find the captain's name safely inside the function instead of the HTML
+            let group = roundData.groups.find(g => g.id === groupId);
+            let captainName = group ? group.captain.split(' ')[0] : "Captain";
+            
+            const baseUrl = window.location.href.split('?')[0]; 
+            const magicLink = `${baseUrl}?team=${groupId}`;
+            const message = encodeURIComponent(`Hey ${captainName}, here is your live scorecard for Group ${groupId}. Click here to start scoring: ${magicLink}`);
+            
+            // Check if the user is on an Apple or Android device to format the link perfectly
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            
+            if (isIOS) {
+                window.location.href = `sms:&body=${message}`; // iOS specific format
+            } else {
+                window.location.href = `sms:?body=${message}`; // Android/Standard format
+            }
         }
 
         // ==========================================
