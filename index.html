@@ -806,6 +806,22 @@
                               </div>`;
             });
 
+            // NEW: Add Handicap Strokes summary to Dashboard Card
+            let strokesHTML = '';
+            roundData.groups.forEach(g => {
+                g.players.forEach(p => {
+                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) {
+                        strokesHTML += `<div style="display: flex; justify-content: space-between; font-size: 13px; margin-top: 3px; padding-left: 10px; color: #ccc;">
+                                            <span>• ${p.name.split(' ')[0]}:</span> 
+                                            <span>Hole(s) ${p.strokeHoles.join(', ')}</span>
+                                          </div>`;
+                    }
+                });
+            });
+            if (strokesHTML !== '') {
+                rulesHTML += `<div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top: 10px; border-top: 1px solid #333; padding-top: 5px;">🎯 Handicap Strokes:</div>` + strokesHTML;
+            }
+
             let finHTML = `
             <div style="background: #252525; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 5px solid #28a745;">
                 <h3 style="margin-top: 0; margin-bottom: 10px; color: #28a745;">💰 Live Purse</h3>
@@ -948,7 +964,6 @@
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
             if(totalPlayers === 0) return "<p>No data.</p>";
 
-            // 1. GROSS SKINS (Calculated entirely on Gross, Ghosts excluded so they don't cancel real players)
             let skinsHTML = `<div class="payout-header">🔥 Gross Skins Payout</div>`;
             let skinsPot = totalPlayers * rData.skinsAmount;
             let playerSkins = {}; 
@@ -960,9 +975,8 @@
                 rData.groups.forEach(g => {
                     g.players.forEach(p => { 
                         let s = sDb[g.id]?.[p.id]?.[h]; 
-                        // ONLY check valid scores from NON-GHOST players for skins
                         if(s && !p.isGhost) {
-                            hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); // Gross score used here
+                            hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); 
                         }
                     });
                 });
@@ -992,7 +1006,6 @@
                 skinsHTML += `<div class="payout-row">No gross skins won / No skins pot.</div>`;
             }
 
-            // 2. TEAM BETS
             let teamHTML = `<div class="payout-header" style="margin-top:25px;">💰 Team Bet Payouts</div>`;
             let potPerBet = totalPlayers * rData.betAmount;
             
@@ -1085,6 +1098,19 @@
             st += `Team Pot: $${totalTeamPot} | Skins Pot: $${skinsPot}\n`;
             st += `Team Entry: $${perPlayerBet}/player | Skins: $${perPlayerSkins}/player\n\n`;
 
+            // NEW: Add Strokes List to Shared Text
+            let strokeText = '';
+            rData.groups.forEach(g => {
+                g.players.forEach(p => {
+                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) {
+                        strokeText += `  ${p.name.split(' ')[0]}: Hole(s) ${p.strokeHoles.join(', ')}\n`;
+                    }
+                });
+            });
+            if (strokeText !== '') {
+                st += `🎯 HANDICAP STROKES:\n` + strokeText + `\n`;
+            }
+
             st += `🏆 TEAM STANDINGS (To Par):\n`;
             rData.groups.forEach(g => {
                 st += `Group ${g.id} (Capt: ${g.captain.split(' ')[0]}):\n`;
@@ -1130,7 +1156,7 @@
                 rData.groups.forEach(g => {
                     g.players.forEach(p => { 
                         let s = sDb[g.id]?.[p.id]?.[h]; 
-                        if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, n: p.name, s: s}); // Gross score used
+                        if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, n: p.name, s: s}); 
                     });
                 });
                 if(hs.length > 0) {
