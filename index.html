@@ -806,7 +806,6 @@
                               </div>`;
             });
 
-            // NEW: Add Handicap Strokes summary to Dashboard Card
             let strokesHTML = '';
             roundData.groups.forEach(g => {
                 g.players.forEach(p => {
@@ -818,8 +817,15 @@
                     }
                 });
             });
+            
+            // NEW: Added the Legend directly below the strokes list
             if (strokesHTML !== '') {
                 rulesHTML += `<div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top: 10px; border-top: 1px solid #333; padding-top: 5px;">🎯 Handicap Strokes:</div>` + strokesHTML;
+                rulesHTML += `<div style="font-size: 11px; color: #ff6666; margin-top: 8px; font-style: italic; line-height: 1.3; background: #1a1a1a; padding: 8px; border-radius: 4px; border: 1px solid #333;">
+                                🔴 = Net Score applied on this hole.<br>
+                                * Scorecard displays Gross numbers, but color coding reflects Net.<br>
+                                * Net scores do NOT count towards the Gross Skins pot.
+                              </div>`;
             }
 
             let finHTML = `
@@ -897,7 +903,15 @@
                                 segmentScoreObj.val += score;
                                 let net = getPlayerNetScore(p, h, score);
                                 let cssClass = "score-cell " + formatNetToParCSS(net - rData.course.pars[h-1]);
-                                fullHTML += `<td class="${cssClass}" style="border-color:#333;">${score}</td>`;
+                                
+                                // NEW: Adds the red dot directly inside the grid next to the stroke scores
+                                let dots = "";
+                                if (!p.isGhost && p.strokeHoles && p.strokeHoles.includes(h)) {
+                                    let count = p.strokeHoles.filter(x => x === h).length;
+                                    dots = `<span style="font-size: 9px; margin-left: 3px; vertical-align: top;">${'🔴'.repeat(count)}</span>`;
+                                }
+                                
+                                fullHTML += `<td class="${cssClass}" style="border-color:#333; white-space: nowrap;">${score}${dots}</td>`;
                             } else {
                                 segmentPlayedFlag.flag = false;
                                 fullHTML += `<td class="score-cell" style="border-color:#333;">-</td>`;
