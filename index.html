@@ -593,6 +593,31 @@
             if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; }
             
             let parsedVal = parseInt(val);
+            
+            // ==========================================
+            // NEW: STRICT MID-ROUND SKIP CHECK
+            // ==========================================
+            if(!isNaN(parsedVal) && parsedVal > 0) {
+                let missedHole = null;
+                
+                // Scan backwards from the start hole up to the hole they are currently on
+                for (let h = roundData.startHole; h < hole; h++) {
+                    if (!scoresDb[groupId]?.[playerId]?.[h]) {
+                        missedHole = h;
+                        break; // Stop at the first blank hole we find
+                    }
+                }
+                
+                // If a blank hole was found, block the entry and alert them
+                if (missedHole) {
+                    el.value = ''; // Erase the number they just typed
+                    alert(`⚠️ Wait! You skipped Hole ${missedHole}.\n\nPlease use the 'Prev' button to go back and enter that score before continuing.`);
+                    return; // Stop the script so it doesn't save or auto-advance
+                }
+            }
+            // ==========================================
+
+            // Standard Save Logic
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 if (!scoresDb[groupId]) scoresDb[groupId] = {};
                 if (!scoresDb[groupId][playerId]) scoresDb[groupId][playerId] = {};
@@ -606,6 +631,7 @@
             
             setTimeout(() => { saveAppStateToCloud(); }, 10);
 
+            // Auto-Advance Logic
             if(val.length === 1) {
                 let inputs = Array.from(document.querySelectorAll('.score-input-field'));
                 let idx = inputs.indexOf(el);
@@ -615,8 +641,31 @@
                     nextInput.focus();
                     nextInput.select();
                 } else if (idx === inputs.length - 1) {
-                    if (hole === roundData.endHole && currentTeamFilter === "ALL") {
-                        document.getElementById('complete-modal').classList.add('active');
+                    // FINAL HOLE CHECK
+                    if (hole === roundData.endHole) {
+                        let missingScores = false;
+                        let firstMissingHole = null;
+
+                        roundData.groups.forEach(g => {
+                            if (currentTeamFilter !== "ALL" && currentTeamFilter != g.id) return;
+                            
+                            g.players.forEach(p => { 
+                                for(let h = roundData.startHole; h <= roundData.endHole; h++) { 
+                                    if(!scoresDb[g.id]?.[p.id]?.[h]) {
+                                        missingScores = true;
+                                        if(!firstMissingHole || h < firstMissingHole) firstMissingHole = h;
+                                    }
+                                } 
+                            });
+                        });
+
+                        if (missingScores) {
+                            alert(`⚠️ Missing Scores!\n\nYou skipped entering scores on Hole ${firstMissingHole}. Please use the 'Prev' button to go back and complete your scorecard.`);
+                        } else {
+                            // Perfect scorecard: jump to dashboard
+                            viewDashboard();
+                        }
+
                     } else {
                         setTimeout(() => { changeHole(1); }, 300); 
                     }
