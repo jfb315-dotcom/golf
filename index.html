@@ -26,9 +26,13 @@
         .btn-success { background-color: #28a745; color: white; width: 100%; padding: 18px; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 10px rgba(40, 167, 69, 0.4); }
         .btn-danger { background-color: #dc3545; color: white; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
 
-        .checkbox-group { display: flex; flex-wrap: wrap; gap: 15px; margin-top: 5px; }
-        .checkbox-group label { text-transform: none; display: flex; align-items: center; gap: 8px; font-size: 15px; color: white; font-weight: normal;}
-        .checkbox-group input { width: 18px; height: 18px; accent-color: var(--accent-gold); }
+        /* NEW FORMAT RULES UI */
+        .format-container { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; background: #222; padding: 15px; border-radius: 6px; border: 1px solid #444; }
+        .format-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .format-row:last-child { border-bottom: none; padding-bottom: 0; }
+        .format-label { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: var(--accent-gold); text-transform: none; margin: 0; }
+        .birdie-label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); font-weight: normal; text-transform: none; margin: 0; }
+        .format-container input { width: 18px; height: 18px; accent-color: var(--accent-gold); margin: 0;}
 
         /* STICKY TOP NAVIGATION */
         .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 10px 0; border-bottom: 1px solid #333; margin-bottom: 15px; }
@@ -123,12 +127,22 @@
             <div style="flex: 1;"><label>Skins Buy-in ($)</label><input type="number" id="skins-amount" min="0" value="50" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
         </div>
 
-        <label>Team Formats</label>
-        <div class="checkbox-group">
-            <label><input type="checkbox" id="fmt-1" value="1-ball" checked> 1-Ball</label>
-            <label><input type="checkbox" id="fmt-2" value="2-ball" checked> 2-Ball</label>
-            <label><input type="checkbox" id="fmt-3" value="3-ball"> 3-Ball</label>
+        <label>Team Formats & Custom Rules</label>
+        <div class="format-container">
+            <div class="format-row">
+                <label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball" checked> 1-Ball</label>
+                <label class="birdie-label"><input type="checkbox" id="fmt-1-birdies" checked> All Birdies Count</label>
+            </div>
+            <div class="format-row">
+                <label class="format-label"><input type="checkbox" id="fmt-2" value="2-ball" checked> 2-Ball</label>
+                <label class="birdie-label"><input type="checkbox" id="fmt-2-birdies" checked> All Birdies Count</label>
+            </div>
+            <div class="format-row">
+                <label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball"> 3-Ball</label>
+                <label class="birdie-label"><input type="checkbox" id="fmt-3-birdies"> All Birdies Count</label>
+            </div>
         </div>
+
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
         <hr style="border-color: #444; margin: 30px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
@@ -197,7 +211,6 @@
                 </div>
 
                 <button class="btn-primary" onclick="validateAndFinalize(false)" style="background-color: #8b0000; color: white;">🛑 Finalize & Archive Round</button>
-                
                 <button id="forceArchiveBtn" class="btn-danger" onclick="validateAndFinalize(true)" style="display: none; background-color: #ff4444; margin-top: 10px;">⚠️ Archive Round Early (Admin)</button>
             </div>
         </div>
@@ -294,7 +307,8 @@
         };
         const curatedColors = ['#d4af37', '#4682B4', '#DC143C', '#228B22', '#9370DB', '#FF8C00', '#00CED1', '#FF1493'];
 
-        let roundData = { course: null, groups: [], formats: [], currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startHole: 1, endHole: 18 };
+        // NEW: added birdieRules to state tracker
+        let roundData = { course: null, groups: [], formats: [], birdieRules: {}, currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startHole: 1, endHole: 18 };
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null;
@@ -453,9 +467,14 @@
 
         function goToStep3() {
             roundData.formats = [];
-            if(document.getElementById('fmt-1').checked) roundData.formats.push(1);
-            if(document.getElementById('fmt-2').checked) roundData.formats.push(2);
-            if(document.getElementById('fmt-3').checked) roundData.formats.push(3);
+            roundData.birdieRules = {}; // NEW: Capture the specific rules
+            
+            [1, 2, 3].forEach(f => {
+                if(document.getElementById(`fmt-${f}`).checked) {
+                    roundData.formats.push(f);
+                    roundData.birdieRules[f] = document.getElementById(`fmt-${f}-birdies`).checked;
+                }
+            });
 
             roundData.groups = [];
             scoresDb = {};
@@ -618,7 +637,6 @@
             if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; }
             let parsedVal = parseInt(val);
             
-            // STRICT MID-ROUND SKIP CHECK
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let missedHole = null;
                 for (let h = roundData.startHole; h < hole; h++) {
@@ -631,7 +649,6 @@
                 }
             }
 
-            // Save Standard Score
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 if (!scoresDb[groupId]) scoresDb[groupId] = {};
                 if (!scoresDb[groupId][playerId]) scoresDb[groupId][playerId] = {};
@@ -643,7 +660,6 @@
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`);
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
-            // GHOST SYNC LOOP
             roundData.groups.forEach(ghostGroup => {
                 ghostGroup.players.forEach(ghostPlayer => {
                     if (ghostPlayer.isGhost && ghostPlayer.sourceG === groupId && ghostPlayer.sourceP === playerId) {
@@ -662,7 +678,6 @@
 
             setTimeout(() => { saveAppStateToCloud(); }, 10);
 
-            // Auto-Advance Logic
             if(val.length === 1) {
                 let inputs = Array.from(document.querySelectorAll('.score-input-field'));
                 let idx = inputs.indexOf(el);
@@ -815,7 +830,7 @@
 
                 fullHTML += `<tr><td colspan="${(segs.total.e - segs.total.s + 1) + 4}" style="padding:0; border:none; height:4px; background:#666;"></td></tr>`;
 
-                // TEAM SCORE ROWS
+                // TEAM SCORE ROWS (With Configurable Birdie Math)
                 rData.formats.forEach(f => {
                     fullHTML += `<tr class="team-math-row"><td style="text-align:left; border-color: #333; color:${g.color};">Team ${f}-Ball</td>`;
 
@@ -829,7 +844,11 @@
                             if(hs.length >= f) {
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
                                 let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                nets.slice(f).forEach(n => { if(n < 0) holeNet += n; });
+                                
+                                // NEW: Only apply extra birdies if the rule is checked for this format
+                                if (rData.birdieRules && rData.birdieRules[f]) {
+                                    nets.slice(f).forEach(n => { if(n < 0) holeNet += n; });
+                                }
 
                                 runningNet += holeNet;
                                 segmentNetObj.val += holeNet;
@@ -902,7 +921,6 @@
             
             if(potPerBet > 0) {
                 let teamPayouts = {};
-                // filter(p => !p.isGhost) ensures Ghost players aren't included in the split math
                 rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: g.color, n: g.captain.split(' ')[0], count: g.players.filter(p => !p.isGhost).length }; });
 
                 rData.formats.forEach(f => {
@@ -917,7 +935,11 @@
                             if(hs.length >= f) {
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
                                 let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                                
+                                // NEW: Configurable Birdie Rule
+                                if (rData.birdieRules && rData.birdieRules[f]) {
+                                    nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                                }
 
                                 tot += net;
                                 if(h >= segs.front.s && h <= segs.front.e) { f9+=net; fPlayed++; }
@@ -1001,7 +1023,10 @@
                         if(hs.length >= f) {
                             let nets = hs.map(s => s - par).sort((a,b) => a-b);
                             let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                            nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                            
+                            if (rData.birdieRules && rData.birdieRules[f]) {
+                                nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                            }
                             
                             teamTotals[f] += net;
                             if(h >= segs.front.s && h <= segs.front.e) teamFront[f] += net;
@@ -1064,7 +1089,10 @@
                             if(hs.length>=f) {
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
                                 let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                                
+                                if (rData.birdieRules && rData.birdieRules[f]) {
+                                    nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                                }
 
                                 tot+=net;
                                 if(h>=segs.front.s && h<=segs.front.e){f9+=net; fp++;}
@@ -1293,6 +1321,8 @@
             if(typeof activeViewRoundData.course === 'string') { activeViewRoundData.course = allAvailableCourses[activeViewRoundData.course] || { name: "Archived Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; }
             if(!activeViewRoundData.playMode) { activeViewRoundData.playMode = '18'; activeViewRoundData.startHole = 1; activeViewRoundData.endHole = 18; }
             if(!activeViewRoundData.formats) { activeViewRoundData.formats = [1, 2]; }
+            // NEW: Fallback for older archives that didn't have configurable rules
+            if(!activeViewRoundData.birdieRules) { activeViewRoundData.birdieRules = {1:true, 2:true, 3:false}; }
 
             try {
                 document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb);
