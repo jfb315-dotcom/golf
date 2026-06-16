@@ -743,27 +743,30 @@
                 // TEAM SCORE ROWS (Cumulative + All Birdies Count Math)
                 rData.formats.forEach(f => {
                     fullHTML += `<tr class="team-math-row"><td style="text-align:left; border-color: #333; color:${g.color};">Team ${f}-Ball</td>`;
-                    let runningNet = 0; // Tracks the cumulative score left-to-right
 
                     let renderTeamSegment = (start, end, segmentNetObj) => {
+                        let runningNet = 0; // NEW: Resets to 0 at the start of every 9-hole segment
+
                         for(let h=start; h<=end; h++) {
                             let par = rData.course.pars[h-1];
                             let hs = [];
                             g.players.forEach(p => { if(sDb[g.id]?.[p.id]?.[h]) hs.push(sDb[g.id][p.id][h]); });
                             
                             if(hs.length >= f) {
-                                // 1. Translate all scores to net par and sort lowest to highest
+                                // 1. Translate scores to relation to par and sort best to worst
                                 let nets = hs.map(s => s - par).sort((a,b) => a-b);
-                                // 2. Take the top F scores and sum them
+                                
+                                // 2. Take the base format scores (e.g. the 1 best, or 2 best)
                                 let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                // 3. ALL BIRDIES COUNT RULE: Loop through the remaining scores and add any negative numbers
+                                
+                                // 3. ALL BIRDIES COUNT: Check remaining balls and add any extra negatives
                                 nets.slice(f).forEach(n => { if(n < 0) holeNet += n; });
 
                                 // Update running totals
                                 runningNet += holeNet;
                                 segmentNetObj.val += holeNet;
                                 
-                                // Print the cumulative score in the cell
+                                // Print the cumulative score as we go for this segment
                                 fullHTML += `<td class="${formatNetToParCSS(runningNet)}" style="border-color:#333;">${formatNetToPar(runningNet)}</td>`;
                             } else {
                                 fullHTML += `<td style="border-color:#333; color:#555;">-</td>`;
@@ -771,10 +774,15 @@
                         }
                     };
 
+                    // Process Front 9
                     let tfObj = {val: 0}; renderTeamSegment(segs.front.s, segs.front.e, tfObj);
                     fullHTML += `<td class="out-in-col ${formatNetToParCSS(tfObj.val)}" style="border-color:#444;">${formatNetToPar(tfObj.val)}</td>`;
+                    
+                    // Process Back 9 (RunningNet starts fresh at 0 here!)
                     let tbObj = {val: 0}; renderTeamSegment(segs.back.s, segs.back.e, tbObj);
                     fullHTML += `<td class="out-in-col ${formatNetToParCSS(tbObj.val)}" style="border-color:#444;">${formatNetToPar(tbObj.val)}</td>`;
+                    
+                    // Overall Total
                     let overallNet = tfObj.val + tbObj.val;
                     fullHTML += `<td class="out-in-col ${formatNetToParCSS(overallNet)}" style="border-color:#444;">${formatNetToPar(overallNet)}</td></tr>`;
                 });
@@ -872,8 +880,8 @@
                         });
                     };
 
-                    processBet(f9Data, "First Set");
-                    processBet(b9Data, "Second Set");
+                    processBet(f9Data, "Front 9");
+                    processBet(b9Data, "Back 9");
                     processBet(totData, "Overall");
                 });
 
