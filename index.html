@@ -20,6 +20,16 @@
 
         body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 15px; padding-bottom: 90px; touch-action: manipulation; }
         
+        .app-logo {
+            position: fixed;
+            top: 15px;
+            right: 15px;
+            width: 60px;
+            height: auto;
+            z-index: 9999;
+            pointer-events: none; /* Lets you click through it */
+        }
+
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; }
         .screen { display: none; } .screen.active { display: block; }
         
@@ -136,8 +146,10 @@
 </head>
 <body>
 
+    <img src="logo.png" class="app-logo" alt="JB Fishing and Golf">
+
     <div id="step-1" class="screen card active">
-        <h2>Golf Tournament Setup</h2>
+        <h2>Tournament Setup</h2>
         <label>Select Course</label>
         <select id="course-selector"></select>
         <p style="font-size: 0.9em; color: var(--accent-gold); cursor: pointer; text-decoration: underline; margin-top: 5px; display: inline-block;" onclick="switchScreen('step-1', 'step-add-course')">+ Create Custom Course</p>
@@ -326,7 +338,7 @@
 
     <script>
         // ==========================================
-        // 1. FIREBASE CONFIGURATION 
+        // 1. FIREBASE CONFIGURATION
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
@@ -385,7 +397,7 @@
                 return [{ s: 1, e: 9, label: 'F', id: 2, type: 'front' }];
             } else {
                 if (rData.startType === 'back') {
-                    // ID 1 applies the Red Border CSS (.b-top-1), ID 2 applies the Green Border CSS (.b-top-2)
+                    // ID 1 = Red Border (.b-top-1), ID 2 = Green Border (.b-top-2)
                     return [
                         { s: 10, e: 18, label: '1ST', id: 1, type: 'back' },
                         { s: 1, e: 9, label: '2ND', id: 2, type: 'front' }
@@ -925,7 +937,6 @@
             document.getElementById('step-dashboard').classList.add('active');
         }
 
-        // --- DYNAMIC BORDER HELPER ---
         function getBorders(isActive, segId, type, h, seg, isLastRow) {
             if (!isActive || segId === 0) return "";
             let cls = "";
@@ -943,7 +954,6 @@
             let isBackStart18 = (rData.playMode === '18' && rData.startType === 'back');
             let orderedSegments = getOrderedSegments(rData);
 
-            // Pre-calculate Format Winners for flashing outlines
             let formatWinners = {}; 
             rData.formats.forEach(f => {
                 formatWinners[f] = { 
@@ -1017,7 +1027,6 @@
                     </div>
                     <div class="table-wrapper"><table style="width: 100%; min-width: 800px; text-align: center; border-collapse: collapse;"><thead><tr>`;
                 
-                // HEADER ROW
                 let headerRow = `<th style="text-align:left; background:var(--bg-table); color:${g.color}; border-color:var(--border-color);">Hole</th>`;
                 orderedSegments.forEach(seg => {
                     for(let i=seg.s; i<=seg.e; i++) {
@@ -1030,7 +1039,6 @@
                 }
                 fullHTML += headerRow + `</tr></thead><tbody>`;
                 
-                // PAR ROW
                 let parRow = `<tr class="par-row"><td style="text-align:left; color:var(--text-muted); border-color:var(--border-color);">PAR</td>`;
                 let totalPar = 0;
                 orderedSegments.forEach(seg => {
@@ -1045,7 +1053,6 @@
                 if (orderedSegments.length > 1) parRow += `<td class="out-in-col" style="border-color:var(--border-color);">${totalPar}</td>`;
                 fullHTML += parRow + `</tr>`;
 
-                // PLAYERS
                 g.players.forEach(p => {
                     let playerRow = `<tr><td style="text-align:left; white-space:nowrap; font-size: 15px; border-color: var(--border-color);"><b>${p.name.split(' ')[0]}</b></td>`;
                     let totalScore = 0;
@@ -1082,11 +1089,9 @@
                     fullHTML += playerRow + `</tr>`;
                 });
 
-                // TEAM DIVIDER
                 let totalCols = orderedSegments.reduce((acc, seg) => acc + (seg.e - seg.s + 2), 0) + (orderedSegments.length > 1 ? 1 : 0) + 1;
                 fullHTML += `<tr><td colspan="${totalCols}" style="padding:0; border:none; height:4px; background:var(--border-color);"></td></tr>`;
 
-                // TEAM MATH
                 rData.formats.forEach(f => {
                     let teamRow = `<tr class="team-math-row"><td style="text-align:left; border-color: var(--border-color); color:${g.color};">Team ${f}-Ball</td>`;
                     let totalNet = 0;
@@ -1107,10 +1112,7 @@
                             if(hs.length >= f) {
                                 let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
                                 let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                
-                                if (rData.birdieRules && rData.birdieRules[f]) {
-                                    nets.slice(f).forEach(n => { if(n < 0) holeNet += n; });
-                                }
+                                if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) holeNet += n; }); }
 
                                 segNet += holeNet;
                                 segPlayed++;
