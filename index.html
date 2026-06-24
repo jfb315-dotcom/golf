@@ -24,11 +24,24 @@
             position: fixed;
             top: 15px;
             right: 15px;
-            width: 110px;
+            width: 90px;
             height: auto;
             z-index: 9999;
             pointer-events: none; /* Lets you click through it */
         }
+
+        /* SKIN ORBIT CSS */
+        @keyframes rotate-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
+        .skin-container { position: relative; display: inline-flex; align-items: center; justify-content: center; }
+        .skin-orbit {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 65px; height: 65px;
+            animation: rotate-orbit 7s linear infinite;
+            pointer-events: none;
+            overflow: visible;
+        }
+        .skin-orbit text { fill: var(--accent-gold); font-size: 15px; font-weight: bold; letter-spacing: 2px; text-shadow: 1px 1px 2px #000; }
 
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; }
         .screen { display: none; } .screen.active { display: block; }
@@ -84,12 +97,12 @@
         .team-math-row { background-color: #132116; font-weight: bold; font-size: 15px; }
 
         /* BOLD OUTLINE CSS FOR SWAPPED NINES */
-        .b-top-1 { border-top: 3px solid #ff6b6b !important; } /* Red for 1st Set (10-18) */
+        .b-top-1 { border-top: 3px solid #ff6b6b !important; } 
         .b-bot-1 { border-bottom: 3px solid #ff6b6b !important; }
         .b-left-1 { border-left: 3px solid #ff6b6b !important; }
         .b-right-1 { border-right: 3px solid #ff6b6b !important; }
 
-        .b-top-2 { border-top: 3px solid #7ced7e !important; } /* Green for 2nd Set (1-9) */
+        .b-top-2 { border-top: 3px solid #7ced7e !important; } 
         .b-bot-2 { border-bottom: 3px solid #7ced7e !important; }
         .b-left-2 { border-left: 3px solid #7ced7e !important; }
         .b-right-2 { border-right: 3px solid #7ced7e !important; }
@@ -197,7 +210,7 @@
             </div>
         </div>
 
-        <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
+        <button class="btn-primary" onclick="goToStep3()">Next: Rosters</button>
         <hr style="border-color: var(--border-color); margin: 30px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
     </div>
@@ -220,7 +233,7 @@
         </div>
         <div id="roster-container"></div>
         <button class="btn-secondary" onclick="switchScreen('step-2', 'step-1')">← Back</button>
-        <button class="btn-primary" onclick="goToStep3()">Start Round & Sync to Cloud</button>
+        <button class="btn-primary" onclick="startRound()">Start Round & Sync to Cloud</button>
     </div>
 
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
@@ -338,7 +351,7 @@
 
     <script>
         // ==========================================
-        // 1. FIREBASE CONFIGURATION
+        // 1. FIREBASE CONFIGURATION 
         // ==========================================
         const firebaseConfig = {
             apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
@@ -397,7 +410,6 @@
                 return [{ s: 1, e: 9, label: 'F', id: 2, type: 'front' }];
             } else {
                 if (rData.startType === 'back') {
-                    // ID 1 = Red Border (.b-top-1), ID 2 = Green Border (.b-top-2)
                     return [
                         { s: 10, e: 18, label: '1ST', id: 1, type: 'back' },
                         { s: 1, e: 9, label: '2ND', id: 2, type: 'front' }
@@ -477,7 +489,6 @@
         function switchScreen(hide, show) {
             document.getElementById(hide).classList.remove('active');
             document.getElementById(show).classList.add('active');
-            window.scrollTo(0,0);
         }
 
         // ==========================================
@@ -524,7 +535,7 @@
             switchScreen('step-add-course', 'step-1');
         }
 
-        function goToStep2() {
+        function goToStep3() {
             roundData.course = allAvailableCourses[document.getElementById('course-selector').value];
             roundData.betAmount = parseInt(document.getElementById('bet-amount').value) || 0;
             roundData.skinsAmount = parseInt(document.getElementById('skins-amount').value) || 0;
@@ -557,9 +568,10 @@
             }
             document.getElementById('roster-container').innerHTML = html;
             switchScreen('step-1', 'step-2');
+            window.scrollTo(0,0);
         }
 
-        function goToStep3() {
+        function startRound() {
             roundData.formats = [];
             roundData.birdieRules = {}; 
             
@@ -611,6 +623,9 @@
             renderPillNav();
             renderScoreEntry();
             document.getElementById('step-3').classList.add('active');
+            
+            // Initial forced scroll to top for start of scoring
+            window.scrollTo(0,0);
         }
 
         // ==========================================
@@ -648,7 +663,7 @@
                 roundData.currentHole = seq[nextIdx];
                 saveAppStateToCloud(); 
                 renderScoreEntry();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                // We specifically REMOVED the window.scrollTo here so the user isn't forced to the top on every single hole swap.
             }
         }
 
@@ -833,7 +848,17 @@
                             }
                         }
                     } else {
-                        setTimeout(() => { changeHole(1); }, 300); 
+                        // AUTO-FOCUS NEXT HOLE BRIDGE
+                        setTimeout(() => { 
+                            changeHole(1); 
+                            setTimeout(() => {
+                                let nextInputs = Array.from(document.querySelectorAll('.score-input-field'));
+                                if (nextInputs.length > 0 && !nextInputs[0].readOnly) {
+                                    nextInputs[0].focus();
+                                    nextInputs[0].select();
+                                }
+                            }, 50);
+                        }, 300); 
                     }
                 }
             }
@@ -954,13 +979,10 @@
             let isBackStart18 = (rData.playMode === '18' && rData.startType === 'back');
             let orderedSegments = getOrderedSegments(rData);
 
+            // PRE-CALCULATE WINNERS FOR FLASHING BORDERS
             let formatWinners = {}; 
             rData.formats.forEach(f => {
-                formatWinners[f] = { 
-                    front: { min: Infinity, count: 0 }, 
-                    back: { min: Infinity, count: 0 }, 
-                    overall: { min: Infinity, count: 0 } 
-                };
+                formatWinners[f] = { front: { min: Infinity, count: 0 }, back: { min: Infinity, count: 0 }, overall: { min: Infinity, count: 0 } };
                 let fScores=[], bScores=[], oScores=[];
                 
                 rData.groups.forEach(g => {
@@ -992,22 +1014,30 @@
                     if(fPlayed > 0 || bPlayed > 0) oScores.push(fNet + bNet);
                 });
                 
-                if(fScores.length > 0) {
-                    let min = Math.min(...fScores);
-                    formatWinners[f].front.min = min;
-                    formatWinners[f].front.count = fScores.filter(s => s === min).length;
-                }
-                if(bScores.length > 0) {
-                    let min = Math.min(...bScores);
-                    formatWinners[f].back.min = min;
-                    formatWinners[f].back.count = bScores.filter(s => s === min).length;
-                }
-                if(oScores.length > 0) {
-                    let min = Math.min(...oScores);
-                    formatWinners[f].overall.min = min;
-                    formatWinners[f].overall.count = oScores.filter(s => s === min).length;
-                }
+                if(fScores.length > 0) { let min = Math.min(...fScores); formatWinners[f].front.min = min; formatWinners[f].front.count = fScores.filter(s => s === min).length; }
+                if(bScores.length > 0) { let min = Math.min(...bScores); formatWinners[f].back.min = min; formatWinners[f].back.count = bScores.filter(s => s === min).length; }
+                if(oScores.length > 0) { let min = Math.min(...oScores); formatWinners[f].overall.min = min; formatWinners[f].overall.count = oScores.filter(s => s === min).length; }
             });
+
+            // PRE-CALCULATE PURE SKINS FOR GOLD ORBITS
+            let skinsWon = {};
+            for(let h=1; h<=18; h++) {
+                let par = rData.course.pars[h-1];
+                let hs = [];
+                rData.groups.forEach(g => {
+                    g.players.forEach(p => { 
+                        let s = sDb[g.id]?.[p.id]?.[h]; 
+                        if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, s: s}); 
+                    });
+                });
+                if(hs.length > 0) {
+                    let min = Math.min(...hs.map(x=>x.s));
+                    if(min < par) {
+                        let winners = hs.filter(x=>x.s===min);
+                        if(winners.length===1) skinsWon[h] = `${winners[0].gid}-${winners[0].id}`;
+                    }
+                }
+            }
 
             if (rData.playMode === '18' && rData.startType === 'back') {
                 fullHTML += `<div style="background: rgba(255, 107, 107, 0.1); border: 1px solid #ff6b6b; color: #ff6b6b; padding: 10px; border-radius: 6px; text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px;">
@@ -1076,7 +1106,22 @@
                                     displayScore = `${score}/${net}`;
                                 }
                                 
-                                playerRow += `<td class="${cssClass} ${getBorders(isBackStart18, seg.id, 'player_hole', h, seg, false)}" style="border-color:var(--border-color); white-space: nowrap;">${displayScore}${dots}</td>`;
+                                let cellContent = `${displayScore}${dots}`;
+                                
+                                // INJECT GOLDEN SKIN ORBIT
+                                if (!p.isGhost && skinsWon[h] === `${g.id}-${p.id}`) {
+                                    let randId = Math.random().toString(36).substr(2, 9);
+                                    cellContent = `
+                                    <div class="skin-container">
+                                        <svg class="skin-orbit" viewBox="0 0 100 100">
+                                            <path id="skinPath-${randId}" d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0" fill="transparent"/>
+                                            <text><textPath href="#skinPath-${randId}" startOffset="0%">SKIN • SKIN • SKIN • </textPath></text>
+                                        </svg>
+                                        <span style="position:relative; z-index:2;">${cellContent}</span>
+                                    </div>`;
+                                }
+
+                                playerRow += `<td class="${cssClass} ${getBorders(isBackStart18, seg.id, 'player_hole', h, seg, false)}" style="border-color:var(--border-color); white-space: nowrap;">${cellContent}</td>`;
                             } else {
                                 segPlayed = false; playedAll = false;
                                 playerRow += `<td class="score-cell ${getBorders(isBackStart18, seg.id, 'player_hole', h, seg, false)}" style="border-color:var(--border-color);">-</td>`;
@@ -1167,6 +1212,7 @@
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
             if(totalPlayers === 0) return "<p>No data.</p>";
 
+            // 1. SKINS SUMMARY
             let skinsHTML = `<div class="payout-header">🔥 Gross Skins Payout</div>`;
             let skinsPot = totalPlayers * rData.skinsAmount;
             let playerSkins = {}; 
@@ -1178,9 +1224,7 @@
                 rData.groups.forEach(g => {
                     g.players.forEach(p => { 
                         let s = sDb[g.id]?.[p.id]?.[h]; 
-                        if(s && !p.isGhost) {
-                            hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); 
-                        }
+                        if(s && !p.isGhost) { hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); }
                     });
                 });
                 if(hs.length > 0) {
@@ -1209,11 +1253,12 @@
                 skinsHTML += `<div class="payout-row">No gross skins won / No skins pot.</div>`;
             }
 
+            // 2. TEAM BETS SUMMARY
             let teamHTML = `<div class="payout-header" style="margin-top:25px;">💰 Team Bet Payouts</div>`;
             let potPerBet = totalPlayers * rData.betAmount;
+            let teamPayouts = {};
             
             if(potPerBet > 0) {
-                let teamPayouts = {};
                 rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: g.color, n: g.captain.split(' ')[0], count: g.players.filter(p => !p.isGhost).length }; });
 
                 rData.formats.forEach(f => {
@@ -1315,9 +1360,7 @@
                     }
                 });
             });
-            if (strokeText !== '') {
-                st += `🎯 HANDICAP STROKES:\n` + strokeText + `\n`;
-            }
+            if (strokeText !== '') { st += `🎯 HANDICAP STROKES:\n` + strokeText + `\n`; }
 
             st += `🏆 TEAM STANDINGS (To Par):\n`;
             rData.groups.forEach(g => {
@@ -1393,11 +1436,12 @@
                 });
             } else { st += `  No gross skins won.\n`; }
 
-            st += `\n💸 TEAM PAYOUTS:\n`;
-            let tp = {}; rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.filter(p => !p.isGhost).length});
+            let tp = {}; 
+            rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.filter(p => !p.isGhost).length});
             
             if(potPerBet = totalPlayers * rData.betAmount > 0) {
                 let pot = totalPlayers * rData.betAmount;
+                st += `\n💸 TEAM PAYOUTS:\n`;
                 
                 rData.formats.forEach(f => {
                     let fD=[], bD=[], tD=[];
