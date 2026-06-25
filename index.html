@@ -18,30 +18,31 @@
             --border-color: #36543b;   
         }
 
-        /* Reverted Padding to comfortable sizing and fixed Wobble */
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 15px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; }
+        /* 5px top padding to allow logo to touch the top */
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; }
         
+        /* 120px Centered Logo with NEGATIVE margins to kill invisible image padding */
         .app-logo {
             display: block;
-            width: 100px;
+            width: 120px;
             height: auto;
-            margin: 0px auto 15px auto; 
+            margin: -10px auto -20px auto; /* Pulls logo UP, and pulls content below it UP */
             position: relative;
             z-index: 500;
         }
 
-        /* REVERTED SKIN ORBIT CSS */
+        /* MICRO SKIN ORBIT CSS */
         @keyframes rotate-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         .skin-container { position: relative; display: inline-flex; align-items: center; justify-content: center; }
         .skin-orbit {
             position: absolute;
             top: 50%; left: 50%;
-            width: 65px; height: 65px;
+            width: 36px; height: 36px;
             animation: rotate-orbit 7s linear infinite;
             pointer-events: none;
             overflow: visible;
         }
-        .skin-orbit text { fill: var(--accent-gold); font-size: 15px; font-weight: bold; letter-spacing: 2px; text-shadow: 1px 1px 2px #000; }
+        .skin-orbit text { fill: var(--accent-gold); font-size: 21px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
 
         /* CENTER POPUP ROAST TOAST */
         .joke-toast {
@@ -71,7 +72,6 @@
             opacity: 1;
         } 
 
-        /* Reverted comfortable card sizes */
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; }
         .screen { display: none; } .screen.active { display: block; }
         
@@ -120,7 +120,6 @@
         .roster-name-input { flex: 2; margin-bottom: 0 !important; }
         .roster-stroke-input { flex: 1; text-align: center; margin-bottom: 0 !important; padding: 12px 5px !important; }
 
-        /* RESTORED LARGER TABLE CSS */
         .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 0px; }
         table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; }
         th, td { border: 1px solid var(--border-color); padding: 8px; }
@@ -282,7 +281,7 @@
         </div>
         <div id="roster-container"></div>
         
-        <!-- NEW HOME FOR THE GHOST BUTTON -->
+        <!-- GHOST BUTTON MOVED HERE -->
         <button class="btn-secondary" onclick="openPreRoundBlindDrawModal()" style="border-color: var(--accent-gold); color: var(--accent-gold); margin-top: 15px;">🔀 Assign Blind Draw (Ghost)</button>
         
         <hr style="border-color: var(--border-color); margin: 25px 0;">
@@ -1325,14 +1324,14 @@
                                 
                                 let cellContent = `${displayScore}${dots}`;
                                 
-                                // INJECT GOLDEN SKIN ORBIT
+                                // INJECT GOLDEN SKIN ORBIT - Micro-sized to 36px
                                 if (!p.isGhost && skinsWon[h] === `${g.id}-${p.id}`) {
                                     let randId = Math.random().toString(36).substr(2, 9);
                                     cellContent = `
                                     <div class="skin-container">
                                         <svg class="skin-orbit" viewBox="0 0 100 100">
-                                            <path id="skinPath-${randId}" d="M 50, 50 m -35, 0 a 35,35 0 1,1 70,0 a 35,35 0 1,1 -70,0" fill="transparent"/>
-                                            <text><textPath href="#skinPath-${randId}" startOffset="0%" textLength="215" lengthAdjust="spacing">SKIN • SKIN • SKIN • </textPath></text>
+                                            <path id="skinPath-${randId}" d="M 50, 50 m -40, 0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0" fill="transparent"/>
+                                            <text><textPath href="#skinPath-${randId}" startOffset="0%" textLength="250" lengthAdjust="spacing">SKIN • SKIN • SKIN • </textPath></text>
                                         </svg>
                                         <span style="position:relative; z-index:2;">${cellContent}</span>
                                     </div>`;
