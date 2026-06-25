@@ -18,20 +18,20 @@
             --border-color: #36543b;   
         }
 
-        /* 0px top padding to allow logo to touch the top */
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0px 15px 90px 15px; touch-action: manipulation; }
+        /* Cinched up outer padding */
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0px 10px 80px 10px; touch-action: manipulation; }
         
-        /* Centered Logo with NEGATIVE margins to kill invisible image padding */
+        /* Tightened Logo */
         .app-logo {
             display: block;
             width: 100px;
             height: auto;
-            margin: -5px auto -15px auto; /* Pulls logo UP, and pulls content below it UP */
+            margin: -5px auto -15px auto; 
             position: relative;
             z-index: 500;
         }
 
-        /* MICRO SKIN ORBIT CSS - Shrunk to 36px */
+        /* MICRO SKIN ORBIT CSS */
         @keyframes rotate-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         .skin-container { position: relative; display: inline-flex; align-items: center; justify-content: center; }
         .skin-orbit {
@@ -69,50 +69,58 @@
         }
         .joke-toast.show { top: 20px; } 
 
-        .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; }
+        /* Cinched up cards */
+        .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 15px; }
         .screen { display: none; } .screen.active { display: block; }
         
-        /* Force Headings up */
-        h2 { margin-top: 0px; margin-bottom: 15px; }
+        /* Force Headings up and smaller */
+        h2 { margin-top: 0px; margin-bottom: 10px; font-size: 1.4em; }
 
-        label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
-        input[type="number"], input[type="text"], input[type="tel"], select, input[type="password"] { width: 100%; padding: 12px; box-sizing: border-box; background: #1e3323; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
+        /* Cinched Labels and Inputs */
+        label { display: block; margin: 10px 0 4px; color: var(--text-muted); font-size: 0.8em; text-transform: uppercase; font-weight: bold;}
+        input[type="number"], input[type="text"], input[type="tel"], select, input[type="password"] { width: 100%; padding: 10px; box-sizing: border-box; background: #1e3323; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 15px; margin-bottom: 8px; }
         
+        /* Cinched Buttons */
         button { font-family: 'Segoe UI', Tahoma, sans-serif; }
-        .btn-primary { background-color: var(--accent-gold); color: #000; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 15px; }
-        .btn-secondary { background-color: transparent; color: var(--text-muted); width: 100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
-        .btn-success { background-color: #3ea84e; color: white; width: 100%; padding: 18px; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 10px rgba(62, 168, 78, 0.4); }
-        .btn-danger { background-color: #c94b4b; color: white; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
+        .btn-primary { background-color: var(--accent-gold); color: #000; width: 100%; padding: 12px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
+        .btn-secondary { background-color: transparent; color: var(--text-muted); width: 100%; padding: 12px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 15px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 8px; }
+        .btn-success { background-color: #3ea84e; color: white; width: 100%; padding: 15px; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 15px; box-shadow: 0 4px 10px rgba(62, 168, 78, 0.4); }
+        .btn-danger { background-color: #c94b4b; color: white; width: 100%; padding: 12px; border: none; border-radius: 4px; font-size: 15px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
 
-        .format-container { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; background: #1e3323; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); }
-        .format-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d4731; padding-bottom: 10px; }
+        /* Cinched Format Options */
+        .format-container { display: flex; flex-direction: column; gap: 8px; margin-top: 0px; background: #1e3323; padding: 12px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .format-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d4731; padding-bottom: 8px; }
         .format-row:last-child { border-bottom: none; padding-bottom: 0; }
-        .format-label { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: var(--accent-gold); text-transform: none; margin: 0; }
-        .birdie-label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); font-weight: normal; text-transform: none; margin: 0; }
-        .format-container input { width: 18px; height: 18px; accent-color: var(--accent-gold); margin: 0;}
+        .format-label { display: flex; align-items: center; gap: 8px; font-size: 15px; font-weight: bold; color: var(--accent-gold); text-transform: none; margin: 0; }
+        .birdie-label { display: flex; align-items: center; gap: 5px; font-size: 12px; color: var(--text-muted); font-weight: normal; text-transform: none; margin: 0; }
+        .format-container input { width: 16px; height: 16px; accent-color: var(--accent-gold); margin: 0;}
 
-        .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 10px 0; border-bottom: 1px solid #2d4731; margin-bottom: 15px; }
-        .pill-nav { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; scrollbar-width: none; }
+        /* Live Buy-In Display */
+        .live-buyin-card { background: #132116; padding: 12px; border-radius: 6px; border: 1px solid var(--accent-gold); margin-top: 10px; margin-bottom: 15px; text-align: center; color: var(--accent-gold); font-size: 1.1em; font-weight: bold; box-shadow: 0 0 10px rgba(212, 184, 114, 0.1); }
+        .live-buyin-val { color: #fff; font-size: 1.2em; margin-left: 5px;}
+
+        .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 8px 0; border-bottom: 1px solid #2d4731; margin-bottom: 12px; }
+        .pill-nav { display: flex; overflow-x: auto; gap: 8px; padding-bottom: 8px; scrollbar-width: none; }
         .pill-nav::-webkit-scrollbar { display: none; }
-        .pill { flex-shrink: 0; padding: 10px 20px; background: #1e3323; border-radius: 25px; border: 1px solid var(--border-color); color: var(--text-main); font-size: 15px; cursor: pointer; transition: all 0.2s; }
+        .pill { flex-shrink: 0; padding: 8px 16px; background: #1e3323; border-radius: 20px; border: 1px solid var(--border-color); color: var(--text-main); font-size: 14px; cursor: pointer; transition: all 0.2s; }
         .pill.active { background: var(--accent-gold); color: #000; font-weight: bold; border-color: var(--accent-gold); }
 
-        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);}
-        .hole-nav button { background: #1e3323; color: var(--text-main); border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold; width: auto; margin: 0;}
-        .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center;}
+        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color);}
+        .hole-nav button { background: #1e3323; color: var(--text-main); border: none; padding: 8px 15px; border-radius: 4px; font-size: 16px; cursor: pointer; font-weight: bold; width: auto; margin: 0;}
+        .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center; font-size: 1.3em;}
         
-        .team-card { background: #1e3323; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #4a6e50; }
-        .team-header { border-bottom: 1px solid #2d4731; padding-bottom: 10px; margin-bottom: 10px; display: block;}
+        .team-card { background: #1e3323; padding: 12px; border-radius: 8px; margin-bottom: 12px; border-left: 5px solid #4a6e50; }
+        .team-header { border-bottom: 1px solid #2d4731; padding-bottom: 8px; margin-bottom: 10px; display: block;}
         
-        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
-        .player-name { flex: 1; font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 5px;}
-        .par-indicator { font-size: 13px; font-weight: bold; width: 85px; text-align: right; text-transform: uppercase; flex-shrink: 0; }
-        .score-box { width: 65px !important; height: 45px !important; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #132116 !important; padding: 5px !important; border: 2px solid var(--border-color) !important; color: var(--text-main) !important; border-radius: 6px; flex-shrink: 0; margin-bottom: 0 !important; }
+        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
+        .player-name { flex: 1; font-size: 16px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 5px;}
+        .par-indicator { font-size: 12px; font-weight: bold; width: 75px; text-align: right; text-transform: uppercase; flex-shrink: 0; }
+        .score-box { width: 55px !important; height: 40px !important; box-sizing: border-box; text-align: center; font-size: 20px; font-weight: bold; background: #132116 !important; padding: 5px !important; border: 2px solid var(--border-color) !important; color: var(--text-main) !important; border-radius: 6px; flex-shrink: 0; margin-bottom: 0 !important; }
         .score-box:focus { border-color: var(--accent-gold) !important; outline: none; background: #0c140d !important; box-shadow: 0 0 10px var(--accent-gold); }
 
-        .roster-player-block { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
+        .roster-player-block { display: flex; gap: 8px; align-items: center; margin-bottom: 8px; }
         .roster-name-input { flex: 2; margin-bottom: 0 !important; }
-        .roster-stroke-input { flex: 1; text-align: center; margin-bottom: 0 !important; padding: 12px 5px !important; }
+        .roster-stroke-input { flex: 1; text-align: center; margin-bottom: 0 !important; padding: 10px 5px !important; }
 
         /* SLIMMED DOWN MOBILE SCORECARD CSS */
         .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 0px; }
@@ -161,27 +169,27 @@
             font-size: 1.15em;
         }
 
-        .par-setup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+        .par-setup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 10px; }
         .par-setup-item { display: flex; align-items: center; justify-content: space-between; background: #1e3323; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);}
         .par-setup-item label { margin: 0; font-size: 12px; }
-        .par-setup-item input { width: 50px !important; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
+        .par-setup-item input { width: 45px !important; margin: 0; padding: 5px; text-align: center; font-size: 15px;}
 
-        .payout-card { background: #1e3323; border-radius: 8px; border-left: 5px solid #3ea84e; padding: 15px; margin-bottom: 15px;}
-        .payout-header { font-size: 1.2em; font-weight: bold; color: #7ced7e; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;}
-        .payout-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .payout-card { background: #1e3323; border-radius: 8px; border-left: 5px solid #3ea84e; padding: 12px; margin-bottom: 12px;}
+        .payout-header { font-size: 1.2em; font-weight: bold; color: #7ced7e; margin-bottom: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;}
+        .payout-row { display: flex; justify-content: space-between; font-size: 13px; margin-bottom: 5px; }
         .payout-winner { color: var(--text-main); font-weight: bold; }
         .payout-amount { color: var(--accent-gold); font-weight: bold; }
 
-        .archive-item { display: flex; align-items: center; background: #1e3323; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
-        .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
+        .archive-item { display: flex; align-items: center; background: #1e3323; padding: 12px; border-radius: 6px; margin-bottom: 8px; border-left: 4px solid var(--accent-gold); gap: 12px;}
+        .archive-checkbox { width: 20px; height: 20px; accent-color: #c94b4b; }
         .archive-info { flex: 1; }
 
-        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 15px; }
         .modal-overlay.active { display: flex; }
-        .modal-content { background: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .pulse-text { animation: pulse 1.5s infinite; color: var(--accent-gold); font-size: 14px; text-align: center; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
+        .modal-content { background: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 15px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
+        .pulse-text { animation: pulse 1.5s infinite; color: var(--accent-gold); font-size: 13px; text-align: center; margin-bottom: 12px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
         @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
-        .share-text-area { width: 100%; height: 250px; background: #132116; color: #7ced7e; border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 15px;}
+        .share-text-area { width: 100%; height: 220px; background: #132116; color: #7ced7e; border: 1px solid var(--border-color); border-radius: 4px; padding: 12px; font-family: monospace; font-size: 13px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 12px;}
     </style>
 
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
@@ -195,14 +203,14 @@
         <h2>Tournament Setup</h2>
         <label>Select Course</label>
         <select id="course-selector"></select>
-        <p style="font-size: 0.9em; color: var(--accent-gold); cursor: pointer; text-decoration: underline; margin-top: 5px; display: inline-block;" onclick="switchScreen('step-1', 'step-add-course')">+ Create Custom Course</p>
+        <p style="font-size: 0.9em; color: var(--accent-gold); cursor: pointer; text-decoration: underline; margin-top: 0px; margin-bottom: 10px; display: inline-block;" onclick="switchScreen('step-1', 'step-add-course')">+ Create Custom Course</p>
 
-        <div style="display: flex; gap: 15px; margin-top: 15px;">
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
             <div style="flex: 1;"><label>Groups?</label><input type="number" id="group-count" min="1" max="10" value="2" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
             <div style="flex: 1;"><label>Players/Group?</label><input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
         </div>
 
-        <div style="display: flex; gap: 15px; margin-top: 5px;">
+        <div style="display: flex; gap: 10px; margin-top: 0px;">
             <div style="flex: 1;">
                 <label>Format</label>
                 <select id="hole-format" onchange="toggle9HoleOptions()">
@@ -220,37 +228,42 @@
         </div>
 
         <!-- 9-Hole Match Type Expansion Option Dropdown -->
-        <div id="nine-hole-match-type-container" style="display: none; margin-top: 5px;">
+        <div id="nine-hole-match-type-container" style="display: none; margin-top: 0px;">
             <label>9-Hole Match Type</label>
-            <select id="nine-hole-type">
+            <select id="nine-hole-type" onchange="calculateLiveBuyIn()">
                 <option value="straight">Straight 9 Holes (1 Bet Total)</option>
                 <option value="nassau">Split 4/5 Nassau (3 Bets: First 4, Last 5, Overall)</option>
             </select>
         </div>
 
-        <div style="display: flex; gap: 15px; margin-top: 5px;">
-            <div style="flex: 1;"><label>Per Bet ($)</label><input type="number" id="bet-amount" min="0" value="20" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
-            <div style="flex: 1;"><label>Skins Buy-in ($)</label><input type="number" id="skins-amount" min="0" value="10" inputmode="numeric" onfocus="this.select()" onclick="this.select()"></div>
-        </div>
-
         <label>Team Formats & Custom Rules</label>
         <div class="format-container">
             <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball"> 1-Ball</label>
+                <label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball" onchange="calculateLiveBuyIn()"> 1-Ball</label>
                 <label class="birdie-label"><input type="checkbox" id="fmt-1-birdies"> All Birdies Count</label>
             </div>
             <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-2" value="2-ball" checked> 2-Ball</label>
+                <label class="format-label"><input type="checkbox" id="fmt-2" value="2-ball" checked onchange="calculateLiveBuyIn()"> 2-Ball</label>
                 <label class="birdie-label"><input type="checkbox" id="fmt-2-birdies" checked> All Birdies Count</label>
             </div>
             <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball" checked> 3-Ball</label>
+                <label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball" checked onchange="calculateLiveBuyIn()"> 3-Ball</label>
                 <label class="birdie-label"><input type="checkbox" id="fmt-3-birdies" checked> All Birdies Count</label>
             </div>
         </div>
 
+        <div style="display: flex; gap: 10px; margin-top: 5px;">
+            <div style="flex: 1;"><label>Per Bet ($)</label><input type="number" id="bet-amount" min="0" value="20" inputmode="numeric" onfocus="this.select()" onclick="this.select()" oninput="calculateLiveBuyIn()"></div>
+            <div style="flex: 1;"><label>Skins Buy-in ($)</label><input type="number" id="skins-amount" min="0" value="10" inputmode="numeric" onfocus="this.select()" onclick="this.select()" oninput="calculateLiveBuyIn()"></div>
+        </div>
+
+        <!-- LIVE BUY-IN CALCULATOR -->
+        <div id="live-buyin-display" class="live-buyin-card">
+            Entry Fee Per Player: <span class="live-buyin-val">$130</span>
+        </div>
+
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
-        <hr style="border-color: var(--border-color); margin: 30px 0 20px 0;">
+        <hr style="border-color: var(--border-color); margin: 20px 0 15px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
     </div>
 
@@ -260,7 +273,7 @@
         <input type="text" id="new-course-name" placeholder="e.g., Pinehurst No. 2">
         <label>Enter Par for Each Hole</label>
         <div class="par-setup-grid" id="par-input-grid"></div>
-        <button class="btn-primary" onclick="saveCustomCourse()" style="margin-top: 25px;">💾 Save Course</button>
+        <button class="btn-primary" onclick="saveCustomCourse()" style="margin-top: 20px;">💾 Save Course</button>
         <button class="btn-secondary" onclick="switchScreen('step-add-course', 'step-1')">Cancel</button>
     </div>
 
@@ -283,7 +296,7 @@
                 <button onclick="changeHole(-1)">◀ Prev</button>
                 <div>
                     <h2 id="current-hole-display-top">Hole 1</h2>
-                    <div id="current-par-display-top" style="text-align: center; color: var(--text-muted);">Par 4</div>
+                    <div id="current-par-display-top" style="text-align: center; color: var(--text-muted); font-size: 0.9em;">Par 4</div>
                 </div>
                 <button onclick="changeHole(1)">Next ▶</button>
             </div>
@@ -300,20 +313,20 @@
     </div>
 
     <div id="step-dashboard" class="screen" style="max-width: 1000px; margin: 0 auto;">
-        <h2 style="text-align: center; color: white; margin-bottom: 20px;" id="dashboard-title">Tournament Dashboard</h2>
+        <h2 style="text-align: center; color: white; margin-bottom: 15px;" id="dashboard-title">Tournament Dashboard</h2>
         
         <div id="dashboard-financial-summary"></div>
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts" class="card" style="max-width:100%; border-color: #3ea84e;"></div>
 
-        <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
+        <div style="margin-top: 30px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
             <button class="btn-secondary" onclick="switchScreen('step-dashboard', 'step-3')">← Back to Scoring</button>
             <button class="btn-primary" onclick="openResultsShareModal()" style="background-color: var(--accent-gold); color: #000; margin-top: 0;">📤 Share Results</button>
             
             <div id="admin-finalize-container">
-                <hr style="border-color: var(--border-color); width: 100%; margin: 20px 0;">
+                <hr style="border-color: var(--border-color); width: 100%; margin: 15px 0;">
                 
-                <button class="btn-secondary" onclick="openBlindDrawModal()" style="border-color: var(--accent-gold); color: var(--accent-gold); margin-bottom: 20px;">🔀 Assign Blind Draw</button>
+                <button class="btn-secondary" onclick="openBlindDrawModal()" style="border-color: var(--accent-gold); color: var(--accent-gold); margin-bottom: 15px;">🔀 Assign Blind Draw</button>
 
                 <div id="admin-unlock-section" style="display: flex; gap: 10px; margin-bottom: 10px;">
                     <input type="password" id="adminPin" placeholder="Admin PIN" style="flex: 1; margin: 0;" inputmode="numeric">
@@ -329,22 +342,22 @@
     <div id="step-7" class="screen card">
         <h2>Share Live Scoring Links</h2>
         <p style="font-size: 14px; color: var(--text-muted);">Send these links so each captain can enter their group's scores.</p>
-        <div id="share-buttons-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"></div>
-        <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
+        <div id="share-buttons-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 15px;"></div>
+        <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 25px;">← Back to Scoring</button>
     </div>
 
     <div id="step-8" class="screen card">
         <h2>Archived Rounds</h2>
         <div id="archive-list-container"></div>
         <button id="bulk-delete-btn" class="btn-danger" style="display:none;" onclick="deleteSelectedArchives()">🗑️ Delete Selected Rounds</button>
-        <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
+        <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 15px;">← Back to Setup</button>
     </div>
     
     <div id="step-9" class="screen" style="max-width: 1000px; margin: 0 auto;">
-        <h2 style="text-align: center; color: white; margin-bottom: 25px;">Archived Round Results</h2>
+        <h2 style="text-align: center; color: white; margin-bottom: 20px;">Archived Round Results</h2>
         <div id="archived-card-container"></div>
         <div id="archived-payout-summary-container" class="card" style="max-width:100%; border-color: #3ea84e;"></div>
-        <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 20px auto; display: block;">← Back to Archives</button>
+        <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 15px auto; display: block;">← Back to Archives</button>
     </div>
 
     <div id="step-dead-link" class="screen card" style="text-align: center; padding: 40px 20px;">
@@ -359,7 +372,7 @@
             <div class="pulse-text">👇 Press and hold text below to copy 👇</div>
             <textarea id="share-text-content" class="share-text-area" readonly></textarea>
             <textarea id="share-text-content-hidden" style="display:none;"></textarea>
-            <button class="btn-primary" onclick="copyAndCloseShare()" style="background-color: #3ea84e; color: white;">📋 Auto-Copy & Close</button>
+            <button class="btn-primary" onclick="copyAndCloseShare()" style="background-color: #3ea84e; color: white; margin-top: 5px;">📋 Auto-Copy & Close</button>
             <button class="btn-secondary" onclick="closeShareModal()">Cancel</button>
         </div>
     </div>
@@ -390,6 +403,32 @@
     </div>
 
     <script>
+        // ==========================================
+        // LIVE BUY-IN CALCULATOR ENGINE
+        // ==========================================
+        function calculateLiveBuyIn() {
+            let mode = document.getElementById('hole-format').value;
+            let nineType = document.getElementById('nine-hole-type').value;
+            
+            // 1 bet per format for 9-hole straight, otherwise 3 bets (Front, Back, Overall or 4/5/Overall)
+            let segments = (mode === '9' && nineType === 'straight') ? 1 : 3;
+            
+            let formatCount = 0;
+            if(document.getElementById('fmt-1').checked) formatCount++;
+            if(document.getElementById('fmt-2').checked) formatCount++;
+            if(document.getElementById('fmt-3').checked) formatCount++;
+            
+            let bet = parseInt(document.getElementById('bet-amount').value) || 0;
+            let skins = parseInt(document.getElementById('skins-amount').value) || 0;
+            
+            let total = (segments * formatCount * bet) + skins;
+            
+            let display = document.getElementById('live-buyin-display');
+            if(display) {
+                display.innerHTML = `Entry Fee Per Player: <span class="live-buyin-val">$${total}</span>`;
+            }
+        }
+
         // ==========================================
         // 1. FIREBASE CONFIGURATION 
         // ==========================================
@@ -449,6 +488,7 @@
         function toggle9HoleOptions() {
             let fmt = document.getElementById('hole-format').value;
             document.getElementById('nine-hole-match-type-container').style.display = (fmt === '9') ? 'block' : 'none';
+            calculateLiveBuyIn();
         }
 
         // ==========================================
@@ -507,6 +547,7 @@
             }
             document.getElementById('par-input-grid').innerHTML = parGridHTML;
             refreshCourseDropdown();
+            calculateLiveBuyIn(); // Initialize the buy-in display
 
             const urlParams = new URLSearchParams(window.location.search);
             const teamParam = urlParams.get('team');
@@ -629,8 +670,8 @@
 
             let html = '';
             for (let g = 1; g <= gCount; g++) {
-                html += `<div style="padding:15px; background:var(--bg-card); border-radius:5px; margin-bottom: 15px;">`;
-                html += `<h3 style="margin-top:0; color:var(--accent-gold);">Group ${g}</h3>`;
+                html += `<div style="padding:12px; background:var(--bg-card); border-radius:5px; margin-bottom: 12px;">`;
+                html += `<h3 style="margin-top:0; margin-bottom:10px; color:var(--accent-gold);">Group ${g}</h3>`;
                 for (let p = 1; p <= pCount; p++) {
                     let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} Full Name`;
                     html += `
@@ -788,7 +829,7 @@
                 html += `<div class="team-card" style="border-left-color: ${group.color};">
                     <div class="team-header">
                         <h3 style="color: ${group.color}; margin: 0 0 5px 0; font-size: 1.5em; text-transform: uppercase; font-weight: bold;">${group.captain}</h3>
-                        <div style="color: ${group.color}; filter: brightness(0.65); font-size: 1.25em; font-weight: bold; text-transform: uppercase;">GROUP ${group.id}</div>
+                        <div style="color: ${group.color}; filter: brightness(0.65); font-size: 1.1em; font-weight: bold; text-transform: uppercase;">GROUP ${group.id}</div>
                     </div>`;
                 
                 group.players.forEach(player => {
@@ -1143,11 +1184,11 @@
                 if(lockedTeamId && g.id !== lockedTeamId) return; 
                 
                 fullHTML += `
-                <div style="background: var(--bg-card); border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                        <h3 style="color: ${g.color}; margin: 0; font-size: 1.6em; text-transform: uppercase; font-weight: bold;">${g.captain}</h3>
-                        ${isBackStart18 ? `<div style="color: #ff6b6b; font-weight: bold; font-size: 1.2em; text-align: center; flex: 1;">STARTED ON BACK NINE</div>` : ''}
-                        <div style="color: var(--text-muted); font-size: 14px; font-weight: bold; text-transform: uppercase;">Group ${g.id}</div>
+                <div style="background: var(--bg-card); border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 25px; padding: 12px; overflow: hidden; max-width: 100%;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; border-bottom: 1px solid var(--border-color); padding-bottom: 8px;">
+                        <h3 style="color: ${g.color}; margin: 0; font-size: 1.4em; text-transform: uppercase; font-weight: bold;">${g.captain}</h3>
+                        ${isBackStart18 ? `<div style="color: #ff6b6b; font-weight: bold; font-size: 1.1em; text-align: center; flex: 1;">STARTED ON BACK NINE</div>` : ''}
+                        <div style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Group ${g.id}</div>
                     </div>
                     <div class="table-wrapper"><table style="width: 100%; text-align: center; border-collapse: collapse;"><thead><tr>`;
                 
