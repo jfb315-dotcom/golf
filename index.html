@@ -16,7 +16,6 @@
         .skin-orbit { position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; animation: rotate-orbit 7s linear infinite; pointer-events: none; overflow: visible; }
         .skin-orbit text { fill: var(--accent-gold); font-size: 21px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
         
-        /* DEAD CENTER POPUPS */
         .joke-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; padding: 25px 20px; border-radius: 12px; font-weight: 900; font-size: 22px; text-align: center; width: 85%; max-width: 400px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 99999; pointer-events: none; line-height: 1.4; box-sizing: border-box; }
         .joke-toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
         .toast-bad { background: #132116; border: 3px solid #ff5e00; color: #ff5e00; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(255, 94, 0, 0.5); }
@@ -118,6 +117,7 @@
 
     <img src="logo.png" class="app-logo" alt="JB Fishing and Golf">
 
+    <!-- SCREEN 1: SETUP -->
     <div id="step-1" class="screen card active">
         <h2>Tournament Setup</h2>
         <label>Select Course</label>
@@ -172,6 +172,7 @@
         <hr style="border-color: var(--border-color); margin: 25px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
         
+        <!-- THEME SWITCHER -->
         <div class="theme-selector">
             <label style="margin-top:0;">App Color Theme</label>
             <select id="app-theme-selector" onchange="changeTheme()" style="margin-bottom:0;">
@@ -187,6 +188,7 @@
         </div>
     </div>
 
+    <!-- SCREEN 1.5: ADD COURSE -->
     <div id="step-add-course" class="screen card">
         <h2>Create Custom Course</h2>
         <label>Course Name</label>
@@ -197,6 +199,7 @@
         <button class="btn-secondary" onclick="switchScreen('step-add-course', 'step-1')">Cancel</button>
     </div>
 
+    <!-- SCREEN 2: TEAM ROSTERS -->
     <div id="step-2" class="screen card">
         <h2>Draft Rosters (The Money)</h2>
         <label>Round Date</label>
@@ -216,9 +219,11 @@
 
         <hr style="border-color: var(--border-color); margin: 25px 0;">
         <button class="btn-secondary" onclick="backToStep1()">← Back to Setup</button>
-        <button class="btn-primary" id="btn-step2-next" onclick="processStep2()">Next</button>
+        <button class="btn-secondary" id="btn-step2-text" onclick="shareRoundInfo()" style="border-color: var(--text-main); color: var(--text-main);">📱 Text Round Info to Group</button>
+        <button class="btn-primary" id="btn-step2-next" onclick="processStep2()">Start Round & Sync</button>
     </div>
 
+    <!-- SCREEN 2.5: PHYSICAL CARTS (SCRAMBLED ONLY) -->
     <div id="step-2-half" class="screen card">
         <h2>Set Physical Pairings</h2>
         <p style="font-size: 13px; color: var(--text-muted);">Assign players to physical carts so scorekeepers have the right names on their screens. Scores will invisibly route back to their money teams.</p>
@@ -236,6 +241,7 @@
         <button class="btn-primary" onclick="startRoundScrambled()">Start Round & Sync</button>
     </div>
 
+    <!-- SCREEN 3: LIVE SCORING -->
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
         <div class="sticky-top">
             <div id="pill-nav-container" class="pill-nav"></div>
@@ -256,6 +262,7 @@
         </div>
     </div>
 
+    <!-- SCREEN 4: DASHBOARD -->
     <div id="step-dashboard" class="screen" style="max-width: 1000px; margin: 0 auto;">
         <h2 style="text-align: center; color: white; margin-bottom: 20px;" id="dashboard-title">Tournament Dashboard</h2>
         <div id="dashboard-financial-summary"></div>
@@ -276,6 +283,7 @@
         </div>
     </div>
 
+    <!-- SCREEN 5: LINK SHARING -->
     <div id="step-7" class="screen card">
         <h2>Share Live Scoring Links</h2>
         <p style="font-size: 14px; color: var(--text-muted);">Send these links so each cart driver can enter their group's scores.</p>
@@ -283,6 +291,7 @@
         <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
     </div>
 
+    <!-- SCREEN 6: ARCHIVE LIST -->
     <div id="step-8" class="screen card">
         <h2>Archived Rounds</h2>
         <div id="archive-list-container"></div>
@@ -290,6 +299,7 @@
         <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
     </div>
     
+    <!-- SCREEN 7: ARCHIVE VIEW -->
     <div id="step-9" class="screen" style="max-width: 1000px; margin: 0 auto;">
         <h2 style="text-align: center; color: white; margin-bottom: 25px;">Archived Round Results</h2>
         <div id="archived-card-container"></div>
@@ -297,15 +307,17 @@
         <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 20px auto; display: block;">← Back to Archives</button>
     </div>
 
+    <!-- SCREEN 8: DEAD LINK -->
     <div id="step-dead-link" class="screen card" style="text-align: center; padding: 40px 20px;">
         <h2 style="color: var(--accent-gold); font-size: 2.2em; margin-bottom: 10px;">⛳ Round Complete</h2>
         <p style="color: var(--text-main); font-size: 1.1em;">This tournament has been finalized.</p>
         <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 20px;">The active scorecard is now locked.</p>
     </div>
 
+    <!-- SHARE MODAL -->
     <div id="share-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top: 0; color: #fff; text-align: center;">Share Results</h2>
+            <h2 id="share-modal-title" style="margin-top: 0; color: #fff; text-align: center;">Share Info</h2>
             <textarea id="share-text-content" style="width: 100%; height: 250px; background: var(--bg-dark); color: #7ced7e; border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 15px;" readonly></textarea>
             <button class="btn-primary" onclick="copyAndCloseShare()" style="background-color: #3ea84e; color: white; margin-top: 5px;">📱 Open Share Menu</button>
             <button class="btn-secondary" onclick="closeShareModal()">Cancel</button>
@@ -332,6 +344,7 @@
         </div>
     </div>
 
+    <!-- JAVASCRIPT LOGIC -->
     <script>
         // ==========================================
         // THEMES & POPUPS
@@ -492,7 +505,6 @@
                         if(!roundData.startHole) { roundData.startHole = 1; roundData.endHole = 18; } 
                         if(!roundData.nineHoleType) { roundData.nineHoleType = 'straight'; }
                         
-                        // Safety Net for older app versions missing Carts
                         if(!roundData.groups) roundData.groups = [];
                         if(!roundData.carts && roundData.groups.length > 0) { 
                             roundData.carts = roundData.groups.map(g => ({ id: g.id, time: '', players: g.players.map(p => ({g: g.id, p: p.id})) })); 
@@ -595,7 +607,8 @@
             for (let g = 1; g <= gCount; g++) {
                 html += `<div style="padding:15px; background:var(--bg-card); border-radius:5px; margin-bottom: 15px;">`;
                 html += `<h3 style="margin-top:0; margin-bottom:10px; color:var(--accent-gold);">Team ${g}</h3>`;
-                html += `<div id="g${g}-time-wrap"><label>Tee Time</label><input type="time" id="g${g}-time" value="${tempRosterCache[`g${g}-time`] || ''}"></div>`;
+                let savedTime = tempRosterCache[`g${g}-time`] || "08:00";
+                html += `<div id="g${g}-time-wrap"><label>Tee Time</label><input type="time" id="g${g}-time" value="${savedTime}"></div>`;
                 
                 for (let p = 1; p <= pCount; p++) {
                     let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} Full Name`;
@@ -618,6 +631,7 @@
                 saveRosterCache(); 
                 let isScram = e.target.value === 'yes'; 
                 document.getElementById('btn-step2-next').innerText = isScram ? "Next: Set Physical Carts" : "Start Round & Sync";
+                document.getElementById('btn-step2-text').style.display = isScram ? 'none' : 'block';
                 for(let g=1; g<=gCount; g++) document.getElementById(`g${g}-time-wrap`).style.display = isScram ? 'none' : 'block';
             });
             document.getElementById('is-scrambled').dispatchEvent(new Event('change'));
@@ -671,14 +685,14 @@
                 for(let p=1; p<=pCount; p++) {
                     let name = tempRosterCache[`g${g}-p${p}-name`];
                     if(name && name.trim() !== "") {
-                        availablePlayers.push({ val: `${g}-${p}`, label: `T${g}: ${name.split(' ')[0]}` });
+                        availablePlayers.push({ val: `${g}-${p}`, label: `${name.split(' ')[0]} - GRP ${g}` });
                     }
                 }
             }
             
             let html = '';
             for(let c=1; c<=cartCount; c++) {
-                let savedTime = tempRosterCache[`cart${c}-time`] || '';
+                let savedTime = tempRosterCache[`cart${c}-time`] || tempRosterCache[`g${c}-time`] || '08:00';
                 html += `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:15px; border:1px solid var(--border-color);">
                 <h3 style="margin:0 0 10px 0; color:var(--accent-gold);">Cart Group ${c}</h3>
                 <label>Tee Time</label><input type="time" id="cart${c}-time" value="${savedTime}" onchange="savePairingsCache()">`;
@@ -708,6 +722,7 @@
         function updateDropdownOptions() {
             let cartCount = parseInt(document.getElementById('cart-group-count').value); 
             let selectedVals = [];
+            
             for(let c=1; c<=cartCount; c++) { 
                 for(let p=1; p<=4; p++) { 
                     let val = document.getElementById(`cart${c}-p${p}`).value; 
@@ -719,8 +734,15 @@
                     let sel = document.getElementById(`cart${c}-p${p}`); 
                     let current = sel.value;
                     Array.from(sel.options).forEach(opt => { 
-                        if(opt.value !== "" && opt.value !== current && selectedVals.includes(opt.value)) opt.style.display = 'none'; 
-                        else opt.style.display = 'block'; 
+                        if(opt.value !== "") {
+                            if(opt.value !== current && selectedVals.includes(opt.value)) {
+                                opt.disabled = true;
+                                if(!opt.text.includes('❌')) opt.text = '❌ ' + opt.text;
+                            } else {
+                                opt.disabled = false;
+                                opt.text = opt.text.replace('❌ ', '');
+                            }
+                        }
                     });
                 }
             }
@@ -826,9 +848,9 @@
             let formatCount = 0; 
             let fStrs = [];
             
-            if(document.getElementById('fmt-1').checked) { formatCount++; fStrs.push(`• 1-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-1-birdies').checked?' ABC':''}`); }
-            if(document.getElementById('fmt-2').checked) { formatCount++; fStrs.push(`• 2-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-2-birdies').checked?' ABC':''}`); }
-            if(document.getElementById('fmt-3').checked) { formatCount++; fStrs.push(`• 3-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-3-birdies').checked?' ABC':''}`); }
+            if(document.getElementById('fmt-1').checked) { formatCount++; fStrs.push(`• 1-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-1-birdies').checked?' (All Birdies Count)':''}`); }
+            if(document.getElementById('fmt-2').checked) { formatCount++; fStrs.push(`• 2-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-2-birdies').checked?' (All Birdies Count)':''}`); }
+            if(document.getElementById('fmt-3').checked) { formatCount++; fStrs.push(`• 3-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-3-birdies').checked?' (All Birdies Count)':''}`); }
             
             let bet = parseInt(document.getElementById('bet-amount').value) || 0; 
             let skins = parseInt(document.getElementById('skins-amount').value) || 0;
@@ -847,7 +869,7 @@
                         if(!tempRosterCache[`g${g}-p${p}-ghost`]) totalP++; 
                     } 
                 } 
-                if(names.length>0) teamLines.push({id: g, names: names.join(', '), time: tempRosterCache[`g${g}-time`] || 'TBD'}); 
+                if(names.length>0) teamLines.push({id: g, names: names.join(', '), time: tempRosterCache[`g${g}-time`] || '08:00 AM'}); 
             }
 
             let isScrambled = document.getElementById('is-scrambled').value === 'yes';
@@ -861,7 +883,10 @@
 
             if(!isScrambled) { 
                 st += `🏌️‍♂️ PAIRINGS & TEAMS:\n`; 
-                teamLines.forEach(t => { st += `Team ${t.id} (${t.time}):\n${t.names}\n\n`; }); 
+                teamLines.forEach(t => { 
+                    let friendlyTime = formatFriendlyTime(t.time);
+                    st += `Team ${t.id} (${friendlyTime}):\n${t.names}\n\n`; 
+                }); 
             } else {
                 st += `🤝 THE DRAFTED TEAMS (For the Money):\n`; 
                 teamLines.forEach(t => { st += `Team ${t.id}: ${t.names}\n`; }); 
@@ -869,7 +894,7 @@
                 let cartCount = parseInt(document.getElementById('cart-group-count').value);
                 for(let c=1; c<=cartCount; c++) {
                     let cNames = []; 
-                    let cTime = tempRosterCache[`cart${c}-time`] || 'TBD';
+                    let cTime = tempRosterCache[`cart${c}-time`] || '08:00';
                     for(let p=1; p<=4; p++) { 
                         let val = tempRosterCache[`cart${c}-p${p}`]; 
                         if(val) { 
@@ -877,16 +902,24 @@
                             cNames.push((tempRosterCache[`g${pts[0]}-p${pts[1]}-name`]||'').split(' ')[0]); 
                         } 
                     }
-                    if(cNames.length>0) st += `Cart ${c} (${cTime}):\n${cNames.join(', ')}\n\n`;
+                    let friendlyTime = formatFriendlyTime(cTime);
+                    if(cNames.length>0) st += `Cart ${c} (${friendlyTime}):\n${cNames.join(', ')}\n\n`;
                 }
             }
 
-            if(navigator.share) { 
-                navigator.share({ title: 'Round Info', text: st }).catch(err => console.log(err)); 
-            } else { 
-                navigator.clipboard.writeText(st); 
-                alert("Text copied to clipboard!"); 
-            }
+            document.getElementById('share-modal-title').innerText = "Share Pre-Round Info";
+            document.getElementById('share-text-content').value = st;
+            document.getElementById('share-modal').classList.add('active');
+        }
+
+        function formatFriendlyTime(time24) {
+            if(!time24 || !time24.includes(':')) return time24;
+            let [h, m] = time24.split(':');
+            let hours = parseInt(h);
+            let ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12; 
+            return `${hours}:${m} ${ampm}`;
         }
 
         // ==========================================
@@ -1514,7 +1547,7 @@
                             teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: ${seg.label} ($${potPerBet} Pot)</div>`;
                             winners.forEach(w => { 
                                 teamPayouts[w.id].total += split; 
-                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
+                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} (Capt: ${teamPayouts[w.id].n}) [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
                             });
                         }
                     });
@@ -1547,7 +1580,7 @@
                             teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: Overall Match ($${potPerBet} Pot)</div>`;
                             winners.forEach(w => { 
                                 teamPayouts[w.id].total += split; 
-                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
+                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} (Capt: ${teamPayouts[w.id].n}) [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
                             });
                         }
                     }
@@ -1558,7 +1591,7 @@
                     let tp = teamPayouts[tid];
                     if(tp.total > 0) {
                         let perPlayer = tp.total / tp.count;
-                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.c}; font-size:16px;">Team ${tid} Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
+                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.c}; font-size:16px;">Team ${tid} (Capt: ${tp.n}) Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
                         teamHTML += `<div class="payout-row" style="color:var(--text-muted); padding-left:10px;"><span>Payout per teammate:</span><span>$${perPlayer.toFixed(2)}</span></div>`;
                     }
                 });
@@ -1696,9 +1729,10 @@
 
             st += `\n💰 FINAL TEAM TOTALS:\n`;
             Object.values(tp).forEach((team, idx) => {
-                if(team.t > 0) { st += `Team ${Object.keys(tp)[idx]}:\n  Team Total Payout: $${team.t.toFixed(2)}\n  Per Player Piece: $${(team.t/team.c).toFixed(2)}\n`; }
+                if(team.t > 0) { st += `Team ${Object.keys(tp)[idx]} (Capt: ${team.n}):\n  Team Total Payout: $${team.t.toFixed(2)}\n  Per Player Piece: $${(team.t/team.c).toFixed(2)}\n`; }
             });
 
+            document.getElementById('share-modal-title').innerText = "Share Final Results";
             document.getElementById('share-text-content').value = st; 
             document.getElementById('share-modal').classList.add('active');
         }
@@ -1706,7 +1740,7 @@
         function copyAndCloseShare() {
             let textArea = document.getElementById('share-text-content');
             if(navigator.share) { 
-                navigator.share({ title: 'Tournament Results', text: textArea.value }).catch(err => console.log(err)); 
+                navigator.share({ title: 'Tournament Info', text: textArea.value }).catch(err => console.log(err)); 
             } else { 
                 textArea.select(); 
                 document.execCommand('copy'); 
@@ -1766,6 +1800,11 @@
             }
 
             saveToArchive(); 
+            
+            // WIPE ROSTER CACHE
+            tempRosterCache = {};
+            document.getElementById('is-scrambled').value = 'no';
+            
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-1').classList.add('active'); 
             window.scrollTo(0,0);
