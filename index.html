@@ -8,86 +8,109 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <style>
         :root { --bg-dark: #1a2c1f; --bg-card: #253d2a; --text-main: #f5eedc; --text-muted: #c9c3ac; --accent-gold: #d4b872; --bg-table: #1e3323; --border-color: #36543b; }
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; }
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
         .app-logo { display: block; width: 120px; height: auto; margin: -10px auto -20px auto; position: relative; z-index: 500; }
+        
         @keyframes rotate-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         .skin-container { position: relative; display: inline-flex; align-items: center; justify-content: center; }
         .skin-orbit { position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; animation: rotate-orbit 7s linear infinite; pointer-events: none; overflow: visible; }
         .skin-orbit text { fill: var(--accent-gold); font-size: 21px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
-        .joke-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; background: #132116; border: 3px solid #ff5e00; color: #ff5e00; padding: 25px 20px; border-radius: 12px; font-weight: 900; font-size: 22px; text-align: center; width: 85%; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.8), 0 0 20px rgba(255, 94, 0, 0.4); transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 10000; pointer-events: none; line-height: 1.4; }
+        
+        /* DEAD CENTER POPUPS */
+        .joke-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; padding: 25px 20px; border-radius: 12px; font-weight: 900; font-size: 22px; text-align: center; width: 85%; max-width: 400px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 99999; pointer-events: none; line-height: 1.4; box-sizing: border-box; }
         .joke-toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
-        .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; }
+        .toast-bad { background: #132116; border: 3px solid #ff5e00; color: #ff5e00; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(255, 94, 0, 0.5); }
+        .toast-birdie { background: #132116; border: 3px solid #39ff14; color: #39ff14; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(57, 255, 20, 0.5); }
+        .toast-eagle { background: #132116; border: 3px solid #ffd700; color: #ffd700; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(255, 215, 0, 0.5); }
+        .toast-ace { background: #000; border: 4px solid #fff; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 30px #00ffff; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 30px #00ffff; animation: flash-ace 0.5s infinite; }
+        @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
+        
+        .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 180px; font-weight: 900; color: var(--accent-gold); opacity: 0.06; z-index: 0; pointer-events: none; user-select: none; }
+        
+        .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; transition: background-color 0.3s; }
         .screen { display: none; } .screen.active { display: block; }
         h2 { margin-top: 0px; margin-bottom: 15px; font-size: 1.5em; }
+        
         label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
-        input[type="number"], input[type="text"], input[type="tel"], select, input[type="password"] { width: 100%; padding: 12px; box-sizing: border-box; background: #1e3323; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
+        input[type="number"], input[type="text"], input[type="tel"], input[type="time"], input[type="date"], select, input[type="password"] { width: 100%; padding: 12px; box-sizing: border-box; background: var(--bg-table); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
+        
         button { font-family: 'Segoe UI', Tahoma, sans-serif; }
         .btn-primary { background-color: var(--accent-gold); color: #000; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 15px; }
         .btn-secondary { background-color: transparent; color: var(--text-muted); width: 100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
         .btn-success { background-color: #3ea84e; color: white; width: 100%; padding: 18px; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 10px rgba(62, 168, 78, 0.4); }
         .btn-danger { background-color: #c94b4b; color: white; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; }
-        .format-container { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; background: #1e3323; padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); }
-        .format-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2d4731; padding-bottom: 10px; }
+        
+        .format-container { display: flex; flex-direction: column; gap: 10px; margin-top: 5px; background: var(--bg-table); padding: 15px; border-radius: 6px; border: 1px solid var(--border-color); }
+        .format-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
         .format-row:last-child { border-bottom: none; padding-bottom: 0; }
         .format-label { display: flex; align-items: center; gap: 8px; font-size: 16px; font-weight: bold; color: var(--accent-gold); text-transform: none; margin: 0; }
         .birdie-label { display: flex; align-items: center; gap: 5px; font-size: 13px; color: var(--text-muted); font-weight: normal; text-transform: none; margin: 0; }
         .format-container input { width: 18px; height: 18px; accent-color: var(--accent-gold); margin: 0;}
-        .live-buyin-card { background: #132116; padding: 15px; border-radius: 6px; border: 1px solid var(--accent-gold); margin-top: 15px; margin-bottom: 20px; text-align: center; color: var(--accent-gold); font-size: 1.1em; font-weight: bold; box-shadow: 0 0 10px rgba(212, 184, 114, 0.1); }
+        
+        .live-buyin-card { background: var(--bg-dark); padding: 15px; border-radius: 6px; border: 1px solid var(--accent-gold); margin-top: 15px; margin-bottom: 20px; text-align: center; color: var(--accent-gold); font-size: 1.1em; font-weight: bold; box-shadow: 0 0 10px rgba(212, 184, 114, 0.1); }
         .live-buyin-val { color: #fff; font-size: 1.2em; margin-left: 5px;}
-        .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 10px 0; border-bottom: 1px solid #2d4731; margin-bottom: 15px; }
+        
+        .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 10px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
         .pill-nav { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; scrollbar-width: none; }
         .pill-nav::-webkit-scrollbar { display: none; }
-        .pill { flex-shrink: 0; padding: 10px 20px; background: #1e3323; border-radius: 25px; border: 1px solid var(--border-color); color: var(--text-main); font-size: 15px; cursor: pointer; transition: all 0.2s; }
+        .pill { flex-shrink: 0; padding: 10px 20px; background: var(--bg-table); border-radius: 25px; border: 1px solid var(--border-color); color: var(--text-main); font-size: 15px; cursor: pointer; transition: all 0.2s; }
         .pill.active { background: var(--accent-gold); color: #000; font-weight: bold; border-color: var(--accent-gold); }
+        
         .hole-nav { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);}
-        .hole-nav button { background: #1e3323; color: var(--text-main); border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold; width: auto; margin: 0;}
+        .hole-nav button { background: var(--bg-table); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold; width: auto; margin: 0;}
         .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center; font-size: 1.4em;}
-        .team-card { background: #1e3323; padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #4a6e50; }
-        .team-header { border-bottom: 1px solid #2d4731; padding-bottom: 10px; margin-bottom: 10px; display: block;}
-        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; }
+        
+        .team-card { background: var(--bg-table); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #4a6e50; position: relative; overflow: hidden; }
+        .team-header { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px; position: relative; z-index: 1;}
+        .player-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; gap: 10px; position: relative; z-index: 1;}
         .player-name { flex: 1; font-size: 18px; font-weight: bold; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; padding-right: 5px;}
         .par-indicator { font-size: 13px; font-weight: bold; width: 85px; text-align: right; text-transform: uppercase; flex-shrink: 0; }
-        .score-box { width: 65px !important; height: 45px !important; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: #132116 !important; padding: 5px !important; border: 2px solid var(--border-color) !important; color: var(--text-main) !important; border-radius: 6px; flex-shrink: 0; margin-bottom: 0 !important; }
-        .score-box:focus { border-color: var(--accent-gold) !important; outline: none; background: #0c140d !important; box-shadow: 0 0 10px var(--accent-gold); }
+        
+        .score-box { width: 65px !important; height: 45px !important; box-sizing: border-box; text-align: center; font-size: 22px; font-weight: bold; background: var(--bg-dark) !important; padding: 5px !important; border: 2px solid var(--border-color) !important; color: var(--text-main) !important; border-radius: 6px; flex-shrink: 0; margin-bottom: 0 !important; }
+        .score-box:focus { border-color: var(--accent-gold) !important; outline: none; background: #000 !important; box-shadow: 0 0 10px var(--accent-gold); }
+        
         .roster-player-block { display: flex; gap: 10px; align-items: center; margin-bottom: 10px; }
         .roster-name-input { flex: 2; margin-bottom: 0 !important; }
         .roster-stroke-input { flex: 1; text-align: center; margin-bottom: 0 !important; padding: 12px 5px !important; }
+        
         .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 0px; }
         table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; }
         th, td { border: 1px solid var(--border-color); padding: 8px; }
         th { background-color: var(--bg-dark); color: var(--accent-gold); }
-        .par-row { background-color: #1e3323; font-weight: bold; color: var(--text-muted); }
+        .par-row { background-color: var(--bg-table); font-weight: bold; color: var(--text-muted); }
         .out-in-col { background-color: var(--bg-dark); font-weight: bold; }
-        .under-par { color: #7ced7e; }
-        .over-par { color: #ff6b6b; }
-        .even-par { color: var(--text-main); }
-        .team-math-row { background-color: #132116; font-weight: bold; font-size: 15px; }
+        .under-par { color: #7ced7e; } .over-par { color: #ff6b6b; } .even-par { color: var(--text-main); }
+        .team-math-row { background-color: var(--bg-dark); font-weight: bold; font-size: 15px; }
+        
         .b-top-1 { border-top: 3px solid #ff6b6b !important; } .b-bot-1 { border-bottom: 3px solid #ff6b6b !important; } .b-left-1 { border-left: 3px solid #ff6b6b !important; } .b-right-1 { border-right: 3px solid #ff6b6b !important; }
         .b-top-2 { border-top: 3px solid #7ced7e !important; } .b-bot-2 { border-bottom: 3px solid #7ced7e !important; } .b-left-2 { border-left: 3px solid #7ced7e !important; } .b-right-2 { border-right: 3px solid #7ced7e !important; }
+        
         @keyframes pulse-winner { 0% { box-shadow: inset 0 0 0 2px var(--team-color), inset 0 0 40px var(--team-color); text-shadow: 1px 1px 2px #000; } 50% { box-shadow: inset 0 0 0 1px var(--team-color), inset 0 0 10px transparent; text-shadow: none; } 100% { box-shadow: inset 0 0 0 2px var(--team-color), inset 0 0 40px var(--team-color); text-shadow: 1px 1px 2px #000; } }
         .winner-pulse { animation: pulse-winner 3s ease-in-out infinite; color: #fff !important; font-weight: 900 !important; font-size: 1.15em; }
         @keyframes pulse-tie { 0% { box-shadow: inset 0 0 0 2px #ff3333, inset 0 0 40px rgba(255,51,51,0.7); text-shadow: 1px 1px 2px #000; color: #fff; } 50% { box-shadow: inset 0 0 0 1px #ff3333, inset 0 0 10px rgba(255,51,51,0.2); text-shadow: none; color: #ff3333; } 100% { box-shadow: inset 0 0 0 2px #ff3333, inset 0 0 40px rgba(255,51,51,0.7); text-shadow: 1px 1px 2px #000; color: #fff; } }
         .tie-pulse { animation: pulse-tie 3s ease-in-out infinite; font-weight: 900 !important; font-size: 1.15em; }
+        
         .par-setup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
-        .par-setup-item { display: flex; align-items: center; justify-content: space-between; background: #1e3323; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);}
+        .par-setup-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-table); padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);}
         .par-setup-item label { margin: 0; font-size: 12px; }
         .par-setup-item input { width: 50px !important; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
-        .payout-card { background: #1e3323; border-radius: 8px; border-left: 5px solid #3ea84e; padding: 15px; margin-bottom: 15px;}
+        
+        .payout-card { background: var(--bg-table); border-radius: 8px; border-left: 5px solid #3ea84e; padding: 15px; margin-bottom: 15px;}
         .payout-header { font-size: 1.2em; font-weight: bold; color: #7ced7e; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;}
         .payout-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
         .payout-winner { color: var(--text-main); font-weight: bold; }
         .payout-amount { color: var(--accent-gold); font-weight: bold; }
-        .archive-item { display: flex; align-items: center; background: #1e3323; padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
+        
+        .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
         .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
         .archive-info { flex: 1; }
+        
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
         .modal-content { background: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
-        .pulse-text { animation: pulse 1.5s infinite; color: var(--accent-gold); font-size: 14px; text-align: center; margin-bottom: 15px; font-weight: bold; text-transform: uppercase; letter-spacing: 1px;}
-        @keyframes pulse { 0% { opacity: 1; transform: scale(1); } 50% { opacity: 0.5; transform: scale(0.98); } 100% { opacity: 1; transform: scale(1); } }
-        .share-text-area { width: 100%; height: 250px; background: #132116; color: #7ced7e; border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 15px;}
+        .theme-selector { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 30px; text-align: center; }
     </style>
-
+    
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -133,18 +156,9 @@
 
         <label>Team Formats & Custom Rules</label>
         <div class="format-container">
-            <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball" onchange="calculateLiveBuyIn()"> 1-Ball</label>
-                <label class="birdie-label"><input type="checkbox" id="fmt-1-birdies"> All Birdies Count</label>
-            </div>
-            <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-2" value="2-ball" checked onchange="calculateLiveBuyIn()"> 2-Ball</label>
-                <label class="birdie-label"><input type="checkbox" id="fmt-2-birdies" checked> All Birdies Count</label>
-            </div>
-            <div class="format-row">
-                <label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball" checked onchange="calculateLiveBuyIn()"> 3-Ball</label>
-                <label class="birdie-label"><input type="checkbox" id="fmt-3-birdies" checked> All Birdies Count</label>
-            </div>
+            <div class="format-row"><label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball" onchange="calculateLiveBuyIn()"> 1-Ball</label><label class="birdie-label"><input type="checkbox" id="fmt-1-birdies"> All Birdies Count</label></div>
+            <div class="format-row"><label class="format-label"><input type="checkbox" id="fmt-2" value="2-ball" checked onchange="calculateLiveBuyIn()"> 2-Ball</label><label class="birdie-label"><input type="checkbox" id="fmt-2-birdies" checked> All Birdies Count</label></div>
+            <div class="format-row"><label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball" checked onchange="calculateLiveBuyIn()"> 3-Ball</label><label class="birdie-label"><input type="checkbox" id="fmt-3-birdies" checked> All Birdies Count</label></div>
         </div>
 
         <div style="display: flex; gap: 15px; margin-top: 5px;">
@@ -152,13 +166,25 @@
             <div style="flex: 1;"><label>Skins Buy-in ($)</label><input type="number" id="skins-amount" min="0" value="10" inputmode="numeric" onfocus="this.select()" onclick="this.select()" oninput="calculateLiveBuyIn()"></div>
         </div>
 
-        <div id="live-buyin-display" class="live-buyin-card">
-            Entry Fee Per Player: <span class="live-buyin-val">$130</span>
-        </div>
+        <div id="live-buyin-display" class="live-buyin-card">Entry Fee Per Player: <span class="live-buyin-val">$130</span></div>
 
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
         <hr style="border-color: var(--border-color); margin: 25px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
+        
+        <div class="theme-selector">
+            <label style="margin-top:0;">App Color Theme</label>
+            <select id="app-theme-selector" onchange="changeTheme()" style="margin-bottom:0;">
+                <option value="classic">🌲 The Classic (Green/Gold)</option>
+                <option value="midnight">🌃 Midnight Run (Navy/Cyan)</option>
+                <option value="volcano">🌋 The Volcano (Black/Orange)</option>
+                <option value="miamivice">🌴 Miami Vice (Purple/Teal)</option>
+                <option value="tiger">🐅 Tiger Sunday (Black/Red)</option>
+                <option value="coastal">🌊 Coastal Links (Blue/Sand)</option>
+                <option value="desert">🏜️ Desert Sunset (Terracotta)</option>
+                <option value="arctic">❄️ Arctic Ice (Frost/White)</option>
+            </select>
+        </div>
     </div>
 
     <div id="step-add-course" class="screen card">
@@ -172,18 +198,42 @@
     </div>
 
     <div id="step-2" class="screen card">
-        <h2>Enter Player Names & Strokes</h2>
-        <div style="display: flex; font-size: 11px; font-weight: bold; color: var(--text-muted); text-transform: uppercase; margin-bottom: 5px; padding-left: 5px;">
-            <div style="flex: 2;">Player Name</div>
-            <div style="flex: 1; text-align: center;">Stroke Holes (e.g. 4, 12)</div>
-        </div>
+        <h2>Draft Rosters (The Money)</h2>
+        <label>Round Date</label>
+        <input type="date" id="round-date" style="margin-bottom: 15px;">
+        
         <div id="roster-container"></div>
         
         <button class="btn-secondary" onclick="openPreRoundBlindDrawModal()" style="border-color: var(--accent-gold); color: var(--accent-gold); margin-top: 15px;">🔀 Assign Blind Draw (Ghost)</button>
         
+        <div style="background: var(--bg-table); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 20px;">
+            <label style="margin-top:0; color:var(--accent-gold);">Are players riding/playing with their drafted teams?</label>
+            <select id="is-scrambled">
+                <option value="no">YES - Standard Pairings</option>
+                <option value="yes">NO - Scramble Pairings (Snake Draft)</option>
+            </select>
+        </div>
+
         <hr style="border-color: var(--border-color); margin: 25px 0;">
-        <button class="btn-secondary" onclick="switchScreen('step-2', 'step-1')">← Back to Setup</button>
-        <button class="btn-primary" onclick="startRound()">Start Round & Sync to Cloud</button>
+        <button class="btn-secondary" onclick="backToStep1()">← Back to Setup</button>
+        <button class="btn-primary" id="btn-step2-next" onclick="processStep2()">Next</button>
+    </div>
+
+    <div id="step-2-half" class="screen card">
+        <h2>Set Physical Pairings</h2>
+        <p style="font-size: 13px; color: var(--text-muted);">Assign players to physical carts so scorekeepers have the right names on their screens. Scores will invisibly route back to their money teams.</p>
+        
+        <label>How many physical Cart Groups?</label>
+        <select id="cart-group-count" onchange="renderPairingDropdowns()">
+            <option value="1">1 Group</option><option value="2" selected>2 Groups</option><option value="3">3 Groups</option><option value="4">4 Groups</option><option value="5">5 Groups</option><option value="6">6 Groups</option><option value="7">7 Groups</option><option value="8">8 Groups</option>
+        </select>
+        
+        <div id="pairings-container" style="margin-top:20px;"></div>
+        
+        <hr style="border-color: var(--border-color); margin: 25px 0;">
+        <button class="btn-secondary" onclick="switchScreen('step-2-half', 'step-2')">← Back to Draft</button>
+        <button class="btn-secondary" onclick="shareRoundInfo()" style="border-color: var(--text-main); color: var(--text-main);">📱 Text Round Info to Group</button>
+        <button class="btn-primary" onclick="startRoundScrambled()">Start Round & Sync</button>
     </div>
 
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
@@ -199,26 +249,21 @@
             </div>
             <div id="sync-status" style="text-align: center; font-size: 10px; color: #7ced7e; margin-top: 4px;">● Synced</div>
         </div>
-
         <div id="entry-container"></div>
-
         <button class="btn-success" onclick="viewDashboard()">🏆 View Standings & Scorecards</button>
         <div id="admin-share-btn-container">
-            <button class="btn-secondary" onclick="openShareMenu()" style="border-color: var(--text-main); color: var(--text-main); margin-top: 15px;">📱 Text Live Links to Captains</button>
+            <button class="btn-secondary" onclick="openShareMenu()" style="border-color: var(--text-main); color: var(--text-main); margin-top: 15px;">📱 Text Live Links to Carts</button>
         </div>
     </div>
 
     <div id="step-dashboard" class="screen" style="max-width: 1000px; margin: 0 auto;">
         <h2 style="text-align: center; color: white; margin-bottom: 20px;" id="dashboard-title">Tournament Dashboard</h2>
-        
         <div id="dashboard-financial-summary"></div>
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts" class="card" style="max-width:100%; border-color: #3ea84e;"></div>
-
         <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
             <button class="btn-secondary" onclick="switchScreen('step-dashboard', 'step-3')">← Back to Scoring</button>
-            <button class="btn-primary" onclick="openResultsShareModal()" style="background-color: var(--accent-gold); color: #000; margin-top: 0;">📤 Share Results</button>
-            
+            <button class="btn-primary" onclick="openResultsShareModal()" style="background-color: var(--accent-gold); color: #000; margin-top: 0;">📤 Share Final Results</button>
             <div id="admin-finalize-container">
                 <hr style="border-color: var(--border-color); width: 100%; margin: 20px 0;">
                 <div id="admin-unlock-section" style="display: flex; gap: 10px; margin-bottom: 10px;">
@@ -233,7 +278,7 @@
 
     <div id="step-7" class="screen card">
         <h2>Share Live Scoring Links</h2>
-        <p style="font-size: 14px; color: var(--text-muted);">Send these links so each captain can enter their group's scores.</p>
+        <p style="font-size: 14px; color: var(--text-muted);">Send these links so each cart driver can enter their group's scores.</p>
         <div id="share-buttons-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"></div>
         <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
     </div>
@@ -255,16 +300,14 @@
     <div id="step-dead-link" class="screen card" style="text-align: center; padding: 40px 20px;">
         <h2 style="color: var(--accent-gold); font-size: 2.2em; margin-bottom: 10px;">⛳ Round Complete</h2>
         <p style="color: var(--text-main); font-size: 1.1em;">This tournament has been finalized.</p>
-        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 20px;">The active scorecard is now locked. Please wait for a new link from the administrator to begin your next round.</p>
+        <p style="color: var(--text-muted); font-size: 0.9em; margin-top: 20px;">The active scorecard is now locked.</p>
     </div>
 
     <div id="share-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="margin-top: 0; color: #fff; text-align: center;">Share Results</h2>
-            <div class="pulse-text">👇 Press and hold text below to copy 👇</div>
-            <textarea id="share-text-content" class="share-text-area" readonly></textarea>
-            <textarea id="share-text-content-hidden" style="display:none;"></textarea>
-            <button class="btn-primary" onclick="copyAndCloseShare()" style="background-color: #3ea84e; color: white; margin-top: 5px;">📋 Auto-Copy & Close</button>
+            <textarea id="share-text-content" style="width: 100%; height: 250px; background: var(--bg-dark); color: #7ced7e; border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 15px;" readonly></textarea>
+            <button class="btn-primary" onclick="copyAndCloseShare()" style="background-color: #3ea84e; color: white; margin-top: 5px;">📱 Open Share Menu</button>
             <button class="btn-secondary" onclick="closeShareModal()">Cancel</button>
         </div>
     </div>
@@ -281,46 +324,88 @@
     <div id="blind-draw-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="margin-top: 0; color: #fff; text-align: center;">🔀 Assign Blind Draw</h2>
-            <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Mirror a player's score to act as a ghost 4th man for a short team. (Their winnings will be divided among the actual players).</p>
-            <label>1. Team Receiving the Blind Draw:</label>
-            <select id="bd-target-team"></select>
-            <label>2. Player to Mirror (Source):</label>
-            <select id="bd-source-player"></select>
+            <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Mirror a player's score to act as a ghost 4th man.</p>
+            <label>1. Team Receiving the Blind Draw:</label><select id="bd-target-team"></select>
+            <label>2. Player to Mirror (Source):</label><select id="bd-source-player"></select>
             <button class="btn-primary" onclick="applyPreRoundBlindDraw()" style="background-color: var(--accent-gold); color: black;">➕ Fill Empty Slot</button>
             <button class="btn-secondary" onclick="closeBlindDrawModal()">Cancel</button>
         </div>
     </div>
 
     <script>
+        // ==========================================
+        // THEMES & POPUPS
+        // ==========================================
+        const appThemes = {
+            classic: { dark: '#1a2c1f', card: '#253d2a', text: '#f5eedc', mute: '#c9c3ac', gold: '#d4b872', table: '#1e3323', border: '#36543b' },
+            midnight: { dark: '#0b132b', card: '#112240', text: '#e0e1dd', mute: '#8d99ae', gold: '#00f5d4', table: '#1c2541', border: '#3a506b' },
+            volcano: { dark: '#0f0f0f', card: '#1a1a1a', text: '#f3f3f3', mute: '#888888', gold: '#ff4500', table: '#121212', border: '#333333' },
+            miamivice: { dark: '#120422', card: '#24083d', text: '#f8f9fa', mute: '#9b7ebb', gold: '#00f5ff', table: '#1c0631', border: '#ff00a0' },
+            tiger: { dark: '#0a0a0a', card: '#141414', text: '#ffffff', mute: '#8c8c8c', gold: '#cc0000', table: '#1a1a1a', border: '#4d0000' },
+            coastal: { dark: '#153243', card: '#284b63', text: '#f4f1de', mute: '#b4c5e4', gold: '#f4a261', table: '#1e3b4d', border: '#3c6e71' },
+            desert: { dark: '#2b1a10', card: '#402a1b', text: '#ffe6a7', mute: '#b8926a', gold: '#ff7b00', table: '#332014', border: '#664229' },
+            arctic: { dark: '#0d1b2a', card: '#1b263b', text: '#e0e1dd', mute: '#778da9', gold: '#ffffff', table: '#142134', border: '#415a77' }
+        };
+
+        const popups = {
+            ace: ["ACE!!! DRINKS ARE ON HIM! 🍻🥃"],
+            eagle: ["THE EAGLE HAS LANDED! 🦅🔥", "TOUR CARD INCOMING! 💳🏌️‍♂️", "HIDE YOUR WALLETS, BOYS! 💸💸"],
+            birdie: ["A BLIND SQUIRREL FINDS A NUT! 🐿️", "SOMEONE CHECK HIS HANDICAP! 🧐"],
+            bogey: ["WOW!! THAT GUY SUCKS 😂", "EVEN THE CART GIRL IS LAUGHING 🛒", "YOU ACTUALLY PAY FOR LESSONS? 💸", "MIGHT BE TIME TO TAKE UP TENNIS 🎾"]
+        };
+
+        function changeTheme(themeKey = null) {
+            let key = themeKey || document.getElementById('app-theme-selector').value; 
+            let t = appThemes[key];
+            if(t) {
+                document.documentElement.style.setProperty('--bg-dark', t.dark); 
+                document.documentElement.style.setProperty('--bg-card', t.card);
+                document.documentElement.style.setProperty('--text-main', t.text); 
+                document.documentElement.style.setProperty('--text-muted', t.mute);
+                document.documentElement.style.setProperty('--accent-gold', t.gold); 
+                document.documentElement.style.setProperty('--bg-table', t.table);
+                document.documentElement.style.setProperty('--border-color', t.border); 
+                localStorage.setItem('savedTheme', key); 
+                document.getElementById('app-theme-selector').value = key;
+            }
+        }
+
+        // ==========================================
+        // FIREBASE & STATE
+        // ==========================================
         function calculateLiveBuyIn() {
-            let mode = document.getElementById('hole-format').value;
+            let mode = document.getElementById('hole-format').value; 
             let nineType = document.getElementById('nine-hole-type').value || 'nassau';
-            let segments = (mode === '9' && nineType === 'straight') ? 1 : 3;
+            let segments = (mode === '9' && nineType === 'straight') ? 1 : 3; 
+            
             let formatCount = 0;
-            if(document.getElementById('fmt-1').checked) formatCount++;
-            if(document.getElementById('fmt-2').checked) formatCount++;
+            if(document.getElementById('fmt-1').checked) formatCount++; 
+            if(document.getElementById('fmt-2').checked) formatCount++; 
             if(document.getElementById('fmt-3').checked) formatCount++;
-            let bet = parseInt(document.getElementById('bet-amount').value) || 0;
+            
+            let bet = parseInt(document.getElementById('bet-amount').value) || 0; 
             let skins = parseInt(document.getElementById('skins-amount').value) || 0;
             let total = (segments * formatCount * bet) + skins;
+            
             let display = document.getElementById('live-buyin-display');
             if(display) { display.innerHTML = `Entry Fee Per Player: <span class="live-buyin-val">$${total}</span>`; }
         }
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
-            authDomain: "golf-327be.firebaseapp.com",
-            projectId: "golf-327be",
-            storageBucket: "golf-327be.firebasestorage.app",
-            messagingSenderId: "481710804257",
-            appId: "1:481710804257:web:84ab3594fcc80b7affc260"
+        const firebaseConfig = { 
+            apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w", 
+            authDomain: "golf-327be.firebaseapp.com", 
+            projectId: "golf-327be", 
+            storageBucket: "golf-327be.firebasestorage.app", 
+            messagingSenderId: "481710804257", 
+            appId: "1:481710804257:web:84ab3594fcc80b7affc260" 
         };
-
-        firebase.initializeApp(firebaseConfig);
-        firebase.firestore().enablePersistence().catch(err => { console.log("Firebase offline mode skipped:", err.code); });
-        const db = firebase.firestore();
+        
+        firebase.initializeApp(firebaseConfig); 
+        firebase.firestore().enablePersistence().catch(err => { console.log("Offline skipped:", err.code); });
+        
+        const db = firebase.firestore(); 
         const activeTournamentRef = db.collection("tournaments").doc("active_round");
-
+        
         const courseDatabase = {
             "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] },
             "chatata_valley": { name: "Chatata Valley (Cleveland, TN)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 5, 4, 3, 4, 3, 4, 5] },
@@ -329,28 +414,28 @@
             "tennessee_national": { name: "Tennessee National (Loudon, TN)", pars: [4, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5, 4, 5, 3, 4] }
         };
         const curatedColors = ['#00f3ff', '#39ff14', '#ff007f', '#ccff00', '#ff5e00', '#bf00ff'];
-        const roastJokes = ["WOW!! THAT GUY SUCKS 😂", "DID YOU HIT IT WITH YOUR PURSE? 👜", "MIGHT BE TIME TO TAKE UP TENNIS 🎾", "I'VE SEEN BETTER SWINGS ON A PORCH 🏡", "SOMEONE CHECK HIS PULSE 🚑", "ARE WE PLAYING GOLF OR LUMBERJACK? 🪓", "YOUR CLUBS CALLED, THEY WANT A NEW OWNER 📱", "EVEN THE CART GIRL IS LAUGHING 🛒", "YOU ACTUALLY PAY FOR LESSONS? 💸", "PUT ME DOWN FOR A 10 ✏️"];
 
-        let roundData = { course: null, groups: [], formats: [], birdieRules: {}, currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau' };
+        let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
         let scoresDb = {}; 
         let currentTeamFilter = "ALL"; 
-        let lockedTeamId = null;
+        let lockedTeamId = null; 
         let allAvailableCourses = {}; 
         let activeViewRoundData = null; 
-        let activeViewScoresDb = null;
+        let activeViewScoresDb = null; 
         let isAdminUnlocked = false; 
+        let tempRosterCache = {};
 
-        function toggle9HoleOptions() {
-            let fmt = document.getElementById('hole-format').value;
-            document.getElementById('nine-hole-match-type-container').style.display = (fmt === '9') ? 'block' : 'none';
-            calculateLiveBuyIn();
+        function toggle9HoleOptions() { 
+            let fmt = document.getElementById('hole-format').value; 
+            document.getElementById('nine-hole-match-type-container').style.display = (fmt === '9') ? 'block' : 'none'; 
+            calculateLiveBuyIn(); 
         }
 
         function getHoleSequence() {
-            if (roundData.playMode === '9') {
-                return roundData.startType === 'back' ? [10,11,12,13,14,15,16,17,18] : [1,2,3,4,5,6,7,8,9];
-            } else {
-                return roundData.startType === 'back' ? [10,11,12,13,14,15,16,17,18,1,2,3,4,5,6,7,8,9] : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18];
+            if (roundData.playMode === '9') { 
+                return roundData.startType === 'back' ? [10,11,12,13,14,15,16,17,18] : [1,2,3,4,5,6,7,8,9]; 
+            } else { 
+                return roundData.startType === 'back' ? [10,11,12,13,14,15,16,17,18,1,2,3,4,5,6,7,8,9] : [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18]; 
             }
         }
 
@@ -370,408 +455,684 @@
         }
 
         window.onload = () => {
-            let parGridHTML = '';
-            for(let i=1; i<=18; i++) {
-                parGridHTML += `<div class="par-setup-item"><label>Hole ${i}</label>
-                <input type="tel" id="custom-par-${i}" placeholder="4" class="custom-par-input" inputmode="numeric" 
-                autocomplete="off" autocorrect="off" onfocus="this.select()" onclick="this.select()" oninput="handleParAdvance(this)"></div>`;
+            let savedTheme = localStorage.getItem('savedTheme'); 
+            if(savedTheme) changeTheme(savedTheme);
+            
+            document.getElementById('round-date').valueAsDate = new Date();
+            
+            let parGridHTML = ''; 
+            for(let i=1; i<=18; i++) { 
+                parGridHTML += `<div class="par-setup-item"><label>Hole ${i}</label><input type="tel" id="custom-par-${i}" placeholder="4" class="custom-par-input" inputmode="numeric" autocomplete="off" autocorrect="off" onfocus="this.select()" onclick="this.select()" oninput="handleParAdvance(this)"></div>`; 
             }
-            document.getElementById('par-input-grid').innerHTML = parGridHTML;
-            refreshCourseDropdown();
+            document.getElementById('par-input-grid').innerHTML = parGridHTML; 
+            refreshCourseDropdown(); 
             calculateLiveBuyIn();
 
-            const urlParams = new URLSearchParams(window.location.search);
-            const teamParam = urlParams.get('team');
-            if (teamParam) {
-                lockedTeamId = parseInt(teamParam);
+            const urlParams = new URLSearchParams(window.location.search); 
+            const teamParam = urlParams.get('cart');
+            if (teamParam) { 
+                lockedTeamId = parseInt(teamParam); 
                 currentTeamFilter = lockedTeamId; 
-                document.getElementById('admin-share-btn-container').style.display = 'none';
-                document.getElementById('admin-finalize-container').style.display = 'none';
+                document.getElementById('admin-share-btn-container').style.display = 'none'; 
+                document.getElementById('admin-finalize-container').style.display = 'none'; 
             }
-
-            const savedFilter = localStorage.getItem('tournamentViewFilter');
+            
+            const savedFilter = localStorage.getItem('tournamentViewFilter'); 
             if (!lockedTeamId && savedFilter) { currentTeamFilter = isNaN(savedFilter) ? savedFilter : parseInt(savedFilter); }
 
             activeTournamentRef.onSnapshot((doc) => {
                 try {
                     if (doc.exists) {
-                        const data = doc.data();
-                        roundData = data.roundData || roundData;
+                        const data = doc.data(); 
+                        roundData = data.roundData || roundData; 
                         scoresDb = data.scoresDb || {};
-
-                        if(!roundData.playMode) { roundData.playMode = '18'; }
-                        if(!roundData.startType) { roundData.startType = (roundData.startHole === 10) ? 'back' : 'front'; }
-                        if(!roundData.startHole) { roundData.startHole = 1; roundData.endHole = 18; }
+                        
+                        if(!roundData.playMode) { roundData.playMode = '18'; } 
+                        if(!roundData.startType) { roundData.startType = (roundData.startHole === 10) ? 'back' : 'front'; } 
+                        if(!roundData.startHole) { roundData.startHole = 1; roundData.endHole = 18; } 
                         if(!roundData.nineHoleType) { roundData.nineHoleType = 'straight'; }
+                        
+                        // Safety Net for older app versions missing Carts
+                        if(!roundData.groups) roundData.groups = [];
+                        if(!roundData.carts && roundData.groups.length > 0) { 
+                            roundData.carts = roundData.groups.map(g => ({ id: g.id, time: '', players: g.players.map(p => ({g: g.id, p: p.id})) })); 
+                        } else if (!roundData.carts) { 
+                            roundData.carts = []; 
+                        }
+                        if(typeof roundData.course === 'string') { 
+                            roundData.course = allAvailableCourses[roundData.course] || { name: "Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; 
+                        }
 
                         if (!document.getElementById('step-3').classList.contains('active') && !document.getElementById('step-dashboard').classList.contains('active')) {
-                            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                            renderPillNav();
+                            renderPillNav(); 
                             renderScoreEntry();
+                            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                             document.getElementById('step-3').classList.add('active');
                         } else {
                             if (document.getElementById('step-3').classList.contains('active')) updateUIWithoutLosingFocus();
                             if (document.getElementById('step-dashboard').classList.contains('active')) viewDashboard(); 
                         }
-                    } else {
-                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-                        if (lockedTeamId !== null) document.getElementById('step-dead-link').classList.add('active');
-                        else document.getElementById('step-1').classList.add('active');
+                    } else { 
+                        document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+                        if (lockedTeamId !== null) document.getElementById('step-dead-link').classList.add('active'); 
+                        else document.getElementById('step-1').classList.add('active'); 
                     }
-                } catch (e) { console.error("Error processing real-time snapshot: ", e); }
+                } catch (e) { 
+                    console.error("Cloud Error: ", e);
+                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+                    document.getElementById('step-1').classList.add('active');
+                }
             });
         };
 
-        function switchScreen(hide, show) {
-            document.getElementById(hide).classList.remove('active');
-            document.getElementById(show).classList.add('active');
-            window.scrollTo(0,0);
+        function switchScreen(hide, show) { 
+            document.getElementById(hide).classList.remove('active'); 
+            document.getElementById(show).classList.add('active'); 
+            window.scrollTo(0,0); 
         }
-
-        function refreshCourseDropdown() {
+        
+        function refreshCourseDropdown() { 
             allAvailableCourses = { ...courseDatabase }; 
-            let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
-            for (const [key, course] of Object.entries(customCourses)) allAvailableCourses[key] = course;
-            const selector = document.getElementById('course-selector');
-            selector.innerHTML = '';
-            for (const [key, course] of Object.entries(allAvailableCourses)) selector.innerHTML += `<option value="${key}">${course.name}</option>`;
+            let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {}; 
+            for (const [key, course] of Object.entries(customCourses)) allAvailableCourses[key] = course; 
+            const selector = document.getElementById('course-selector'); 
+            selector.innerHTML = ''; 
+            for (const [key, course] of Object.entries(allAvailableCourses)) selector.innerHTML += `<option value="${key}">${course.name}</option>`; 
         }
-
-        function handleParAdvance(el) {
-            let val = el.value.trim();
-            if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; }
-            if(val.length === 1) {
-                let inputs = Array.from(document.querySelectorAll('.custom-par-input'));
-                let idx = inputs.indexOf(el);
-                if(idx > -1 && idx < inputs.length - 1) { let next = inputs[idx + 1]; next.focus(); next.select(); }
-            }
+        
+        function handleParAdvance(el) { 
+            let val = el.value.trim(); 
+            if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
+            if(val.length === 1) { 
+                let inputs = Array.from(document.querySelectorAll('.custom-par-input')); 
+                let idx = inputs.indexOf(el); 
+                if(idx > -1 && idx < inputs.length - 1) { let next = inputs[idx + 1]; next.focus(); next.select(); } 
+            } 
         }
-
-        function saveCustomCourse() {
-            let name = document.getElementById('new-course-name').value.trim();
-            if (!name) { alert("Please enter a course name."); return; }
-            let pars = [];
-            for(let i=1; i<=18; i++) {
-                let val = parseInt(document.getElementById(`custom-par-${i}`).value);
+        
+        function saveCustomCourse() { 
+            let name = document.getElementById('new-course-name').value.trim(); 
+            if (!name) { alert("Please enter a course name."); return; } 
+            let pars = []; 
+            for(let i=1; i<=18; i++) { 
+                let val = parseInt(document.getElementById(`custom-par-${i}`).value); 
                 pars.push(isNaN(val) ? 4 : val); 
-            }
-            let courseKey = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, '');
-            let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {};
-            customCourses[courseKey] = { name: name + " (Custom)", pars: pars };
-            localStorage.setItem('customCourses', JSON.stringify(customCourses));
+            } 
+            let courseKey = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
+            let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {}; 
+            customCourses[courseKey] = { name: name + " (Custom)", pars: pars }; 
+            localStorage.setItem('customCourses', JSON.stringify(customCourses)); 
             refreshCourseDropdown(); 
             document.getElementById('course-selector').value = courseKey; 
-            document.getElementById('new-course-name').value = '';
-            for(let i=1; i<=18; i++) document.getElementById(`custom-par-${i}`).value = '';
-            alert("Course Saved Successfully!");
-            switchScreen('step-add-course', 'step-1');
+            document.getElementById('new-course-name').value = ''; 
+            for(let i=1; i<=18; i++) document.getElementById(`custom-par-${i}`).value = ''; 
+            alert("Course Saved Successfully!"); 
+            switchScreen('step-add-course', 'step-1'); 
         }
 
+        // ==========================================
+        // SETUP & SCRAMBLED PAIRINGS ENGINE
+        // ==========================================
         function goToStep2() {
-            roundData.course = allAvailableCourses[document.getElementById('course-selector').value];
-            roundData.betAmount = parseInt(document.getElementById('bet-amount').value) || 0;
-            roundData.skinsAmount = parseInt(document.getElementById('skins-amount').value) || 0;
-            roundData.playMode = document.getElementById('hole-format').value;
-            roundData.startType = document.getElementById('start-type').value;
+            roundData.course = allAvailableCourses[document.getElementById('course-selector').value]; 
+            roundData.betAmount = parseInt(document.getElementById('bet-amount').value) || 0; 
+            roundData.skinsAmount = parseInt(document.getElementById('skins-amount').value) || 0; 
+            roundData.playMode = document.getElementById('hole-format').value; 
+            roundData.startType = document.getElementById('start-type').value; 
             roundData.nineHoleType = document.getElementById('nine-hole-type').value || 'nassau';
             
-            if(roundData.playMode === '9') {
-                if(roundData.startType === 'back') { roundData.startHole = 10; roundData.endHole = 18; }
-                else { roundData.startHole = 1; roundData.endHole = 9; }
-            } else { roundData.startHole = 1; roundData.endHole = 18; }
+            if(roundData.playMode === '9') { 
+                if(roundData.startType === 'back') { roundData.startHole = 10; roundData.endHole = 18; } 
+                else { roundData.startHole = 1; roundData.endHole = 9; } 
+            } else { 
+                roundData.startHole = 1; roundData.endHole = 18; 
+            }
 
-            const gCount = parseInt(document.getElementById('group-count').value);
+            const gCount = parseInt(document.getElementById('group-count').value); 
             const pCount = parseInt(document.getElementById('players-per-group').value);
-
+            
             let html = '';
             for (let g = 1; g <= gCount; g++) {
                 html += `<div style="padding:15px; background:var(--bg-card); border-radius:5px; margin-bottom: 15px;">`;
-                html += `<h3 style="margin-top:0; margin-bottom:10px; color:var(--accent-gold);">Group ${g}</h3>`;
+                html += `<h3 style="margin-top:0; margin-bottom:10px; color:var(--accent-gold);">Team ${g}</h3>`;
+                html += `<div id="g${g}-time-wrap"><label>Tee Time</label><input type="time" id="g${g}-time" value="${tempRosterCache[`g${g}-time`] || ''}"></div>`;
+                
                 for (let p = 1; p <= pCount; p++) {
                     let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} Full Name`;
-                    html += `
-                    <div class="roster-player-block">
-                        <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}">
-                        <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="e.g. 4, 12" autocomplete="off">
+                    let savedName = tempRosterCache[`g${g}-p${p}-name`] || ""; 
+                    let savedStrokes = tempRosterCache[`g${g}-p${p}-strokes`] || ""; 
+                    let savedGhost = tempRosterCache[`g${g}-p${p}-ghost`] || "";
+                    let isGhostProp = savedGhost ? `data-ghost="${savedGhost}" readonly style="color:var(--accent-gold);"` : "";
+                    
+                    html += `<div class="roster-player-block">
+                        <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}" value="${savedName}" ${isGhostProp} onchange="saveRosterCache()">
+                        <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="e.g. 4, 12" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()">
                     </div>`;
                 }
                 html += `</div>`;
             }
             document.getElementById('roster-container').innerHTML = html;
+            
+            document.getElementById('is-scrambled').value = tempRosterCache['isScrambled'] || 'no';
+            document.getElementById('is-scrambled').addEventListener('change', (e) => { 
+                saveRosterCache(); 
+                let isScram = e.target.value === 'yes'; 
+                document.getElementById('btn-step2-next').innerText = isScram ? "Next: Set Physical Carts" : "Start Round & Sync";
+                for(let g=1; g<=gCount; g++) document.getElementById(`g${g}-time-wrap`).style.display = isScram ? 'none' : 'block';
+            });
+            document.getElementById('is-scrambled').dispatchEvent(new Event('change'));
+            
             switchScreen('step-1', 'step-2');
         }
 
-        function openPreRoundBlindDrawModal() {
-            let gCount = parseInt(document.getElementById('group-count').value);
-            let pCount = parseInt(document.getElementById('players-per-group').value);
+        function saveRosterCache() {
+            const gCount = parseInt(document.getElementById('group-count').value); 
+            const pCount = parseInt(document.getElementById('players-per-group').value);
             
-            let targetHtml = '';
             for(let g=1; g<=gCount; g++) {
-                let captName = document.getElementById(`g${g}-p1-name`).value.trim() || `Group ${g}`;
-                targetHtml += `<option value="${g}">Group ${g} (${captName})</option>`;
+                let timeEl = document.getElementById(`g${g}-time`); 
+                if(timeEl) tempRosterCache[`g${g}-time`] = timeEl.value;
+                for(let p=1; p<=pCount; p++) {
+                    let el = document.getElementById(`g${g}-p${p}-name`); 
+                    let str = document.getElementById(`g${g}-p${p}-strokes`);
+                    if(el) { 
+                        tempRosterCache[`g${g}-p${p}-name`] = el.value; 
+                        tempRosterCache[`g${g}-p${p}-ghost`] = el.getAttribute('data-ghost') || ""; 
+                    }
+                    if(str) { tempRosterCache[`g${g}-p${p}-strokes`] = str.value; }
+                }
             }
+            tempRosterCache['isScrambled'] = document.getElementById('is-scrambled').value;
+        }
+
+        function backToStep1() { 
+            saveRosterCache(); 
+            switchScreen('step-2', 'step-1'); 
+        }
+
+        function processStep2() {
+            saveRosterCache(); 
+            let isScrambled = document.getElementById('is-scrambled').value === 'yes';
+            if(isScrambled) { 
+                renderPairingDropdowns(); 
+                switchScreen('step-2', 'step-2-half'); 
+            } else { 
+                buildRoundDataAndStart(false); 
+            }
+        }
+
+        function renderPairingDropdowns() {
+            let cartCount = parseInt(document.getElementById('cart-group-count').value);
+            const gCount = parseInt(document.getElementById('group-count').value); 
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            let availablePlayers = [];
             
-            let sourceHtml = '';
             for(let g=1; g<=gCount; g++) {
                 for(let p=1; p<=pCount; p++) {
-                    let inputEl = document.getElementById(`g${g}-p${p}-name`);
-                    let name = inputEl.value.trim();
-                    let isGhost = inputEl.hasAttribute('data-ghost');
-                    if (name !== "" && !isGhost) { sourceHtml += `<option value="${g}-${p}">Group ${g}: ${name}</option>`; }
+                    let name = tempRosterCache[`g${g}-p${p}-name`];
+                    if(name && name.trim() !== "") {
+                        availablePlayers.push({ val: `${g}-${p}`, label: `T${g}: ${name.split(' ')[0]}` });
+                    }
                 }
             }
             
-            if (sourceHtml === '') { alert("Please enter at least one real player name first!"); return; }
-
-            document.getElementById('bd-target-team').innerHTML = targetHtml;
-            document.getElementById('bd-source-player').innerHTML = sourceHtml;
-            document.getElementById('blind-draw-modal').classList.add('active');
-        }
-
-        function applyPreRoundBlindDraw() {
-            let targetG = document.getElementById('bd-target-team').value;
-            let sourceVal = document.getElementById('bd-source-player').value;
-            let pCount = parseInt(document.getElementById('players-per-group').value);
-            let emptySlot = null;
-            for(let p=1; p<=pCount; p++) {
-                let input = document.getElementById(`g${targetG}-p${p}-name`);
-                if (input.value.trim() === "") { emptySlot = input; break; }
+            let html = '';
+            for(let c=1; c<=cartCount; c++) {
+                let savedTime = tempRosterCache[`cart${c}-time`] || '';
+                html += `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:15px; border:1px solid var(--border-color);">
+                <h3 style="margin:0 0 10px 0; color:var(--accent-gold);">Cart Group ${c}</h3>
+                <label>Tee Time</label><input type="time" id="cart${c}-time" value="${savedTime}" onchange="savePairingsCache()">`;
+                
+                for(let p=1; p<=4; p++) {
+                    let savedVal = tempRosterCache[`cart${c}-p${p}`] || "";
+                    html += `<select id="cart${c}-p${p}" onchange="savePairingsCache(); updateDropdownOptions();" style="margin-bottom:8px;"><option value="">--- Empty Slot ---</option>`;
+                    availablePlayers.forEach(ap => { html += `<option value="${ap.val}" ${savedVal === ap.val ? 'selected' : ''}>${ap.label}</option>`; });
+                    html += `</select>`;
+                }
+                html += `</div>`;
             }
-            
-            if (!emptySlot) { alert(`Group ${targetG} is already full! Clear a slot first.`); return; }
-            
-            let sourceInfo = sourceVal.split('-');
-            let sourceName = document.getElementById(`g${sourceInfo[0]}-p${sourceInfo[1]}-name`).value.trim().split(' ')[0];
-            
-            emptySlot.value = `Ghost: ${sourceName}`;
-            emptySlot.setAttribute('data-ghost', sourceVal);
-            emptySlot.readOnly = true;
-            emptySlot.style.color = "var(--accent-gold)";
-            
-            closeBlindDrawModal();
+            document.getElementById('pairings-container').innerHTML = html; 
+            updateDropdownOptions();
         }
 
-        function closeBlindDrawModal() { document.getElementById('blind-draw-modal').classList.remove('active'); }
+        function savePairingsCache() {
+            let cartCount = parseInt(document.getElementById('cart-group-count').value);
+            for(let c=1; c<=cartCount; c++) { 
+                tempRosterCache[`cart${c}-time`] = document.getElementById(`cart${c}-time`).value; 
+                for(let p=1; p<=4; p++) { 
+                    tempRosterCache[`cart${c}-p${p}`] = document.getElementById(`cart${c}-p${p}`).value; 
+                } 
+            }
+        }
 
-        function startRound() {
-            roundData.formats = [];
+        function updateDropdownOptions() {
+            let cartCount = parseInt(document.getElementById('cart-group-count').value); 
+            let selectedVals = [];
+            for(let c=1; c<=cartCount; c++) { 
+                for(let p=1; p<=4; p++) { 
+                    let val = document.getElementById(`cart${c}-p${p}`).value; 
+                    if(val) selectedVals.push(val); 
+                } 
+            }
+            for(let c=1; c<=cartCount; c++) {
+                for(let p=1; p<=4; p++) {
+                    let sel = document.getElementById(`cart${c}-p${p}`); 
+                    let current = sel.value;
+                    Array.from(sel.options).forEach(opt => { 
+                        if(opt.value !== "" && opt.value !== current && selectedVals.includes(opt.value)) opt.style.display = 'none'; 
+                        else opt.style.display = 'block'; 
+                    });
+                }
+            }
+        }
+
+        function startRoundScrambled() { buildRoundDataAndStart(true); }
+
+        function buildRoundDataAndStart(isScrambled) {
+            roundData.date = document.getElementById('round-date').value || new Date().toLocaleDateString(); 
+            roundData.isScrambled = isScrambled;
+            roundData.formats = []; 
             roundData.birdieRules = {}; 
             
-            [1, 2, 3].forEach(f => {
-                if(document.getElementById(`fmt-${f}`).checked) {
-                    roundData.formats.push(f);
-                    roundData.birdieRules[f] = document.getElementById(`fmt-${f}-birdies`).checked;
-                }
+            [1, 2, 3].forEach(f => { 
+                if(document.getElementById(`fmt-${f}`).checked) { 
+                    roundData.formats.push(f); 
+                    roundData.birdieRules[f] = document.getElementById(`fmt-${f}-birdies`).checked; 
+                } 
             });
-
-            roundData.groups = [];
+            
+            roundData.groups = []; 
+            roundData.carts = []; 
             scoresDb = {};
-            const gCount = parseInt(document.getElementById('group-count').value);
+            const gCount = parseInt(document.getElementById('group-count').value); 
             const pCount = parseInt(document.getElementById('players-per-group').value);
             
             for (let g = 1; g <= gCount; g++) {
-                let teamPlayers = [];
-                scoresDb[g] = {};
+                let teamPlayers = []; 
+                scoresDb[g] = {}; 
                 let validPlayerId = 1;
                 for (let p = 1; p <= pCount; p++) {
-                    let inputEl = document.getElementById(`g${g}-p${p}-name`);
-                    let name = inputEl.value.trim();
-                    if (name === "") continue;
-
-                    let strokesInput = document.getElementById(`g${g}-p${p}-strokes`).value.trim();
-                    let strokeHoles = [];
-                    if (strokesInput) {
-                        let matches = strokesInput.match(/\d+/g);
-                        if (matches) strokeHoles = matches.map(Number);
+                    let name = tempRosterCache[`g${g}-p${p}-name`]; 
+                    if (!name || name.trim() === "") continue;
+                    
+                    let strIn = tempRosterCache[`g${g}-p${p}-strokes`]; 
+                    let strokes = []; 
+                    if(strIn) { 
+                        let m = strIn.match(/\d+/g); 
+                        if(m) strokes = m.map(Number); 
                     }
-
-                    let ghostData = inputEl.getAttribute('data-ghost');
-
-                    if (ghostData) {
-                        let parts = ghostData.split('-');
-                        teamPlayers.push({ id: validPlayerId, name: name, isGhost: true, sourceG: parseInt(parts[0]), sourceP: parseInt(parts[1]) });
-                    } else {
-                        teamPlayers.push({ id: validPlayerId, name: name, strokeHoles: strokeHoles });
+                    
+                    let ghost = tempRosterCache[`g${g}-p${p}-ghost`];
+                    
+                    if(ghost) { 
+                        let pts = ghost.split('-'); 
+                        teamPlayers.push({ id: validPlayerId, name: name, isGhost: true, sourceG: parseInt(pts[0]), sourceP: parseInt(pts[1]) }); 
+                    } else { 
+                        teamPlayers.push({ id: validPlayerId, name: name, strokeHoles: strokes }); 
                     }
                     scoresDb[g][validPlayerId] = {}; 
                     validPlayerId++;
                 }
-                let teamColor = curatedColors[(g - 1) % curatedColors.length];
-                roundData.groups.push({ id: g, captain: teamPlayers[0] ? teamPlayers[0].name : "Captain", players: teamPlayers, color: teamColor });
+                let c = curatedColors[(g - 1) % curatedColors.length];
+                roundData.groups.push({ id: g, captain: teamPlayers[0] ? teamPlayers[0].name : `Team ${g}`, players: teamPlayers, color: c });
             }
 
-            roundData.currentHole = getHoleSequence()[0];
+            if(isScrambled) {
+                let cartCount = parseInt(document.getElementById('cart-group-count').value);
+                for(let c=1; c<=cartCount; c++) {
+                    let cartPlayers = []; 
+                    let time = tempRosterCache[`cart${c}-time`] || '';
+                    for(let p=1; p<=4; p++) { 
+                        let val = tempRosterCache[`cart${c}-p${p}`]; 
+                        if(val) { 
+                            let pts = val.split('-'); 
+                            cartPlayers.push({ g: parseInt(pts[0]), p: parseInt(pts[1]) }); 
+                        } 
+                    }
+                    if(cartPlayers.length > 0) roundData.carts.push({ id: c, time: time, players: cartPlayers });
+                }
+            } else {
+                roundData.groups.forEach(g => { 
+                    let time = tempRosterCache[`g${g.id}-time`] || ''; 
+                    roundData.carts.push({ id: g.id, time: time, players: g.players.map(p => ({g: g.id, p: p.id})) }); 
+                });
+            }
+
+            roundData.currentHole = getHoleSequence()[0]; 
             currentTeamFilter = "ALL";
             
-            saveAppStateToCloud();
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            renderPillNav();
-            renderScoreEntry();
-            document.getElementById('step-3').classList.add('active');
+            saveAppStateToCloud(); 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            renderPillNav(); 
+            renderScoreEntry(); 
+            document.getElementById('step-3').classList.add('active'); 
             window.scrollTo(0,0);
         }
 
-        function showJokePopup() {
-            let toast = document.createElement('div');
-            let randomJoke = roastJokes[Math.floor(Math.random() * roastJokes.length)];
-            toast.innerText = randomJoke;
-            toast.className = "joke-toast";
+        // ==========================================
+        // TEXT SHARE ENGINE
+        // ==========================================
+        function shareRoundInfo() {
+            saveRosterCache(); 
+            savePairingsCache(); 
+            
+            let course = allAvailableCourses[document.getElementById('course-selector').value].name;
+            let dateVal = document.getElementById('round-date').value; 
+            let dateStr = dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString();
+            
+            let mode = document.getElementById('hole-format').value; 
+            let nineType = document.getElementById('nine-hole-type').value || 'nassau';
+            let segments = (mode === '9' && nineType === 'straight') ? 1 : 3; 
+            let formatCount = 0; 
+            let fStrs = [];
+            
+            if(document.getElementById('fmt-1').checked) { formatCount++; fStrs.push(`• 1-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-1-birdies').checked?' ABC':''}`); }
+            if(document.getElementById('fmt-2').checked) { formatCount++; fStrs.push(`• 2-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-2-birdies').checked?' ABC':''}`); }
+            if(document.getElementById('fmt-3').checked) { formatCount++; fStrs.push(`• 3-Ball: ${Array(segments).fill(document.getElementById('bet-amount').value).join('/')}${document.getElementById('fmt-3-birdies').checked?' ABC':''}`); }
+            
+            let bet = parseInt(document.getElementById('bet-amount').value) || 0; 
+            let skins = parseInt(document.getElementById('skins-amount').value) || 0;
+            
+            let gCount = parseInt(document.getElementById('group-count').value); 
+            let pCount = parseInt(document.getElementById('players-per-group').value);
+            let teamLines = []; 
+            let totalP = 0;
+            
+            for(let g=1; g<=gCount; g++) { 
+                let names = []; 
+                for(let p=1; p<=pCount; p++) { 
+                    let n=tempRosterCache[`g${g}-p${p}-name`]; 
+                    if(n && n.trim()!=="") { 
+                        names.push(n.split(' ')[0]); 
+                        if(!tempRosterCache[`g${g}-p${p}-ghost`]) totalP++; 
+                    } 
+                } 
+                if(names.length>0) teamLines.push({id: g, names: names.join(', '), time: tempRosterCache[`g${g}-time`] || 'TBD'}); 
+            }
+
+            let isScrambled = document.getElementById('is-scrambled').value === 'yes';
+            
+            let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\n🏆 CHOOSE-UP TOURNAMENT 🏆\nDate: ${dateStr}\nCourse: ${course}\n`;
+            if (mode === '9') st += `Format: 9 Holes (${nineType === 'nassau' ? '4/5 Nassau Split' : 'Straight 9'})\n\n`; else st += `Format: 18 Holes\n\n`;
+            
+            let totPer = (segments * formatCount * bet) + skins;
+            st += `💰 THE ACTION:\nEntry Fee: $${totPer}/player\n(Team: $${totPer-skins} | Skins: $${skins})\n\n`; 
+            st += fStrs.join('\n') + `\n\n`;
+
+            if(!isScrambled) { 
+                st += `🏌️‍♂️ PAIRINGS & TEAMS:\n`; 
+                teamLines.forEach(t => { st += `Team ${t.id} (${t.time}):\n${t.names}\n\n`; }); 
+            } else {
+                st += `🤝 THE DRAFTED TEAMS (For the Money):\n`; 
+                teamLines.forEach(t => { st += `Team ${t.id}: ${t.names}\n`; }); 
+                st += `\n🏌️‍♂️ PHYSICAL PAIRINGS & TEE TIMES:\n`;
+                let cartCount = parseInt(document.getElementById('cart-group-count').value);
+                for(let c=1; c<=cartCount; c++) {
+                    let cNames = []; 
+                    let cTime = tempRosterCache[`cart${c}-time`] || 'TBD';
+                    for(let p=1; p<=4; p++) { 
+                        let val = tempRosterCache[`cart${c}-p${p}`]; 
+                        if(val) { 
+                            let pts = val.split('-'); 
+                            cNames.push((tempRosterCache[`g${pts[0]}-p${pts[1]}-name`]||'').split(' ')[0]); 
+                        } 
+                    }
+                    if(cNames.length>0) st += `Cart ${c} (${cTime}):\n${cNames.join(', ')}\n\n`;
+                }
+            }
+
+            if(navigator.share) { 
+                navigator.share({ title: 'Round Info', text: st }).catch(err => console.log(err)); 
+            } else { 
+                navigator.clipboard.writeText(st); 
+                alert("Text copied to clipboard!"); 
+            }
+        }
+
+        // ==========================================
+        // GHOST MODAL
+        // ==========================================
+        function openPreRoundBlindDrawModal() {
+            saveRosterCache();
+            let gCount = parseInt(document.getElementById('group-count').value); 
+            let pCount = parseInt(document.getElementById('players-per-group').value);
+            
+            let targetHtml = ''; 
+            let sourceHtml = '';
+            
+            for(let g=1; g<=gCount; g++) { 
+                let capt = tempRosterCache[`g${g}-p1-name`] || `Team ${g}`; 
+                targetHtml += `<option value="${g}">Team ${g} (${capt.split(' ')[0]})</option>`; 
+            }
+            
+            for(let g=1; g<=gCount; g++) {
+                for(let p=1; p<=pCount; p++) { 
+                    let name = tempRosterCache[`g${g}-p${p}-name`]; 
+                    let isGhost = tempRosterCache[`g${g}-p${p}-ghost`]; 
+                    if (name && name.trim() !== "" && !isGhost) { 
+                        sourceHtml += `<option value="${g}-${p}">Team ${g}: ${name.split(' ')[0]}</option>`; 
+                    } 
+                }
+            }
+            if (sourceHtml === '') { alert("Please enter at least one real player name first!"); return; }
+            document.getElementById('bd-target-team').innerHTML = targetHtml; 
+            document.getElementById('bd-source-player').innerHTML = sourceHtml; 
+            document.getElementById('blind-draw-modal').classList.add('active');
+        }
+
+        function applyPreRoundBlindDraw() {
+            let targetG = document.getElementById('bd-target-team').value; 
+            let sourceVal = document.getElementById('bd-source-player').value;
+            let pCount = parseInt(document.getElementById('players-per-group').value); 
+            let emptySlot = null;
+            
+            for(let p=1; p<=pCount; p++) { 
+                let val = tempRosterCache[`g${targetG}-p${p}-name`]; 
+                if (!val || val.trim() === "") { emptySlot = p; break; } 
+            }
+            if (!emptySlot) { alert(`Team ${targetG} is already full! Clear a slot first.`); return; }
+            
+            let sourceInfo = sourceVal.split('-'); 
+            let sourceName = tempRosterCache[`g${sourceInfo[0]}-p${sourceInfo[1]}-name`].split(' ')[0];
+            
+            document.getElementById(`g${targetG}-p${emptySlot}-name`).value = `Ghost: ${sourceName}`; 
+            document.getElementById(`g${targetG}-p${emptySlot}-name`).setAttribute('data-ghost', sourceVal); 
+            document.getElementById(`g${targetG}-p${emptySlot}-name`).readOnly = true; 
+            document.getElementById(`g${targetG}-p${emptySlot}-name`).style.color = "var(--accent-gold)";
+            
+            saveRosterCache(); 
+            closeBlindDrawModal();
+        }
+        function closeBlindDrawModal() { document.getElementById('blind-draw-modal').classList.remove('active'); }
+
+        // ==========================================
+        // SCORING ENGINE & POPUPS
+        // ==========================================
+        function showJokePopup(type) {
+            let toast = document.createElement('div'); 
+            toast.className = "joke-toast"; 
+            let msg = "";
+            
+            if(type === 'ace') { 
+                msg = popups.ace[Math.floor(Math.random() * popups.ace.length)]; 
+                toast.classList.add('toast-ace'); 
+            } else if(type === 'eagle') { 
+                msg = popups.eagle[Math.floor(Math.random() * popups.eagle.length)]; 
+                toast.classList.add('toast-eagle'); 
+            } else if(type === 'birdie') { 
+                msg = popups.birdie[Math.floor(Math.random() * popups.birdie.length)]; 
+                toast.classList.add('toast-birdie'); 
+            } else { 
+                msg = popups.bogey[Math.floor(Math.random() * popups.bogey.length)]; 
+                toast.classList.add('toast-bad'); 
+            }
+            
+            toast.innerText = msg; 
             document.body.appendChild(toast);
-            setTimeout(() => { toast.classList.add('show'); }, 50);
+            
+            setTimeout(() => { toast.classList.add('show'); }, 50); 
             setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 3000);
         }
 
         function renderPillNav() {
             if(lockedTeamId) { document.getElementById('pill-nav-container').style.display = 'none'; return; }
-            let container = document.getElementById('pill-nav-container');
+            let container = document.getElementById('pill-nav-container'); 
             let html = `<div class="pill ${currentTeamFilter === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')"><b>ADMIN VIEW</b></div>`;
-            roundData.groups.forEach(g => {
-                let isSelected = currentTeamFilter == g.id;
-                html += `<div class="pill ${isSelected ? 'active' : ''}" style="${isSelected ? `background:${g.color}; color:#000; border-color:${g.color};` : ''}" onclick="setTeamFilter(${g.id})"><b>${g.captain.split(' ')[0].toUpperCase()}</b></div>`;
+            roundData.carts.forEach(c => { 
+                let isSelected = currentTeamFilter == c.id; 
+                html += `<div class="pill ${isSelected ? 'active' : ''}" onclick="setTeamFilter(${c.id})"><b>CART ${c.id}</b></div>`; 
             });
             container.innerHTML = html;
         }
 
-        function setTeamFilter(filterValue) { currentTeamFilter = filterValue; localStorage.setItem('tournamentViewFilter', currentTeamFilter); renderPillNav(); renderScoreEntry(); }
+        function setTeamFilter(filterValue) { 
+            currentTeamFilter = filterValue; 
+            localStorage.setItem('tournamentViewFilter', currentTeamFilter); 
+            renderPillNav(); 
+            renderScoreEntry(); 
+        }
 
         function changeHole(direction) {
-            let seq = getHoleSequence();
-            let idx = seq.indexOf(roundData.currentHole);
+            let seq = getHoleSequence(); 
+            let idx = seq.indexOf(roundData.currentHole); 
             let nextIdx = idx + direction;
-            if(nextIdx >= 0 && nextIdx < seq.length) {
-                roundData.currentHole = seq[nextIdx];
+            if(nextIdx >= 0 && nextIdx < seq.length) { 
+                roundData.currentHole = seq[nextIdx]; 
                 saveAppStateToCloud(); 
-                renderScoreEntry();
-                window.scrollTo({ top: 0, behavior: 'smooth' });
+                renderScoreEntry(); 
+                window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
         }
 
-        function getParText(score, par) {
-            if(!score) return "";
-            let diff = score - par;
-            if(diff === 0) return "Par";
-            if(diff === -1) return "Birdie";
-            if(diff === -2) return "Eagle";
-            if(diff <= -3) return "Albatross";
-            if(diff === 1) return "Bogey";
-            if(diff === 2) return "Dbl Bogey";
-            return `+${diff}`;
-        }
-
-        function getParColor(score, par) {
-            if(!score) return "";
-            let diff = score - par;
-            if(diff < 0) return "#7ced7e"; 
-            if(diff > 0) return "#ff6b6b"; 
-            return "#f5eedc"; 
-        }
+        function getParText(score, par) { if(!score) return ""; let d = score - par; if(d===0) return "Par"; if(d===-1) return "Birdie"; if(d===-2) return "Eagle"; if(d<=-3) return "Albatross"; if(d===1) return "Bogey"; if(d===2) return "Dbl Bogey"; return `+${d}`; }
+        function getParColor(score, par) { if(!score) return ""; let d = score - par; if(d<0) return "#39ff14"; if(d>0) return "#ff6b6b"; return "#f5eedc"; }
 
         function renderScoreEntry() {
-            let hole = roundData.currentHole;
+            let hole = roundData.currentHole; 
             let par = roundData.course.pars[hole-1];
-            document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`;
+            document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`; 
             document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-            let html = '';
-            roundData.groups.forEach(group => {
-                if (currentTeamFilter !== "ALL" && currentTeamFilter != group.id) return;
-                html += `<div class="team-card" style="border-left-color: ${group.color}; position: relative; overflow: hidden;">
-                    <div style="position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 160px; font-weight: 900; color: rgba(212, 184, 114, 0.08); z-index: 0; pointer-events: none; user-select: none;">${hole}</div>
-                    <div style="position: relative; z-index: 1;">
-                        <div class="team-header">
-                            <h3 style="color: ${group.color}; margin: 0 0 5px 0; font-size: 1.5em; text-transform: uppercase; font-weight: bold;">${group.captain}</h3>
-                            <div style="color: ${group.color}; filter: brightness(0.65); font-size: 1.1em; font-weight: bold; text-transform: uppercase;">GROUP ${group.id}</div>
+            let html = `<div class="hole-watermark">${hole}</div>`;
+            
+            if (currentTeamFilter === "ALL") {
+                roundData.groups.forEach(group => {
+                    html += `<div class="team-card" style="border-left-color: ${group.color}; position: relative; z-index: 1;">
+                        <div class="team-header"><h3 style="color: ${group.color}; margin: 0 0 5px 0; font-size: 1.5em; text-transform: uppercase;">Team ${group.id}</h3></div>`;
+                    
+                    group.players.forEach(player => {
+                        let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
+                        let isGhostStyle = player.isGhost ? `background: var(--bg-dark) !important; pointer-events: none; color: var(--text-muted) !important; border-color: var(--bg-dark) !important;` : ``;
+                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field"; 
+                        let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
+                        
+                        html += `<div class="player-row">
+                            <span class="player-name">${player.name}${netDot}</span>
+                            <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.select()" onclick="this.select()" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
-                group.players.forEach(player => {
-                    let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
-                    let indText = getParText(currentScore, par);
-                    let indColor = getParColor(currentScore, par);
-                    let isGhostStyle = player.isGhost ? `background: var(--bg-table) !important; pointer-events: none; color: #6a826d !important; border-color: #2d4731 !important;` : ``;
-                    let isGhostReadonly = player.isGhost ? `readonly tabindex="-1"` : ``;
-                    let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field"; 
-                    let netDot = "";
-                    if (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) {
-                        let strokesOnHole = player.strokeHoles.filter(h => h === hole).length;
-                        netDot = " " + "🔴".repeat(strokesOnHole);
-                    }
-                    html += `<div class="player-row">
-                        <span class="player-name">${player.name}${netDot}</span>
-                        <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${indColor};">${indText}</span>
-                        <input type="tel" inputmode="numeric" pattern="[0-9]*" class="${inputClass}" style="${isGhostStyle}" ${isGhostReadonly}
-                               id="score-input-${group.id}-${player.id}" value="${currentScore}" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"
-                               onfocus="this.select()" onclick="this.select()" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})"></div>`;
+                    }); 
+                    html += `</div>`;
                 });
-                html += `</div></div>`;
-            });
+            } else {
+                let cart = roundData.carts.find(c => c.id == currentTeamFilter);
+                if(cart) {
+                    html += `<div class="team-card" style="border-left-color: var(--accent-gold); position: relative; z-index: 1;">
+                        <div class="team-header"><h3 style="color: var(--accent-gold); margin: 0 0 5px 0; font-size: 1.5em; text-transform: uppercase;">Cart ${cart.id}</h3></div>`;
+                    
+                    cart.players.forEach(cp => {
+                        let group = roundData.groups.find(g => g.id === cp.g); 
+                        let player = group.players.find(p => p.id === cp.p);
+                        let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
+                        let isGhostStyle = player.isGhost ? `background: var(--bg-dark) !important; pointer-events: none; color: var(--text-muted) !important; border-color: var(--bg-dark) !important;` : ``;
+                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field"; 
+                        let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
+                        let teamTag = roundData.isScrambled ? `<span style="font-size:10px; color:${group.color};"> [T${group.id}]</span>` : '';
+                        
+                        html += `<div class="player-row">
+                            <span class="player-name">${player.name}${teamTag}${netDot}</span>
+                            <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.select()" onclick="this.select()" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                        </div>`;
+                    }); 
+                    html += `</div>`;
+                }
+            }
             document.getElementById('entry-container').innerHTML = html;
         }
 
         function updateUIWithoutLosingFocus() {
             try {
-                let hole = roundData.currentHole;
+                let hole = roundData.currentHole; 
                 let par = roundData.course.pars[hole-1];
                 roundData.groups.forEach(g => {
                     g.players.forEach(p => {
                         let inputEl = document.getElementById(`score-input-${g.id}-${p.id}`);
                         if (inputEl && document.activeElement !== inputEl) {
                             let cloudVal = (scoresDb[g.id] && scoresDb[g.id][p.id]) ? (scoresDb[g.id][p.id][hole] || '') : '';
-                            inputEl.value = cloudVal;
+                            inputEl.value = cloudVal; 
                             let ind = document.getElementById(`par-ind-${g.id}-${p.id}`);
                             if(ind) { ind.innerText = getParText(cloudVal, par); ind.style.color = getParColor(cloudVal, par); }
                         }
                     });
                 });
-            } catch(err) { console.error("UI Update error skipped to preserve layout"); }
+            } catch(err) {}
         }
 
         function saveAppStateToCloud() {
-            let status = document.getElementById('sync-status');
+            let status = document.getElementById('sync-status'); 
             if(status) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
-            activeTournamentRef.set({ roundData: roundData, scoresDb: scoresDb })
-                .then(() => { if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; } })
-                .catch((error) => { if(status) { status.innerText = "↻ Queued (Offline)"; status.style.color = "var(--text-muted)"; } });
+            activeTournamentRef.set({ roundData: roundData, scoresDb: scoresDb }).then(() => { 
+                if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; } 
+            }).catch((error) => {});
         }
 
         function handleInputAdvance(el, groupId, playerId, hole, par) {
-            let val = el.value.trim();
-            if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; }
+            let val = el.value.trim(); 
+            if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
             let parsedVal = parseInt(val);
             
             if(!isNaN(parsedVal) && parsedVal > 0) {
-                if ((parsedVal - par) >= 2) { showJokePopup(); }
-                let missedHole = null;
-                let seq = getHoleSequence();
+                let diff = parsedVal - par;
+                if (parsedVal === 1) { showJokePopup('ace'); } 
+                else if (diff === -2) { showJokePopup('eagle'); } 
+                else if (diff === -1) { showJokePopup('birdie'); } 
+                else if (diff >= 2) { showJokePopup('bogey'); }
+
+                let missedHole = null; 
+                let seq = getHoleSequence(); 
                 let currentIndex = seq.indexOf(hole);
-                for (let i = 0; i < currentIndex; i++) {
-                    let h = seq[i];
-                    if (!scoresDb[groupId]?.[playerId]?.[h]) { missedHole = h; break; }
+                for (let i = 0; i < currentIndex; i++) { 
+                    if (!scoresDb[groupId]?.[playerId]?.[seq[i]]) { missedHole = seq[i]; break; } 
                 }
-                if (missedHole) {
+                if (missedHole) { 
                     el.value = ''; 
-                    alert(`⚠️ Wait! You skipped Hole ${missedHole}.\n\nPlease use the 'Prev' button to go back and enter that score before continuing.`);
+                    alert(`⚠️ Wait! You skipped Hole ${missedHole}. Use the 'Prev' button to go back.`); 
                     return; 
                 }
             }
 
             if(!isNaN(parsedVal) && parsedVal > 0) {
-                if (!scoresDb[groupId]) scoresDb[groupId] = {};
+                if (!scoresDb[groupId]) scoresDb[groupId] = {}; 
                 if (!scoresDb[groupId][playerId]) scoresDb[groupId][playerId] = {};
                 scoresDb[groupId][playerId][hole] = parsedVal;
-            } else {
+            } else { 
                 if (scoresDb[groupId] && scoresDb[groupId][playerId]) delete scoresDb[groupId][playerId][hole]; 
             } 
             
-            let ind = document.getElementById(`par-ind-${groupId}-${playerId}`);
+            let ind = document.getElementById(`par-ind-${groupId}-${playerId}`); 
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
             roundData.groups.forEach(ghostGroup => {
                 ghostGroup.players.forEach(ghostPlayer => {
                     if (ghostPlayer.isGhost && ghostPlayer.sourceG === groupId && ghostPlayer.sourceP === playerId) {
-                        if (!scoresDb[ghostGroup.id]) scoresDb[ghostGroup.id] = {};
+                        if (!scoresDb[ghostGroup.id]) scoresDb[ghostGroup.id] = {}; 
                         if (!scoresDb[ghostGroup.id][ghostPlayer.id]) scoresDb[ghostGroup.id][ghostPlayer.id] = {};
                         if (!isNaN(parsedVal) && parsedVal > 0) { scoresDb[ghostGroup.id][ghostPlayer.id][hole] = parsedVal; } 
                         else { delete scoresDb[ghostGroup.id][ghostPlayer.id][hole]; }
+                        
                         let ghostInput = document.getElementById(`score-input-${ghostGroup.id}-${ghostPlayer.id}`);
                         if (ghostInput) ghostInput.value = (isNaN(parsedVal) || parsedVal <= 0) ? '' : parsedVal;
+                        
                         let ghostInd = document.getElementById(`par-ind-${ghostGroup.id}-${ghostPlayer.id}`);
                         if (ghostInd) { ghostInd.innerText = getParText(val, par); ghostInd.style.color = getParColor(val, par); }
                     }
@@ -781,63 +1142,82 @@
             setTimeout(() => { saveAppStateToCloud(); }, 10);
 
             if(val.length === 1) {
-                let inputs = Array.from(document.querySelectorAll('.score-input-field'));
+                let inputs = Array.from(document.querySelectorAll('.score-input-field')); 
                 let idx = inputs.indexOf(el);
-                if(idx > -1 && idx < inputs.length - 1) {
-                    let nextInput = inputs[idx + 1];
-                    nextInput.focus();
-                    nextInput.select();
+                
+                if(idx > -1 && idx < inputs.length - 1) { 
+                    inputs[idx + 1].focus(); 
+                    inputs[idx + 1].select(); 
                 } else if (idx === inputs.length - 1) {
                     let seq = getHoleSequence();
                     if (hole === seq[seq.length - 1]) {
-                        let missingScores = false;
+                        let missingScores = false; 
                         let firstMissingHole = null;
-                        roundData.groups.forEach(g => {
-                            if (currentTeamFilter !== "ALL" && currentTeamFilter != g.id) return;
-                            g.players.forEach(p => { 
-                                if(p.isGhost) return;
-                                for(let h of seq) { 
-                                    if(!scoresDb[g.id]?.[p.id]?.[h]) {
-                                        missingScores = true;
-                                        if(!firstMissingHole || seq.indexOf(h) < seq.indexOf(firstMissingHole)) firstMissingHole = h;
-                                    }
-                                } 
+                        
+                        if(currentTeamFilter === "ALL") {
+                            roundData.groups.forEach(g => { 
+                                g.players.forEach(p => { 
+                                    if(p.isGhost) return; 
+                                    for(let h of seq) { 
+                                        if(!scoresDb[g.id]?.[p.id]?.[h]) { 
+                                            missingScores = true; 
+                                            if(!firstMissingHole || seq.indexOf(h) < seq.indexOf(firstMissingHole)) firstMissingHole = h; 
+                                        } 
+                                    } 
+                                }); 
                             });
-                        });
+                        } else {
+                            let cart = roundData.carts.find(c => c.id == currentTeamFilter);
+                            if(cart) {
+                                cart.players.forEach(cp => { 
+                                    let p = roundData.groups.find(g=>g.id===cp.g).players.find(x=>x.id===cp.p); 
+                                    if(p.isGhost) return; 
+                                    for(let h of seq) { 
+                                        if(!scoresDb[cp.g]?.[cp.p]?.[h]) { 
+                                            missingScores = true; 
+                                            if(!firstMissingHole || seq.indexOf(h) < seq.indexOf(firstMissingHole)) firstMissingHole = h; 
+                                        } 
+                                    } 
+                                });
+                            }
+                        }
 
-                        if (missingScores) {
+                        if (missingScores) { 
                             el.value = ''; 
-                            alert(`⚠️ Missing Scores!\n\nYou skipped entering scores on Hole ${firstMissingHole}. Please use the 'Prev' button to go back and complete your scorecard.`);
+                            alert(`⚠️ Missing Scores!\nYou skipped Hole ${firstMissingHole}. Use the 'Prev' button to go back.`); 
                         } else { 
-                            if (currentTeamFilter === "ALL") document.getElementById('complete-modal').classList.add('active');
+                            if (currentTeamFilter === "ALL") document.getElementById('complete-modal').classList.add('active'); 
                             else viewDashboard(); 
                         }
-                    } else {
+                    } else { 
                         setTimeout(() => { 
                             changeHole(1); 
-                            setTimeout(() => {
-                                let nextInputs = Array.from(document.querySelectorAll('.score-input-field'));
-                                if (nextInputs.length > 0 && !nextInputs[0].readOnly) { nextInputs[0].focus(); nextInputs[0].select(); }
-                            }, 50);
+                            setTimeout(() => { 
+                                let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
+                                if (nInp.length > 0 && !nInp[0].readOnly) { nInp[0].focus(); nInp[0].select(); } 
+                            }, 50); 
                         }, 300); 
                     }
                 }
             }
         }
 
-        function closeCompleteModalAndView() {
-            document.getElementById('complete-modal').classList.remove('active');
-            viewDashboard();
+        function closeCompleteModalAndView() { 
+            document.getElementById('complete-modal').classList.remove('active'); 
+            viewDashboard(); 
         }
 
+        // ==========================================
+        // SCOREBOARDS & PAYOUTS
+        // ==========================================
         function getPlayerNetScore(rData, player, hole, grossScore) {
             if (!grossScore) return 0;
-            if (player.isGhost) {
-                let srcGroup = rData.groups.find(g => g.id === player.sourceG);
-                let srcPlayer = srcGroup ? srcGroup.players.find(p => p.id === player.sourceP) : null;
-                if (srcPlayer) return getPlayerNetScore(rData, srcPlayer, hole, grossScore);
+            if (player.isGhost) { 
+                let srcGroup = rData.groups.find(g => g.id === player.sourceG); 
+                let srcPlayer = srcGroup ? srcGroup.players.find(p => p.id === player.sourceP) : null; 
+                if (srcPlayer) return getPlayerNetScore(rData, srcPlayer, hole, grossScore); 
             }
-            let strokesOnHole = 0;
+            let strokesOnHole = 0; 
             if (player.strokeHoles) { strokesOnHole = player.strokeHoles.filter(h => h === hole).length; }
             return grossScore - strokesOnHole;
         }
@@ -846,89 +1226,88 @@
         function formatNetToParCSS(net) { if(net === 0) return "even-par"; return net > 0 ? "over-par" : "under-par"; }
 
         function viewDashboard() {
-            activeViewRoundData = roundData;
+            activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
             document.getElementById('dashboard-title').innerText = (lockedTeamId === null) ? "Live Tournament Dashboard" : "Live Scorecard";
             
-            let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.length, 0);
-            let orderedSegments = getOrderedSegments(roundData);
+            let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
+            let orderedSegments = getOrderedSegments(roundData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
-            let totalBets = roundData.formats.length * betsPerFormat;
-            let totalTeamPot = totalPlayers * roundData.betAmount * totalBets;
+            let totalBets = roundData.formats.length * betsPerFormat; 
+            let totalTeamPot = totalPlayers * roundData.betAmount * totalBets; 
             let skinsPot = totalPlayers * roundData.skinsAmount;
             
-            let rulesHTML = '';
-            roundData.formats.forEach(f => {
-                let ruleStatus = (roundData.birdieRules && roundData.birdieRules[f]) ? `<span style="color: #7ced7e; font-weight: bold;">ON</span>` : `<span style="color: #ff6b6b; font-weight: bold;">OFF</span>`;
-                rulesHTML += `<div style="display: flex; justify-content: space-between; font-size: 13px; margin-top: 3px; padding-left: 10px; color: var(--text-muted);"><span>• ${f}-Ball Birdies Rule:</span> <span>${ruleStatus}</span></div>`;
-            });
-
-            let strokesHTML = '';
-            roundData.groups.forEach(g => {
-                g.players.forEach(p => {
-                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) { strokesHTML += `<div style="display: flex; justify-content: space-between; font-size: 13px; margin-top: 3px; padding-left: 10px; color: var(--text-muted);"><span>• ${p.name.split(' ')[0]}:</span> <span>Hole(s) ${p.strokeHoles.join(', ')}</span></div>`; }
-                });
+            let rulesHTML = ''; 
+            roundData.formats.forEach(f => { 
+                let rS = (roundData.birdieRules && roundData.birdieRules[f]) ? `<span style="color:#39ff14; font-weight:bold;">ON</span>` : `<span style="color:#ff6b6b; font-weight:bold;">OFF</span>`; 
+                rulesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${f}-Ball Birdies Rule:</span> <span>${rS}</span></div>`; 
             });
             
-            if (strokesHTML !== '') {
-                rulesHTML += `<div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 5px;">🎯 Handicap Strokes:</div>` + strokesHTML;
-                rulesHTML += `<div style="font-size: 11px; color: #ff6b6b; margin-top: 8px; font-style: italic; line-height: 1.3; background: #132116; padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);">🔴 = Net Score applied on this hole.<br>* Scorecard displays Gross/Net.<br>* Net scores do NOT count towards the Gross Skins pot.</div>`;
+            let strokesHTML = ''; 
+            roundData.groups.forEach(g => { 
+                g.players.forEach(p => { 
+                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) { 
+                        strokesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${p.name.split(' ')[0]}:</span> <span>Hole(s) ${p.strokeHoles.join(', ')}</span></div>`; 
+                    } 
+                }); 
+            });
+            
+            if (strokesHTML !== '') { 
+                rulesHTML += `<div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 5px;">🎯 Handicap Strokes:</div>` + strokesHTML; 
+                rulesHTML += `<div style="font-size:11px; color:#ff6b6b; margin-top:8px; font-style:italic; line-height:1.3; background:var(--bg-table); padding:8px; border-radius:4px; border:1px solid var(--border-color);">🔴 = Net Score applied on this hole.<br>* Scorecard displays Gross/Net.<br>* Net scores do NOT count towards the Gross Skins pot.</div>`; 
             }
 
-            let finHTML = `
-            <div style="background: var(--bg-card); padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 5px solid #3ea84e;">
-                <h3 style="margin-top: 0; margin-bottom: 10px; color: #7ced7e;">💰 Live Purse</h3>
-                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;"><span>Total Team Purse:</span> <b>$${totalTeamPot}</b></div>
-                <div style="display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px;"><span>Total Skins Pot:</span> <b>$${skinsPot}</b></div>
-                <hr style="border-color: var(--border-color); margin: 10px 0;">
-                <div style="display: flex; justify-content: space-between; font-size: 14px; font-weight: bold; color: var(--text-main); margin-bottom: 5px;"><span>Total Buy-in Per Player:</span> <span style="color: var(--accent-gold); font-size: 16px;">$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</span></div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding-left: 5px;"><span>Individual Bet (Per Segment):</span> <span>$${roundData.betAmount}</span></div>
-                <div style="display: flex; justify-content: space-between; font-size: 13px; color: var(--text-muted); padding-left: 5px; margin-bottom: 10px;"><span>Skins Buy-in:</span> <span>$${roundData.skinsAmount}</span></div>
-                <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>
-                ${rulesHTML}
+            let finHTML = `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:20px; border-left:5px solid #3ea84e;">
+                <h3 style="margin-top:0; margin-bottom:10px; color:#7ced7e;">💰 Live Purse</h3>
+                <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Team Purse:</span> <b>$${totalTeamPot}</b></div>
+                <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Skins Pot:</span> <b>$${skinsPot}</b></div>
+                <hr style="border-color:var(--border-color); margin:10px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; color:var(--text-main); margin-bottom:5px;"><span>Total Buy-in Per Player:</span> <span style="color:var(--accent-gold); font-size:16px;">$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px;"><span>Individual Bet (Per Segment):</span> <span>$${roundData.betAmount}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px; margin-bottom:10px;"><span>Skins Buy-in:</span> <span>$${roundData.skinsAmount}</span></div>
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>${rulesHTML}
             </div>`;
             
-            document.getElementById('dashboard-financial-summary').innerHTML = finHTML;
-            document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb);
+            document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
+            document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb); 
             document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
         }
 
-        function getBorders(isActive, segId, type, h, seg, isLastRow) {
-            if (!isActive || segId === 0) return "";
-            let cls = "";
-            if (type === 'header_hole') { cls += ` b-top-${segId}`; if (h === seg.s) cls += ` b-left-${segId}`; }
-            if (type === 'header_tot') { cls += ` b-top-${segId} b-right-${segId}`; }
-            if (type === 'par_hole' || type === 'player_hole') { if (h === seg.s) cls += ` b-left-${segId}`; }
-            if (type === 'par_tot' || type === 'player_tot') { cls += ` b-right-${segId}`; }
-            if (type === 'team_hole') { if (isLastRow) cls += ` b-bot-${segId}`; if (h === seg.s) cls += ` b-left-${segId}`; }
-            if (type === 'team_tot') { if (isLastRow) cls += ` b-bot-${segId}`; cls += ` b-right-${segId}`; }
-            return cls;
+        function getBorders(isActive, segId, type, h, seg, isLastRow) { 
+            if (!isActive || segId === 0) return ""; 
+            let cls = ""; 
+            if (type === 'header_hole') { cls += ` b-top-${segId}`; if (h === seg.s) cls += ` b-left-${segId}`; } 
+            if (type === 'header_tot') { cls += ` b-top-${segId} b-right-${segId}`; } 
+            if (type === 'par_hole' || type === 'player_hole') { if (h === seg.s) cls += ` b-left-${segId}`; } 
+            if (type === 'par_tot' || type === 'player_tot') { cls += ` b-right-${segId}`; } 
+            if (type === 'team_hole') { if (isLastRow) cls += ` b-bot-${segId}`; if (h === seg.s) cls += ` b-left-${segId}`; } 
+            if (type === 'team_tot') { if (isLastRow) cls += ` b-bot-${segId}`; cls += ` b-right-${segId}`; } 
+            return cls; 
         }
 
         function generateScorecardHTML(rData, sDb) {
-            let fullHTML = '';
-            let isBackStart18 = (rData.playMode === '18' && rData.startType === 'back');
+            let fullHTML = ''; 
+            let isBackStart18 = (rData.playMode === '18' && rData.startType === 'back'); 
             let orderedSegments = getOrderedSegments(rData);
-
+            
             let formatWinners = {}; 
             rData.formats.forEach(f => {
-                formatWinners[f] = { overall: { min: Infinity, count: 0 } };
+                formatWinners[f] = { overall: { min: Infinity, count: 0 } }; 
                 orderedSegments.forEach(seg => { formatWinners[f][seg.type] = { min: Infinity, count: 0 }; });
                 rData.groups.forEach(g => {
                     let overallNet = 0; let overallPlayed = 0;
                     orderedSegments.forEach(seg => {
                         let segNet = 0; let segPlayed = 0;
                         for(let h=seg.s; h<=seg.e; h++) {
-                            let basePar = rData.course.pars[h-1];
-                            let hs = [];
+                            let basePar = rData.course.pars[h-1]; let hs = [];
                             g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                            if(hs.length >= f) {
-                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
-                                let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); }
-                                segNet += net; segPlayed++;
+                            if(hs.length >= f) { 
+                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
+                                let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
+                                if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
+                                segNet += net; segPlayed++; 
                             }
                         }
                         if(segPlayed > 0) {
@@ -937,24 +1316,23 @@
                             overallNet += segNet; overallPlayed += segPlayed;
                         }
                     });
-                    if(overallPlayed > 0) {
-                        if (overallNet < formatWinners[f].overall.min) { formatWinners[f].overall.min = overallNet; formatWinners[f].overall.count = 1; }
-                        else if (overallNet === formatWinners[f].overall.min) { formatWinners[f].overall.count++; }
+                    if(overallPlayed > 0) { 
+                        if (overallNet < formatWinners[f].overall.min) { formatWinners[f].overall.min = overallNet; formatWinners[f].overall.count = 1; } 
+                        else if (overallNet === formatWinners[f].overall.min) { formatWinners[f].overall.count++; } 
                     }
                 });
             });
 
             let skinsWon = {};
             for(let h=1; h<=18; h++) {
-                let par = rData.course.pars[h-1];
-                let hs = [];
+                let par = rData.course.pars[h-1]; let hs = [];
                 rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, s: s}); }); });
-                if(hs.length > 0) {
-                    let min = Math.min(...hs.map(x=>x.s));
-                    if(min < par) {
-                        let winners = hs.filter(x=>x.s===min);
-                        if(winners.length===1) skinsWon[h] = `${winners[0].gid}-${winners[0].id}`;
-                    }
+                if(hs.length > 0) { 
+                    let min = Math.min(...hs.map(x=>x.s)); 
+                    if(min < par) { 
+                        let winners = hs.filter(x=>x.s===min); 
+                        if(winners.length===1) skinsWon[h] = `${winners[0].gid}-${winners[0].id}`; 
+                    } 
                 }
             }
 
@@ -962,15 +1340,14 @@
             else if (rData.playMode === '9' && rData.nineHoleType === 'nassau') { fullHTML += `<div style="background: rgba(212, 184, 114, 0.1); border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 10px; border-radius: 6px; text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px;">🏆 NASSAU 4/5 SPLIT MATCH ACTIVE</div>`; }
 
             rData.groups.forEach(g => {
-                if(lockedTeamId && g.id !== lockedTeamId) return; 
-                fullHTML += `<div style="background: var(--bg-card); border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
+                fullHTML += `<div style="background: var(--bg-table); border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
                     <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                        <h3 style="color: ${g.color}; margin: 0; font-size: 1.6em; text-transform: uppercase; font-weight: bold;">${g.captain}</h3>
+                        <h3 style="color: ${g.color}; margin: 0; font-size: 1.6em; text-transform: uppercase; font-weight: bold;">Team ${g.id}</h3>
                         ${isBackStart18 ? `<div style="color: #ff6b6b; font-weight: bold; font-size: 1.2em; text-align: center; flex: 1;">STARTED ON BACK NINE</div>` : ''}
-                        <div style="color: var(--text-muted); font-size: 14px; font-weight: bold; text-transform: uppercase;">Group ${g.id}</div>
+                        <div style="color: var(--text-muted); font-size: 14px; font-weight: bold; text-transform: uppercase;">Capt: ${g.captain.split(' ')[0]}</div>
                     </div><div class="table-wrapper"><table style="width: 100%; text-align: center; border-collapse: collapse;"><thead><tr>`;
                 
-                let headerRow = `<th style="text-align:left; background:var(--bg-table); color:${g.color}; border-color:var(--border-color);">Hole</th>`;
+                let headerRow = `<th style="text-align:left; background:var(--bg-dark); color:${g.color}; border-color:var(--border-color);">Hole</th>`;
                 orderedSegments.forEach(seg => {
                     for(let i=seg.s; i<=seg.e; i++) { headerRow += `<th class="${getBorders(true, seg.id, 'header_hole', i, seg, false)}" style="border-color:var(--border-color);">${i}</th>`; }
                     headerRow += `<th class="out-in-col ${getBorders(true, seg.id, 'header_tot', 0, seg, false)}" style="border-color:var(--border-color);">${seg.label}</th>`;
@@ -983,8 +1360,7 @@
                 orderedSegments.forEach(seg => {
                     let segPar = 0;
                     for(let i=seg.s; i<=seg.e; i++) { parRow += `<td class="${getBorders(true, seg.id, 'par_hole', i, seg, false)}" style="border-color:var(--border-color);">${rData.course.pars[i-1]}</td>`; segPar += rData.course.pars[i-1]; }
-                    parRow += `<td class="out-in-col ${getBorders(true, seg.id, 'par_tot', 0, seg, false)}" style="border-color:var(--border-color);">${segPar}</td>`;
-                    totalPar += segPar;
+                    parRow += `<td class="out-in-col ${getBorders(true, seg.id, 'par_tot', 0, seg, false)}" style="border-color:var(--border-color);">${segPar}</td>`; totalPar += segPar;
                 });
                 if (orderedSegments.length > 1) parRow += `<td class="out-in-col" style="border-color:var(--border-color);">${totalPar}</td>`;
                 fullHTML += parRow + `</tr>`;
@@ -998,14 +1374,14 @@
                         for(let h=seg.s; h<=seg.e; h++) {
                             let score = sDb[g.id]?.[p.id]?.[h];
                             if(score) {
-                                segScore += score;
-                                let net = getPlayerNetScore(rData, p, h, score);
+                                segScore += score; 
+                                let net = getPlayerNetScore(rData, p, h, score); 
                                 let cssClass = "score-cell " + formatNetToParCSS(net - rData.course.pars[h-1]);
                                 let dots = ""; let displayScore = score;
-                                if (!p.isGhost && p.strokeHoles && p.strokeHoles.includes(h)) {
-                                    let count = p.strokeHoles.filter(x => x === h).length;
-                                    dots = `<span style="font-size: 9px; margin-left: 2px; vertical-align: top;">${'🔴'.repeat(count)}</span>`;
-                                    displayScore = `${score}/${net}`;
+                                if (!p.isGhost && p.strokeHoles && p.strokeHoles.includes(h)) { 
+                                    let count = p.strokeHoles.filter(x => x === h).length; 
+                                    dots = `<span style="font-size: 9px; margin-left: 2px; vertical-align: top;">${'🔴'.repeat(count)}</span>`; 
+                                    displayScore = `${score}/${net}`; 
                                 }
                                 let cellContent = `${displayScore}${dots}`;
                                 if (!p.isGhost && skinsWon[h] === `${g.id}-${p.id}`) {
@@ -1013,12 +1389,12 @@
                                     cellContent = `<div class="skin-container"><svg class="skin-orbit" viewBox="0 0 100 100"><path id="skinPath-${randId}" d="M 50, 50 m -40, 0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0" fill="transparent"/><text><textPath href="#skinPath-${randId}" startOffset="0%" textLength="250" lengthAdjust="spacing">SKIN • SKIN • SKIN • </textPath></text></svg><span style="position:relative; z-index:2;">${cellContent}</span></div>`;
                                 }
                                 playerRow += `<td class="${cssClass} ${getBorders(true, seg.id, 'player_hole', h, seg, false)}" style="border-color:var(--border-color);">${cellContent}</td>`;
-                            } else {
-                                segPlayed = false; playedAll = false;
-                                playerRow += `<td class="score-cell ${getBorders(true, seg.id, 'player_hole', h, seg, false)}" style="border-color:var(--border-color);">-</td>`;
+                            } else { 
+                                segPlayed = false; playedAll = false; 
+                                playerRow += `<td class="score-cell ${getBorders(true, seg.id, 'player_hole', h, seg, false)}" style="border-color:var(--border-color);">-</td>`; 
                             }
                         }
-                        playerRow += `<td class="out-in-col ${getBorders(true, seg.id, 'player_tot', 0, seg, false)}" style="border-color:var(--border-color);">${segPlayed ? segScore : '-'}</td>`;
+                        playerRow += `<td class="out-in-col ${getBorders(true, seg.id, 'player_tot', 0, seg, false)}" style="border-color:var(--border-color);">${segPlayed ? segScore : '-'}</td>`; 
                         totalScore += segScore;
                     });
                     if (orderedSegments.length > 1) playerRow += `<td class="out-in-col" style="border-color:var(--border-color);">${playedAll ? totalScore : '-'}</td>`;
@@ -1030,38 +1406,39 @@
 
                 rData.formats.forEach(f => {
                     let teamRow = `<tr class="team-math-row"><td style="text-align:left; border-color: var(--border-color); color:${g.color};">Team ${f}-Ball</td>`;
-                    let totalNet = 0; let totalPlayed = 0;
-                    let isLastRow = (rData.formats.indexOf(f) === rData.formats.length - 1);
+                    let totalNet = 0; let totalPlayed = 0; let isLastRow = (rData.formats.indexOf(f) === rData.formats.length - 1);
 
                     orderedSegments.forEach(seg => {
                         let segNet = 0; let segPlayed = 0;
                         for(let h=seg.s; h<=seg.e; h++) {
-                            let basePar = rData.course.pars[h-1];
-                            let hs = [];
+                            let basePar = rData.course.pars[h-1]; let hs = [];
                             g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
                             if(hs.length >= f) {
-                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
+                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
                                 let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
                                 if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) holeNet += n; }); }
-                                segNet += holeNet; segPlayed++;
+                                segNet += holeNet; segPlayed++; 
                                 teamRow += `<td class="${formatNetToParCSS(holeNet)} ${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color);">${formatNetToPar(holeNet)}</td>`;
-                            } else {
-                                teamRow += `<td class="${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color); color:var(--text-muted);">-</td>`;
+                            } else { 
+                                teamRow += `<td class="${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color); color:var(--text-muted);">-</td>`; 
                             }
                         }
                         totalNet += segNet; totalPlayed += segPlayed;
-                        let isWinner = (segPlayed > 0 && segNet === formatWinners[f][seg.type].min);
+                        
+                        let isWinner = (segPlayed > 0 && segNet === formatWinners[f][seg.type].min); 
                         let isTie = isWinner && formatWinners[f][seg.type].count > 1;
                         let winPulse = ""; let inlineStyle = `border-color:var(--border-color);`;
-                        if (isTie) { winPulse = "tie-pulse"; } else if (isWinner) { winPulse = "winner-pulse"; inlineStyle += ` --team-color:${g.color};`; }
+                        if (isTie) { winPulse = "tie-pulse"; } 
+                        else if (isWinner) { winPulse = "winner-pulse"; inlineStyle += ` --team-color:${g.color};`; }
                         teamRow += `<td class="out-in-col ${formatNetToParCSS(segNet)} ${getBorders(true, seg.id, 'team_tot', 0, seg, isLastRow)} ${winPulse}" style="${inlineStyle}">${formatNetToPar(segNet)}</td>`;
                     });
 
                     if (orderedSegments.length > 1) {
-                        let isWinOverall = (totalPlayed > 0 && totalNet === formatWinners[f].overall.min);
+                        let isWinOverall = (totalPlayed > 0 && totalNet === formatWinners[f].overall.min); 
                         let isTieOverall = isWinOverall && formatWinners[f].overall.count > 1;
                         let winPulseOver = ""; let inlineStyle = `border-color:var(--border-color);`;
-                        if (isTieOverall) { winPulseOver = "tie-pulse"; } else if (isWinOverall) { winPulseOver = "winner-pulse"; inlineStyle += ` --team-color:${g.color};`; }
+                        if (isTieOverall) { winPulseOver = "tie-pulse"; } 
+                        else if (isWinOverall) { winPulseOver = "winner-pulse"; inlineStyle += ` --team-color:${g.color};`; }
                         teamRow += `<td class="out-in-col ${formatNetToParCSS(totalNet)} ${winPulseOver}" style="${inlineStyle}">${formatNetToPar(totalNet)}</td>`;
                     }
                     fullHTML += teamRow + `</tr>`;
@@ -1072,203 +1449,46 @@
         }
 
         function generateFinancialSummaryHTML(rData, sDb) {
-            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
+            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0); 
             if(totalPlayers === 0) return "<p>No data.</p>";
 
-            let skinsHTML = `<div class="payout-header">🔥 Gross Skins Payout</div>`;
-            let skinsPot = totalPlayers * rData.skinsAmount;
+            let skinsHTML = `<div class="payout-header">🔥 Gross Skins Payout</div>`; 
+            let skinsPot = totalPlayers * rData.skinsAmount; 
             let playerSkins = {}; let totalSkinsWon = 0;
 
             for(let h=1; h<=18; h++) {
-                let par = rData.course.pars[h-1];
-                let hs = [];
+                let par = rData.course.pars[h-1]; let hs = [];
                 rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) { hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); } }); });
                 if(hs.length > 0) {
                     let min = Math.min(...hs.map(x=>x.s));
-                    if(min < par) {
-                        let winners = hs.filter(x=>x.s===min);
-                        if(winners.length===1) {
-                            let w = winners[0]; let key = `${w.gid}-${w.id}`;
-                            if(!playerSkins[key]) playerSkins[key] = { name: w.n, color: w.c, holes: [] };
-                            playerSkins[key].holes.push(h);
-                            totalSkinsWon++;
-                        }
+                    if(min < par) { 
+                        let winners = hs.filter(x=>x.s===min); 
+                        if(winners.length===1) { 
+                            let w = winners[0]; let key = `${w.gid}-${w.id}`; 
+                            if(!playerSkins[key]) playerSkins[key] = { name: w.n, color: w.c, holes: [] }; 
+                            playerSkins[key].holes.push(h); totalSkinsWon++; 
+                        } 
                     }
                 }
             }
 
             if(totalSkinsWon > 0 && skinsPot > 0) {
-                let perSkin = skinsPot / totalSkinsWon;
+                let perSkin = skinsPot / totalSkinsWon; 
                 skinsHTML += `<div class="payout-row" style="color:var(--text-muted); margin-bottom:15px;">Total Pot: $${skinsPot} | Value Per Skin: $${perSkin.toFixed(2)}</div>`;
-                Object.values(playerSkins).forEach(ps => {
-                    let totalWon = ps.holes.length * perSkin;
-                    skinsHTML += `<div class="payout-row"><span class="payout-winner" style="color:${ps.color}">${ps.name.split(' ')[0]} (Holes: ${ps.holes.join(', ')})</span><span class="payout-amount">$${totalWon.toFixed(2)}</span></div>`;
+                Object.values(playerSkins).forEach(ps => { 
+                    let totalWon = ps.holes.length * perSkin; 
+                    skinsHTML += `<div class="payout-row"><span class="payout-winner" style="color:${ps.color}">${ps.name.split(' ')[0]} (Holes: ${ps.holes.join(', ')})</span><span class="payout-amount">$${totalWon.toFixed(2)}</span></div>`; 
                 });
             } else { skinsHTML += `<div class="payout-row">No gross skins won / No skins pot.</div>`; }
 
             let teamHTML = `<div class="payout-header" style="margin-top:25px;">💰 Team Bet Payouts</div>`;
-            let orderedSegments = getOrderedSegments(rData);
-            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
+            let orderedSegments = getOrderedSegments(rData); 
+            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1; 
             let totalBets = rData.formats.length * betsPerFormat;
-            let potPerBet = totalPlayers * rData.betAmount;
-            let teamPayouts = {};
+            let potPerBet = totalPlayers * rData.betAmount; let teamPayouts = {};
             
             if(potPerBet > 0) {
                 rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: g.color, n: g.captain.split(' ')[0], count: g.players.filter(p => !p.isGhost).length }; });
-
-                rData.formats.forEach(f => {
-                    orderedSegments.forEach(seg => {
-                        let segData = [];
-                        rData.groups.forEach(g => {
-                            let segNet = 0, segPlayed = 0;
-                            for(let h=seg.s; h<=seg.e; h++) {
-                                let basePar = rData.course.pars[h-1];
-                                let hs = [];
-                                g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                if(hs.length >= f) {
-                                    let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
-                                    let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                    if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); }
-                                    segNet += net; segPlayed++;
-                                }
-                            }
-                            if(segPlayed > 0) segData.push({id: g.id, net: segNet});
-                        });
-
-                        if(segData.length > 0) {
-                            let minNet = Math.min(...segData.map(d => d.net));
-                            let winners = segData.filter(d => d.net === minNet);
-                            let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: ${seg.label} ($${potPerBet} Pot)</div>`;
-                            winners.forEach(w => {
-                                teamPayouts[w.id].total += split;
-                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Capt: ${teamPayouts[w.id].n} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`;
-                            });
-                        }
-                    });
-
-                    if (orderedSegments.length > 1) {
-                        let totData = [];
-                        rData.groups.forEach(g => {
-                            let overallNet = 0, overallPlayed = 0;
-                            orderedSegments.forEach(seg => {
-                                let segNet = 0, segPlayed = 0;
-                                for(let h=seg.s; h<=seg.e; h++) {
-                                    let basePar = rData.course.pars[h-1];
-                                    let hs = [];
-                                    g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                    if(hs.length >= f) {
-                                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
-                                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                        if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); }
-                                        segNet += net; segPlayed++;
-                                    }
-                                }
-                                if(segPlayed > 0) { overallNet += segNet; overallPlayed += segPlayed; }
-                            });
-                            if(overallPlayed > 0) totData.push({id: g.id, net: overallNet});
-                        });
-
-                        if(totData.length > 0) {
-                            let minNet = Math.min(...totData.map(d => d.net));
-                            let winners = totData.filter(d => d.net === minNet);
-                            let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: Overall Match ($${potPerBet} Pot)</div>`;
-                            winners.forEach(w => {
-                                teamPayouts[w.id].total += split;
-                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Capt: ${teamPayouts[w.id].n} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`;
-                            });
-                        }
-                    }
-                });
-
-                teamHTML += `<div class="payout-header" style="margin-top:20px; font-size:1em;">Final Team Totals (Split Per Player)</div>`;
-                Object.keys(teamPayouts).forEach(tid => {
-                    let tp = teamPayouts[tid];
-                    if(tp.total > 0) {
-                        let perPlayer = tp.total / tp.count;
-                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.c}; font-size:16px;">Capt: ${tp.n} Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
-                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); padding-left:10px;"><span>Payout per teammate:</span><span>$${perPlayer.toFixed(2)}</span></div>`;
-                    }
-                });
-            } else { teamHTML += `<div class="payout-row">No Team Bets configured.</div>`; }
-
-            return skinsHTML + teamHTML;
-        }
-
-        function openResultsShareModal() {
-            let rData = activeViewRoundData; let sDb = activeViewScoresDb;
-            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.length, 0);
-            let orderedSegments = getOrderedSegments(rData);
-            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
-            let totalBets = rData.formats.length * betsPerFormat;
-            let totalTeamPot = totalPlayers * rData.betAmount * totalBets;
-            let skinsPot = totalPlayers * rData.skinsAmount;
-            let perPlayerBet = rData.betAmount * totalBets;
-            let perPlayerSkins = rData.skinsAmount;
-
-            let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\n🏆 CHOOSE-UP TOURNAMENT 🏆\nDate: ${new Date().toLocaleDateString()}\nCourse: ${rData.course.name}\n`;
-            if (rData.playMode === '9') st += `Format: 9 Holes (${rData.nineHoleType === 'nassau' ? '4/5 Nassau Split' : 'Straight 9'})\n\n`; else st += `Format: 18 Holes\n\n`;
-            st += `💰 TOTAL PURSE: $${totalTeamPot + skinsPot}\nTeam Pot: $${totalTeamPot} | Skins Pot: $${skinsPot}\nTeam Entry: $${perPlayerBet}/player | Skins: $${perPlayerSkins}/player\n\n`;
-
-            let strokeText = '';
-            rData.groups.forEach(g => { g.players.forEach(p => { if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) { strokeText += `  ${p.name.split(' ')[0]}: Hole(s) ${p.strokeHoles.join(', ')}\n`; } }); });
-            if (strokeText !== '') { st += `🎯 HANDICAP STROKES:\n` + strokeText + `\n`; }
-
-            st += `🏆 TEAM STANDINGS (To Par):\n`;
-            rData.groups.forEach(g => {
-                st += `Group ${g.id} (Capt: ${g.captain.split(' ')[0]}):\n`;
-                rData.formats.forEach(f => {
-                    st += `  ${f}-Ball:\n`;
-                    let overallNet = 0;
-                    orderedSegments.forEach(seg => {
-                        let segNet = 0;
-                        for(let h=seg.s; h<=seg.e; h++) {
-                            let basePar = rData.course.pars[h-1]; let hs = [];
-                            g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                            if(hs.length >= f) {
-                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
-                                let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); }
-                                segNet += net;
-                            }
-                        }
-                        st += `    ${seg.label}: [${formatNetToPar(segNet)}]\n`;
-                        overallNet += segNet;
-                    });
-                    if (orderedSegments.length > 1) { st += `    Overall Total: [${formatNetToPar(overallNet)}]\n`; }
-                });
-                st += `\n`;
-            });
-
-            st += `🔥 GROSS SKINS WON:\n`;
-            let playerSkins = {}; let totalSkins = 0;
-            for(let h=1; h<=18; h++) {
-                let par = rData.course.pars[h-1]; let hs = [];
-                rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, n: p.name, s: s}); }); });
-                if(hs.length > 0) {
-                    let min = Math.min(...hs.map(x=>x.s));
-                    if(min < par) {
-                        let winners = hs.filter(x=>x.s===min);
-                        if(winners.length===1) {
-                            let k = `${winners[0].gid}-${winners[0].id}`;
-                            if(!playerSkins[k]) playerSkins[k] = {n: winners[0].n.split(' ')[0], holes: []};
-                            playerSkins[k].holes.push(h); totalSkins++;
-                        }
-                    }
-                }
-            }
-            if(totalSkins > 0 && skinsPot > 0) {
-                let perSkin = skinsPot / totalSkins;
-                st += `Value Per Skin: $${perSkin.toFixed(2)}\n`;
-                Object.values(playerSkins).forEach(ps => { st += `  ${ps.n} | $${(ps.holes.length * perSkin).toFixed(2)} | Holes: ${ps.holes.join(', ')}\n`; });
-            } else { st += `  No gross skins won.\n`; }
-
-            let tp = {}; rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.filter(p => !p.isGhost).length});
-            let pot = totalPlayers * rData.betAmount;
-            
-            if(pot > 0) {
-                st += `\n💸 TEAM PAYOUTS:\n`;
                 rData.formats.forEach(f => {
                     orderedSegments.forEach(seg => {
                         let segData = [];
@@ -1277,20 +1497,25 @@
                             for(let h=seg.s; h<=seg.e; h++) {
                                 let basePar = rData.course.pars[h-1]; let hs = [];
                                 g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                if(hs.length >= f) {
-                                    let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
-                                    let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                    if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); }
-                                    segNet += net; segPlayed++;
+                                if(hs.length >= f) { 
+                                    let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
+                                    let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
+                                    if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
+                                    segNet += net; segPlayed++; 
                                 }
                             }
                             if(segPlayed > 0) segData.push({id: g.id, net: segNet});
                         });
                         
                         if(segData.length > 0) {
-                            let min = Math.min(...segData.map(d=>d.net)); let w = segData.filter(d=>d.net===min); let split = pot/w.length;
-                            st += `${f}-Ball ${seg.label}:\n`;
-                            w.forEach(win => { tp[win.id].t += split; st += `  Capt: ${tp[win.id].n} [${formatNetToPar(min)}] ($${split.toFixed(2)})\n`; });
+                            let minNet = Math.min(...segData.map(d => d.net)); 
+                            let winners = segData.filter(d => d.net === minNet); 
+                            let split = potPerBet / winners.length;
+                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: ${seg.label} ($${potPerBet} Pot)</div>`;
+                            winners.forEach(w => { 
+                                teamPayouts[w.id].total += split; 
+                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
+                            });
                         }
                     });
 
@@ -1303,11 +1528,11 @@
                                 for(let h=seg.s; h<=seg.e; h++) {
                                     let basePar = rData.course.pars[h-1]; let hs = [];
                                     g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                    if(hs.length >= f) {
-                                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
-                                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                        if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); }
-                                        segNet += net; segPlayed++;
+                                    if(hs.length >= f) { 
+                                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
+                                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
+                                        if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
+                                        segNet += net; segPlayed++; 
                                     }
                                 }
                                 if(segPlayed > 0) { overallNet += segNet; overallPlayed += segPlayed; }
@@ -1316,140 +1541,279 @@
                         });
 
                         if(totData.length > 0) {
-                            let min = Math.min(...totData.map(d=>d.net)); let w = totData.filter(d=>d.net===min); let split = pot/w.length;
-                            st += `${f}-Ball Overall Match:\n`;
-                            w.forEach(win => { tp[win.id].t += split; st += `  Capt: ${tp[win.id].n} [${formatNetToPar(min)}] ($${split.toFixed(2)})\n`; });
+                            let minNet = Math.min(...totData.map(d => d.net)); 
+                            let winners = totData.filter(d => d.net === minNet); 
+                            let split = potPerBet / winners.length;
+                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: Overall Match ($${potPerBet} Pot)</div>`;
+                            winners.forEach(w => { 
+                                teamPayouts[w.id].total += split; 
+                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
+                            });
+                        }
+                    }
+                });
+
+                teamHTML += `<div class="payout-header" style="margin-top:20px; font-size:1em;">Final Team Totals (Split Per Player)</div>`;
+                Object.keys(teamPayouts).forEach(tid => {
+                    let tp = teamPayouts[tid];
+                    if(tp.total > 0) {
+                        let perPlayer = tp.total / tp.count;
+                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.c}; font-size:16px;">Team ${tid} Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
+                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); padding-left:10px;"><span>Payout per teammate:</span><span>$${perPlayer.toFixed(2)}</span></div>`;
+                    }
+                });
+            } else { teamHTML += `<div class="payout-row">No Team Bets configured.</div>`; }
+
+            return skinsHTML + teamHTML;
+        }
+
+        // ==========================================
+        // SHARE & ARCHIVE ENGINE
+        // ==========================================
+        function openResultsShareModal() {
+            let rData = activeViewRoundData; 
+            let sDb = activeViewScoresDb;
+            
+            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
+            let orderedSegments = getOrderedSegments(rData); 
+            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1; 
+            let totalBets = rData.formats.length * betsPerFormat;
+            let totalTeamPot = totalPlayers * rData.betAmount * totalBets; 
+            let skinsPot = totalPlayers * rData.skinsAmount;
+            let perPlayerBet = rData.betAmount * totalBets; 
+            let perPlayerSkins = rData.skinsAmount;
+
+            let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\n🏆 TOURNAMENT FINAL RESULTS 🏆\nDate: ${rData.date}\nCourse: ${rData.course.name}\n\n`;
+            st += `💰 TOTAL PURSE: $${totalTeamPot + skinsPot}\nTeam Pot: $${totalTeamPot} | Skins Pot: $${skinsPot}\n\n`;
+
+            st += `🏆 TEAM STANDINGS (To Par):\n`;
+            rData.groups.forEach(g => {
+                st += `Team ${g.id} (Capt: ${g.captain.split(' ')[0]}):\n`;
+                rData.formats.forEach(f => {
+                    st += `  ${f}-Ball:\n`; 
+                    let overallNet = 0;
+                    orderedSegments.forEach(seg => {
+                        let segNet = 0;
+                        for(let h=seg.s; h<=seg.e; h++) {
+                            let basePar = rData.course.pars[h-1]; let hs = [];
+                            g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
+                            if(hs.length >= f) { 
+                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
+                                let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
+                                if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
+                                segNet += net; 
+                            }
+                        }
+                        st += `    ${seg.label}: [${formatNetToPar(segNet)}]\n`; overallNet += segNet;
+                    });
+                    if (orderedSegments.length > 1) { st += `    Overall Total: [${formatNetToPar(overallNet)}]\n`; }
+                }); 
+                st += `\n`;
+            });
+
+            st += `🔥 GROSS SKINS WON:\n`;
+            let playerSkins = {}; let totalSkins = 0;
+            for(let h=1; h<=18; h++) {
+                let par = rData.course.pars[h-1]; let hs = [];
+                rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, n: p.name, s: s}); }); });
+                if(hs.length > 0) {
+                    let min = Math.min(...hs.map(x=>x.s));
+                    if(min < par) { 
+                        let winners = hs.filter(x=>x.s===min); 
+                        if(winners.length===1) { 
+                            let k = `${winners[0].gid}-${winners[0].id}`; 
+                            if(!playerSkins[k]) playerSkins[k] = {n: winners[0].n.split(' ')[0], holes: []}; 
+                            playerSkins[k].holes.push(h); totalSkins++; 
+                        } 
+                    }
+                }
+            }
+            if(totalSkins > 0 && skinsPot > 0) {
+                let perSkin = skinsPot / totalSkins; 
+                st += `Value Per Skin: $${perSkin.toFixed(2)}\n`;
+                Object.values(playerSkins).forEach(ps => { st += `  ${ps.n} | $${(ps.holes.length * perSkin).toFixed(2)} | Holes: ${ps.holes.join(', ')}\n`; });
+            } else { st += `  No gross skins won.\n`; }
+
+            let tp = {}; 
+            rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.filter(p => !p.isGhost).length});
+            let pot = totalPlayers * rData.betAmount;
+            
+            if(pot > 0) {
+                rData.formats.forEach(f => {
+                    orderedSegments.forEach(seg => {
+                        let segData = [];
+                        rData.groups.forEach(g => {
+                            let segNet = 0, segPlayed = 0;
+                            for(let h=seg.s; h<=seg.e; h++) {
+                                let basePar = rData.course.pars[h-1]; let hs = [];
+                                g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
+                                if(hs.length >= f) { 
+                                    let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
+                                    let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
+                                    if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
+                                    segNet += net; segPlayed++; 
+                                }
+                            }
+                            if(segPlayed > 0) segData.push({id: g.id, net: segNet});
+                        });
+                        if(segData.length > 0) {
+                            let min = Math.min(...segData.map(d=>d.net)); 
+                            let w = segData.filter(d=>d.net===min); 
+                            let split = pot/w.length;
+                            w.forEach(win => { tp[win.id].t += split; });
+                        }
+                    });
+                    
+                    if (orderedSegments.length > 1) {
+                        let totData = [];
+                        rData.groups.forEach(g => {
+                            let overallNet = 0, overallPlayed = 0;
+                            orderedSegments.forEach(seg => {
+                                let segNet = 0, segPlayed = 0;
+                                for(let h=seg.s; h<=seg.e; h++) {
+                                    let basePar = rData.course.pars[h-1]; let hs = [];
+                                    g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
+                                    if(hs.length >= f) { 
+                                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
+                                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
+                                        if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
+                                        segNet += net; segPlayed++; 
+                                    }
+                                }
+                                if(segPlayed > 0) { overallNet += segNet; overallPlayed += segPlayed; }
+                            });
+                            if(overallPlayed > 0) totData.push({id: g.id, net: overallNet});
+                        });
+                        if(totData.length > 0) {
+                            let min = Math.min(...totData.map(d=>d.net)); 
+                            let w = totData.filter(d=>d.net===min); 
+                            let split = pot/w.length;
+                            w.forEach(win => { tp[win.id].t += split; });
                         }
                     }
                 });
             }
 
             st += `\n💰 FINAL TEAM TOTALS:\n`;
-            Object.values(tp).forEach(team => {
-                if(team.t > 0) { st += `Capt ${team.n} Team:\n  Team Total Payout: $${team.t.toFixed(2)}\n  Per Player Piece: $${(team.t/team.c).toFixed(2)}\n`; }
+            Object.values(tp).forEach((team, idx) => {
+                if(team.t > 0) { st += `Team ${Object.keys(tp)[idx]}:\n  Team Total Payout: $${team.t.toFixed(2)}\n  Per Player Piece: $${(team.t/team.c).toFixed(2)}\n`; }
             });
 
-            document.getElementById('share-text-content').value = st;
+            document.getElementById('share-text-content').value = st; 
             document.getElementById('share-modal').classList.add('active');
         }
 
         function copyAndCloseShare() {
             let textArea = document.getElementById('share-text-content');
-            textArea.select();
-            document.execCommand('copy'); 
-            if(navigator.clipboard) navigator.clipboard.writeText(textArea.value);
+            if(navigator.share) { 
+                navigator.share({ title: 'Tournament Results', text: textArea.value }).catch(err => console.log(err)); 
+            } else { 
+                textArea.select(); 
+                document.execCommand('copy'); 
+                if(navigator.clipboard) navigator.clipboard.writeText(textArea.value); 
+                alert("Copied to clipboard!"); 
+            }
             closeShareModal();
         }
         function closeShareModal() { document.getElementById('share-modal').classList.remove('active'); }
 
         function openShareMenu() {
             let html = '';
-            roundData.groups.forEach(g => {
-                html += `<button class="btn-secondary" style="border-color: ${g.color}; color: ${g.color};" onclick="sendSMS(${g.id})">📱 Text Group ${g.id} (Capt: ${g.captain.split(' ')[0]})</button>`;
+            roundData.carts.forEach(c => {
+                const baseUrl = window.location.href.split('?')[0]; 
+                const magicLink = `${baseUrl}?cart=${c.id}`;
+                const message = encodeURIComponent(`Here is the live scorecard for Cart ${c.id}. Click here to start scoring: ${magicLink}`);
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                const smsLink = isIOS ? `sms:&body=${message}` : `sms:?body=${message}`;
+                html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="window.location.href='${smsLink}'">📱 Text Link for Cart ${c.id}</button>`;
             });
-            document.getElementById('share-buttons-container').innerHTML = html;
+            document.getElementById('share-buttons-container').innerHTML = html; 
             switchScreen('step-3', 'step-7');
-        }
-
-        function sendSMS(groupId) {
-            let group = roundData.groups.find(g => g.id === groupId);
-            let captainName = group ? group.captain.split(' ')[0] : "Captain";
-            const baseUrl = window.location.href.split('?')[0]; 
-            const magicLink = `${baseUrl}?team=${groupId}`;
-            const message = encodeURIComponent(`Hey ${captainName}, here is your live scorecard for Group ${groupId}. Click here to start scoring: ${magicLink}`);
-            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-            if (isIOS) { window.location.href = `sms:&body=${message}`; } else { window.location.href = `sms:?body=${message}`; }
         }
 
         function unlockAdmin() {
             const pin = document.getElementById('adminPin').value;
-            if (pin === '1234') {
-                isAdminUnlocked = true;
-                document.getElementById('admin-unlock-section').style.display = 'none';
-                document.getElementById('forceArchiveBtn').style.display = 'block';
-                alert("Admin unlocked! You can now archive rounds early.");
-            } else { alert("Incorrect PIN."); }
+            if (pin === '1234') { 
+                isAdminUnlocked = true; 
+                document.getElementById('admin-unlock-section').style.display = 'none'; 
+                document.getElementById('forceArchiveBtn').style.display = 'block'; 
+                alert("Admin unlocked! You can now archive rounds early."); 
+            } else { 
+                alert("Incorrect PIN."); 
+            }
         }
 
-        // ==========================================
-        // 8. ARCHIVE & FINALIZE ENGINE
-        // ==========================================
         function validateAndFinalize(forceArchive = false) {
-            let missingScores = false;
+            let missingScores = false; 
             let seq = getHoleSequence();
             
-            roundData.groups.forEach(g => {
+            roundData.groups.forEach(g => { 
                 g.players.forEach(p => { 
-                    if(p.isGhost) return;
-                    for(let h of seq) { 
-                        if(!scoresDb[g.id]?.[p.id]?.[h]) missingScores = true; 
-                    } 
-                });
+                    if(p.isGhost) return; 
+                    for(let h of seq) { if(!scoresDb[g.id]?.[p.id]?.[h]) missingScores = true; } 
+                }); 
             });
-
+            
             if(missingScores) {
-                if (forceArchive && isAdminUnlocked) {
-                    if(!confirm("⚠️ The round isn't finished yet. Are you sure you want to FORCE archive it?")) return;
-                } else {
-                    alert("⚠️ Cannot finalize!\n\nAll scores have not been entered yet. Use Admin Unlock to bypass.");
-                    return;
+                if (forceArchive && isAdminUnlocked) { 
+                    if(!confirm("⚠️ The round isn't finished yet. Are you sure you want to FORCE archive it?")) return; 
+                } else { 
+                    alert("⚠️ Cannot finalize!\n\nAll scores have not been entered yet. Use Admin Unlock to bypass."); 
+                    return; 
                 }
-            } else {
-                if(!confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) return;
+            } else { 
+                if(!confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) return; 
             }
 
-            saveToArchive();
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById('step-1').classList.add('active');
+            saveToArchive(); 
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            document.getElementById('step-1').classList.add('active'); 
             window.scrollTo(0,0);
-
-            activeTournamentRef.delete().catch(err => console.error("Cloud delete failed: ", err));
-
-            setTimeout(() => {
-                if(confirm("Round Finalized successfully! Generate text results to copy/share?")) { openResultsShareModal(); }
-            }, 150);
+            
+            activeTournamentRef.delete().catch(err => console.log(err));
+            setTimeout(() => { if(confirm("Round Finalized successfully! Generate text results to copy/share?")) { openResultsShareModal(); } }, 150);
         }
 
         function saveToArchive() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
-            archive.push({ date: new Date().toLocaleDateString(), course: roundData.course, roundData: roundData, scoresDb: scoresDb });
+            archive.push({ date: roundData.date || new Date().toLocaleDateString(), course: roundData.course, roundData: roundData, scoresDb: scoresDb });
             localStorage.setItem('tournamentArchive', JSON.stringify(archive));
         }
 
         function viewArchiveList() {
-            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; 
             let html = '';
             document.getElementById('bulk-delete-btn').style.display = archive.length > 0 ? 'block' : 'none';
-            
-            if(archive.length === 0) {
-                html = '<p style="text-align: center; padding: 20px; background: var(--bg-card); border-radius: 6px;">No archived rounds found.</p>';
-            } else {
-                archive.forEach((arc, i) => {
-                    html += `
-                    <div class="archive-item">
+            if(archive.length === 0) { 
+                html = '<p style="text-align: center; padding: 20px; background: var(--bg-table); border-radius: 6px;">No archived rounds found.</p>'; 
+            } else { 
+                archive.forEach((arc, i) => { 
+                    html += `<div class="archive-item">
                         <input type="checkbox" class="archive-checkbox" value="${i}">
                         <div class="archive-info">
                             <div style="font-weight: bold; font-size: 18px;">${arc.course.name || arc.course}</div>
                             <div style="color: var(--text-muted); font-size: 14px;">Played on: ${arc.date}</div>
                         </div>
                         <button class="btn-secondary" style="width:auto; padding: 8px 12px; margin:0; font-size: 12px;" onclick="showArchivedCard(${i})">View</button>
-                    </div>`;
-                });
+                    </div>`; 
+                }); 
             }
-            document.getElementById('archive-list-container').innerHTML = html;
+            document.getElementById('archive-list-container').innerHTML = html; 
             switchScreen('step-1', 'step-8');
         }
 
         function deleteSelectedArchives() {
-            let checkboxes = document.querySelectorAll('.archive-checkbox:checked');
+            let checkboxes = document.querySelectorAll('.archive-checkbox:checked'); 
             if(checkboxes.length === 0) { alert("Please select at least one round to delete."); return; }
             if (prompt("Enter Admin PIN (1234) to delete selected rounds:") === "1234") {
-                let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+                let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; 
                 let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a,b) => b-a);
-                indices.forEach(idx => archive.splice(idx, 1));
-                localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+                indices.forEach(idx => archive.splice(idx, 1)); 
+                localStorage.setItem('tournamentArchive', JSON.stringify(archive)); 
                 viewArchiveList();
-            } else { alert("Incorrect PIN. Deletion aborted."); }
+            } else { 
+                alert("Incorrect PIN. Deletion aborted."); 
+            }
         }
 
         function showArchivedCard(index) {
@@ -1458,20 +1822,19 @@
             activeViewScoresDb = arc.scoresDb || arc.scores || {};
             
             if(typeof activeViewRoundData.course === 'string') { activeViewRoundData.course = allAvailableCourses[activeViewRoundData.course] || { name: "Archived Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; }
-            if(!activeViewRoundData.playMode) { activeViewRoundData.playMode = '18'; }
-            if(!activeViewRoundData.startType) { activeViewRoundData.startType = (activeViewRoundData.startHole === 10) ? 'back' : 'front'; }
-            if(!activeViewRoundData.startHole) { activeViewRoundData.startHole = 1; activeViewRoundData.endHole = 18; }
-            if(!activeViewRoundData.formats) { activeViewRoundData.formats = [1, 2]; }
-            if(!activeViewRoundData.birdieRules) { activeViewRoundData.birdieRules = {1:true, 2:true, 3:false}; }
+            if(!activeViewRoundData.playMode) { activeViewRoundData.playMode = '18'; } 
+            if(!activeViewRoundData.startType) { activeViewRoundData.startType = (activeViewRoundData.startHole === 10) ? 'back' : 'front'; } 
+            if(!activeViewRoundData.startHole) { activeViewRoundData.startHole = 1; activeViewRoundData.endHole = 18; } 
+            if(!activeViewRoundData.formats) { activeViewRoundData.formats = [1, 2]; } 
+            if(!activeViewRoundData.birdieRules) { activeViewRoundData.birdieRules = {1:true, 2:true, 3:false}; } 
             if(!activeViewRoundData.nineHoleType) { activeViewRoundData.nineHoleType = 'straight'; }
-
-            try {
-                document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb);
-                document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb);
-                switchScreen('step-8', 'step-9');
-            } catch (error) {
-                console.error("Archive Rendering Error:", error);
-                alert("⚠️ This specific round is from an older version of the app and is missing the data required to draw the new scorecard layout.");
+            
+            try { 
+                document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb); 
+                document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb); 
+                switchScreen('step-8', 'step-9'); 
+            } catch (error) { 
+                alert("⚠️ This round is from an older version of the app and is missing data for the new layout."); 
             }
         }
     </script>
