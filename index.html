@@ -26,7 +26,7 @@
             display: block;
             width: 120px;
             height: auto;
-            margin: -10px auto -20px auto; /* Pulls logo UP, and pulls content below it UP */
+            margin: -10px auto -20px auto; 
             position: relative;
             z-index: 500;
         }
@@ -468,10 +468,10 @@
             "I'VE SEEN BETTER SWINGS ON A PORCH 🏡",
             "SOMEONE CHECK HIS PULSE 🚑",
             "ARE WE PLAYING GOLF OR LUMBERJACK? 🪓",
-            "YOUR CLUBS CALLED, THEY WANT A NEW OWNER 📱",
+            "MY NAMES JEFF📱",
             "EVEN THE CART GIRL IS LAUGHING 🛒",
             "YOU ACTUALLY PAY FOR LESSONS? 💸",
-            "PUT ME DOWN FOR A 10 ✏️"
+            
         ];
 
         let roundData = { course: null, groups: [], formats: [], birdieRules: {}, currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau' };
@@ -1324,7 +1324,6 @@
                                 
                                 let cellContent = `${displayScore}${dots}`;
                                 
-                                // INJECT GOLDEN SKIN ORBIT - Micro-sized to 36px
                                 if (!p.isGhost && skinsWon[h] === `${g.id}-${p.id}`) {
                                     let randId = Math.random().toString(36).substr(2, 9);
                                     cellContent = `
@@ -1505,7 +1504,7 @@
                             let minNet = Math.min(...segData.map(d => d.net));
                             let winners = segData.filter(d => d.net === minNet);
                             let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: ${seg.label} ($${potPerBet} Pot)</div>`;
+                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball Match Segment: ${seg.label} ($${potPerBet} Pot)</div>`;
                             winners.forEach(w => {
                                 teamPayouts[w.id].total += split;
                                 teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Capt: ${teamPayouts[w.id].n} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`;
@@ -1542,7 +1541,7 @@
                             let minNet = Math.min(...totData.map(d => d.net));
                             let winners = totData.filter(d => d.net === minNet);
                             let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: Overall Match ($${potPerBet} Pot)</div>`;
+                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball Match Segment: Overall ($${potPerBet} Pot)</div>`;
                             winners.forEach(w => {
                                 teamPayouts[w.id].total += split;
                                 teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Capt: ${teamPayouts[w.id].n} [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`;
@@ -1707,7 +1706,7 @@
                             let min = Math.min(...segData.map(d=>d.net));
                             let w = segData.filter(d=>d.net===min);
                             let split = pot/w.length;
-                            st += `${f}-Ball ${seg.label}:\n`;
+                            st += `${f}-Ball Segment ${seg.label}:\n`;
                             w.forEach(win => {
                                 tp[win.id].t += split;
                                 st += `  Capt: ${tp[win.id].n} [${formatNetToPar(min)}] ($${split.toFixed(2)})\n`;
@@ -1806,6 +1805,74 @@
                 document.getElementById('forceArchiveBtn').style.display = 'block';
                 alert("Admin unlocked! You can now archive rounds early.");
             } else { alert("Incorrect PIN."); }
+        }
+
+        // ==========================================
+        // 8. ARCHIVE HISTORY ENGINE
+        // ==========================================
+        function saveToArchive() {
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+            archive.push({ date: new Date().toLocaleDateString(), course: roundData.course, roundData: roundData, scoresDb: scoresDb });
+            localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+        }
+
+        function viewArchiveList() {
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+            let html = '';
+            document.getElementById('bulk-delete-btn').style.display = archive.length > 0 ? 'block' : 'none';
+            
+            if(archive.length === 0) {
+                html = '<p style="text-align: center; padding: 20px; background: var(--bg-card); border-radius: 6px;">No archived rounds found.</p>';
+            } else {
+                archive.forEach((arc, i) => {
+                    html += `
+                    <div class="archive-item">
+                        <input type="checkbox" class="archive-checkbox" value="${i}">
+                        <div class="archive-info">
+                            <div style="font-weight: bold; font-size: 18px;">${arc.course.name || arc.course}</div>
+                            <div style="color: var(--text-muted); font-size: 14px;">Played on: ${arc.date}</div>
+                        </div>
+                        <button class="btn-secondary" style="width:auto; padding: 8px 12px; margin:0; font-size: 12px;" onclick="showArchivedCard(${i})">View</button>
+                    </div>`;
+                });
+            }
+            document.getElementById('archive-list-container').innerHTML = html;
+            switchScreen('step-1', 'step-8');
+        }
+
+        function deleteSelectedArchives() {
+            let checkboxes = document.querySelectorAll('.archive-checkbox:checked');
+            if(checkboxes.length === 0) { alert("Please select at least one round to delete."); return; }
+            if (prompt("Enter Admin PIN (1234) to delete selected rounds:") === "1234") {
+                let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
+                let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a,b) => b-a);
+                indices.forEach(idx => archive.splice(idx, 1));
+                localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+                viewArchiveList();
+            } else { alert("Incorrect PIN. Deletion aborted."); }
+        }
+
+        function showArchivedCard(index) {
+            let arc = (JSON.parse(localStorage.getItem('tournamentArchive')) || [])[index];
+            activeViewRoundData = arc.roundData || { course: arc.course, groups: arc.groups || [], formats: arc.formats || [1, 2], betAmount: arc.betAmount || 0, skinsAmount: arc.skinsAmount || 0 };
+            activeViewScoresDb = arc.scoresDb || arc.scores || {};
+            
+            if(typeof activeViewRoundData.course === 'string') { activeViewRoundData.course = allAvailableCourses[activeViewRoundData.course] || { name: "Archived Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; }
+            if(!activeViewRoundData.playMode) { activeViewRoundData.playMode = '18'; }
+            if(!activeViewRoundData.startType) { activeViewRoundData.startType = (activeViewRoundData.startHole === 10) ? 'back' : 'front'; }
+            if(!activeViewRoundData.startHole) { activeViewRoundData.startHole = 1; activeViewRoundData.endHole = 18; }
+            if(!activeViewRoundData.formats) { activeViewRoundData.formats = [1, 2]; }
+            if(!activeViewRoundData.birdieRules) { activeViewRoundData.birdieRules = {1:true, 2:true, 3:false}; }
+            if(!activeViewRoundData.nineHoleType) { activeViewRoundData.nineHoleType = 'nassau'; }
+
+            try {
+                document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb);
+                document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb);
+                switchScreen('step-8', 'step-9');
+            } catch (error) {
+                console.error("Archive Rendering Error:", error);
+                alert("⚠️ This specific round is from an older version of the app and is missing the data required to draw the new scorecard layout.");
+            }
         }
     </script>
 </body>
