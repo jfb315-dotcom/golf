@@ -422,13 +422,13 @@
         const activeTournamentRef = db.collection("tournaments").doc("active_round");
         
         const courseDatabase = {
-            "ballyhack": { name: "Ballyhack Golf Club (Roanoke, VA)", pars: [4, 5, 3, 4, 4, 4, 3, 4, 5, 5, 4, 4, 3, 4, 5, 4, 3, 4] },
-            "virginian": { name: "The Virginian Golf Club (Bristol, VA)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 4, 3, 5, 3, 4, 4, 5] },
             "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] },
             "chatata_valley": { name: "Chatata Valley (Cleveland, TN)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 5, 4, 3, 4, 3, 4, 5] },
             "council_fire": { name: "Council Fire (Chattanooga, TN)", pars: [4, 5, 4, 3, 4, 5, 3, 4, 4, 4, 5, 3, 5, 3, 4, 4, 3, 5] },
             "chattanooga_cc": { name: "Chattanooga Country Club", pars: [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4] },
-            "tennessee_national": { name: "Tennessee National (Loudon, TN)", pars: [4, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5, 4, 5, 3, 4] }
+            "tennessee_national": { name: "Tennessee National (Loudon, TN)", pars: [4, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5, 4, 5, 3, 4] },
+            "ballyhack": { name: "Ballyhack Golf Club (Roanoke, VA)", pars: [4, 5, 3, 4, 4, 4, 3, 4, 5, 5, 4, 4, 3, 4, 5, 4, 3, 4] },
+            "virginian": { name: "The Virginian Golf Club (Bristol, VA)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 4, 3, 5, 3, 4, 4, 5] }
         };
         const curatedColors = ['#00f3ff', '#39ff14', '#ff007f', '#ccff00', '#ff5e00', '#bf00ff'];
 
@@ -503,6 +503,29 @@
                 try {
                     if (doc.exists) {
                         const data = doc.data(); 
+
+                        // 48-HOUR GRACE PERIOD LOGIC
+                        if (data.isArchived) {
+                            if (isSpectator) {
+                                const hoursPassed = (new Date().getTime() - (data.archivedAt || 0)) / (1000 * 60 * 60);
+                                if (hoursPassed > 48) {
+                                    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+                                    document.getElementById('step-dead-link').classList.add('active'); 
+                                    return;
+                                }
+                                // If within 48 hours, fall through to load Dashboard below
+                            } else {
+                                // For carts and admin, route away from live scoring
+                                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+                                if (lockedTeamId !== null) {
+                                    document.getElementById('step-dead-link').classList.add('active'); 
+                                } else if (!document.getElementById('step-8').classList.contains('active') && !document.getElementById('step-9').classList.contains('active') && !document.getElementById('step-add-course').classList.contains('active')) {
+                                    document.getElementById('step-1').classList.add('active'); 
+                                }
+                                return;
+                            }
+                        }
+
                         roundData = data.roundData || roundData; 
                         scoresDb = data.scoresDb || {};
                         
@@ -1145,7 +1168,7 @@
         function saveAppStateToCloud() {
             let status = document.getElementById('sync-status'); 
             if(status) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
-            activeTournamentRef.set({ roundData: roundData, scoresDb: scoresDb }).then(() => { 
+            activeTournamentRef.set({ roundData: roundData, scoresDb: scoresDb, isArchived: false }).then(() => { 
                 if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; } 
             }).catch((error) => {});
         }
@@ -1846,7 +1869,11 @@
             document.getElementById('step-1').classList.add('active'); 
             window.scrollTo(0,0);
             
-            activeTournamentRef.delete().catch(err => console.log(err));
+            activeTournamentRef.update({ 
+                isArchived: true, 
+                archivedAt: new Date().getTime() 
+            }).catch(err => console.log(err));
+
             setTimeout(() => { if(confirm("Round Finalized successfully! Generate text results to copy/share?")) { openResultsShareModal(); } }, 150);
         }
 
