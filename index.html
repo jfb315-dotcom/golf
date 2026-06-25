@@ -1126,10 +1126,10 @@
             
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let diff = parsedVal - par;
-                if (parsedVal === 1) { showJokePopup('ace'); } 
-                else if (diff === -2) { showJokePopup('eagle'); } 
-                else if (diff === -1) { showJokePopup('birdie'); } 
-                else if (diff >= 2) { showJokePopup('bogey'); }
+if (parsedVal === 1) { showJokePopup('ace'); } 
+else if (diff === -2) { showJokePopup('eagle'); } 
+else if (diff >= 2) { showJokePopup('bogey'); }
+                
 
                 let missedHole = null; 
                 let seq = getHoleSequence(); 
