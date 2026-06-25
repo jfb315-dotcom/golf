@@ -1,7 +1,7 @@
 {
   "name": "JB Fishing & Golf",
   "short_name": "JB Golf",
-  "start_url": "index.html",
+  "start_url": "./",
   "display": "standalone",
   "background_color": "#1a2c1f",
   "theme_color": "#d4b872",
