@@ -1,7 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <link rel="manifest" href="manifest.json">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Tournament Scorer</title>
@@ -111,6 +110,7 @@
         .theme-selector { background: var(--bg-card); padding: 15px; border-radius: 8px; border: 1px solid var(--border-color); margin-top: 30px; text-align: center; }
     </style>
     
+    <link rel="manifest" href="manifest.json">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
 </head>
@@ -260,6 +260,7 @@
         <button class="btn-success" onclick="viewDashboard()">🏆 View Standings & Scorecards</button>
         <div id="admin-share-btn-container">
             <button class="btn-secondary" onclick="openShareMenu()" style="border-color: var(--text-main); color: var(--text-main); margin-top: 15px;">📱 Text Live Links to Carts</button>
+            <button class="btn-secondary" onclick="shareSpectatorLink()" style="border-color: #00f5ff; color: #00f5ff; margin-top: 10px;">👀 Share Spectator Leaderboard</button>
         </div>
     </div>
 
@@ -484,6 +485,8 @@
 
             const urlParams = new URLSearchParams(window.location.search); 
             const teamParam = urlParams.get('cart');
+            const isSpectator = urlParams.get('spectator') === 'true';
+
             if (teamParam) { 
                 lockedTeamId = parseInt(teamParam); 
                 currentTeamFilter = lockedTeamId; 
@@ -516,6 +519,15 @@
                             roundData.course = allAvailableCourses[roundData.course] || { name: "Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; 
                         }
 
+                        // SPECTATOR MODE LOCKOUT
+                        if (isSpectator) {
+                            document.getElementById('admin-finalize-container').style.display = 'none';
+                            const dashBtns = document.querySelectorAll('#step-dashboard button');
+                            dashBtns.forEach(btn => btn.style.display = 'none'); 
+                            viewDashboard();
+                            return;
+                        }
+
                         if (!document.getElementById('step-3').classList.contains('active') && !document.getElementById('step-dashboard').classList.contains('active')) {
                             renderPillNav(); 
                             renderScoreEntry();
@@ -526,6 +538,12 @@
                             if (document.getElementById('step-dashboard').classList.contains('active')) viewDashboard(); 
                         }
                     } else { 
+                        if (isSpectator) {
+                            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+                            document.getElementById('step-dead-link').classList.add('active'); 
+                            return;
+                        }
+
                         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                         if (lockedTeamId !== null) document.getElementById('step-dead-link').classList.add('active'); 
                         else document.getElementById('step-1').classList.add('active'); 
@@ -913,6 +931,16 @@
             document.getElementById('share-modal').classList.add('active');
         }
 
+        function shareSpectatorLink() {
+            const baseUrl = window.location.href.split('?')[0]; 
+            const spectatorLink = `${baseUrl}?spectator=true`;
+            let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\nFollow our live tournament leaderboard here:\n\n${spectatorLink}`;
+            
+            document.getElementById('share-modal-title').innerText = "Share Spectator Link";
+            document.getElementById('share-text-content').value = st;
+            document.getElementById('share-modal').classList.add('active');
+        }
+
         function formatFriendlyTime(time24) {
             if(!time24 || !time24.includes(':')) return time24;
             let [h, m] = time24.split(':');
@@ -1127,10 +1155,10 @@
             
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let diff = parsedVal - par;
-if (parsedVal === 1) { showJokePopup('ace'); } 
-else if (diff === -2) { showJokePopup('eagle'); } 
-else if (diff >= 2) { showJokePopup('bogey'); }
-                
+                if (parsedVal === 1) { showJokePopup('ace'); } 
+                else if (diff === -2) { showJokePopup('eagle'); } 
+                else if (diff === -1) { showJokePopup('birdie'); } 
+                else if (diff >= 2) { showJokePopup('bogey'); }
 
                 let missedHole = null; 
                 let seq = getHoleSequence(); 
@@ -1260,9 +1288,15 @@ else if (diff >= 2) { showJokePopup('bogey'); }
         function formatNetToParCSS(net) { if(net === 0) return "even-par"; return net > 0 ? "over-par" : "under-par"; }
 
         function viewDashboard() {
+            const urlParams = new URLSearchParams(window.location.search);
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
-            document.getElementById('dashboard-title').innerText = (lockedTeamId === null) ? "Live Tournament Dashboard" : "Live Scorecard";
+
+            if (urlParams.get('spectator') === 'true') {
+                document.getElementById('dashboard-title').innerText = "Live Spectator Leaderboard";
+            } else {
+                document.getElementById('dashboard-title').innerText = (lockedTeamId === null) ? "Live Tournament Dashboard" : "Live Scorecard";
+            }
             
             let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
             let orderedSegments = getOrderedSegments(roundData); 
