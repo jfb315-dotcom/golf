@@ -18,15 +18,17 @@
             --border-color: #36543b;   
         }
 
-        /* Tightened top padding to bring everything up */
-        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; }
+        /* 0px top padding to allow logo to touch the top */
+        body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 0px 15px 90px 15px; touch-action: manipulation; }
         
-        /* Shrunk logo and removed dead space */
+        /* Centered Logo with NEGATIVE margins to kill invisible image padding */
         .app-logo {
             display: block;
-            width: 80px;
+            width: 100px;
             height: auto;
-            margin: 0px auto 10px auto;
+            margin: -5px auto -15px auto; /* Pulls logo UP, and pulls content below it UP */
+            position: relative;
+            z-index: 500;
         }
 
         /* MICRO SKIN ORBIT CSS - Shrunk to 36px */
@@ -45,12 +47,12 @@
         /* UPGRADED TOP-DROP ROAST TOAST */
         .joke-toast {
             position: fixed;
-            top: -100px; /* Hidden off the top of the screen */
+            top: -100px; 
             left: 50%;
             transform: translateX(-50%);
-            background: #132116; /* Sleek dark background */
-            border: 2px solid #ff5e00; /* Neon Orange Border */
-            color: #ff5e00; /* Neon Orange Text */
+            background: #132116; 
+            border: 2px solid #ff5e00; 
+            color: #ff5e00; 
             padding: 12px 20px;
             border-radius: 8px;
             font-weight: 900;
@@ -62,16 +64,16 @@
             transition: top 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
             z-index: 10000;
             pointer-events: none;
-            white-space: normal; /* Allows long text to wrap to 2 lines */
+            white-space: normal; 
             line-height: 1.3;
         }
-        .joke-toast.show { top: 25px; } /* Drops down into view, dodging the keyboard entirely */
+        .joke-toast.show { top: 20px; } 
 
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; }
         .screen { display: none; } .screen.active { display: block; }
         
-        /* Reduced top margin on headings to suck space up */
-        h2 { margin-top: 5px; }
+        /* Force Headings up */
+        h2 { margin-top: 0px; margin-bottom: 15px; }
 
         label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
         input[type="number"], input[type="text"], input[type="tel"], select, input[type="password"] { width: 100%; padding: 12px; box-sizing: border-box; background: #1e3323; border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
