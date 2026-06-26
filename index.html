@@ -602,12 +602,10 @@
                                 claimClipboard();
                             } else if (currentOwner !== myClientId) {
                                 hasReadonlyLock = true;
-                                let warnEl = document.getElementById('clipboard-warning');
-                                if(warnEl) warnEl.style.display = 'block';
+                                document.getElementById('clipboard-warning').style.display = 'block';
                             } else {
                                 hasReadonlyLock = false;
-                                let warnEl = document.getElementById('clipboard-warning');
-                                if(warnEl) warnEl.style.display = 'none';
+                                document.getElementById('clipboard-warning').style.display = 'none';
                             }
                         }
 
@@ -671,8 +669,7 @@
                 clipboards[lockedTeamId] = myClientId;
                 activeTournamentRef.update({ clipboards: clipboards });
                 hasReadonlyLock = false;
-                let warnEl = document.getElementById('clipboard-warning');
-                if(warnEl) warnEl.style.display = 'none';
+                document.getElementById('clipboard-warning').style.display = 'none';
                 renderScoreEntry();
             }
         }
@@ -1977,7 +1974,7 @@
                 
                 const baseUrl = window.location.href.split('?')[0]; 
                 const magicLink = `${baseUrl}?cart=${c.id}`;
-                const message = encodeURIComponent(`Here is the live scorecard for Cart ${c.id} (${cartCaptain}). Click here to start scoring: ${magicLink}`);
+                const message = encodeURIComponent(`⛳🎣 JB FISHING & GOLF APP 🎣⛳\n\nHere is the live scorecard for Cart ${c.id} (${cartCaptain}). Click here to start scoring:\n\n${magicLink}\n\n📲 PRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 const smsLink = isIOS ? `sms:&body=${message}` : `sms:?body=${message}`;
                 html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="window.location.href='${smsLink}'">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
