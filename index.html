@@ -279,14 +279,7 @@
             
             <div id="admin-finalize-container">
                 <hr style="border-color: var(--border-color); width: 100%; margin: 20px 0;">
-                <div id="admin-unlock-section" style="display: flex; gap: 10px; margin-bottom: 10px;">
-                    <input type="password" id="adminPin" placeholder="Admin PIN" style="flex: 1; margin: 0;" inputmode="numeric">
-                    <button class="btn-secondary" onclick="unlockAdmin()" style="margin: 0; width: auto; padding: 10px 20px;">Unlock Admin Options</button>
-                </div>
-                <div id="admin-action-buttons" style="display: none; flex-direction: column; gap: 10px;">
-                    <button class="btn-primary" onclick="validateAndFinalize(false)" style="background-color: #8c2d2d; color: white; margin-top: 0;">🛑 Finalize & Archive Round</button>
-                    <button class="btn-danger" onclick="validateAndFinalize(true)" style="background-color: #c94b4b; margin-top: 0;">⚠️ Force Archive (Skip Validation)</button>
-                </div>
+                <button class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8c2d2d; color: white; margin-top: 0;">🛑 Finalize & Archive Round</button>
             </div>
         </div>
     </div>
@@ -474,7 +467,6 @@
         let allAvailableCourses = {}; 
         let activeViewRoundData = null; 
         let activeViewScoresDb = null; 
-        let isAdminUnlocked = false; 
         let tempRosterCache = {};
 
         function toggle9HoleOptions() { 
@@ -509,6 +501,9 @@
         window.onload = () => {
             let savedTheme = localStorage.getItem('savedTheme'); 
             if(savedTheme) changeTheme(savedTheme);
+
+            let savedRosterData = localStorage.getItem('jbGolfRosterCache');
+            if(savedRosterData) { try { tempRosterCache = JSON.parse(savedRosterData); } catch(e){} }
             
             document.getElementById('round-date').valueAsDate = new Date();
             
@@ -539,7 +534,6 @@
                     if (doc.exists) {
                         const data = doc.data(); 
 
-                        // 48-HOUR GRACE PERIOD LOGIC
                         if (data.isArchived) {
                             if (isSpectator) {
                                 const hoursPassed = (new Date().getTime() - (data.archivedAt || 0)) / (1000 * 60 * 60);
@@ -551,9 +545,7 @@
                                     document.getElementById('global-hole-watermark').style.display = 'none';
                                     return;
                                 }
-                                // If within 48 hours, fall through to load Dashboard below
                             } else {
-                                // For carts and admin, route away from live scoring securely
                                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                                 if (lockedTeamId !== null) {
                                     document.getElementById('step-dead-link').classList.add('active'); 
@@ -567,7 +559,6 @@
                                 return;
                             }
                         } else {
-                            // CACHE TRAP FIX: If the document is live, make sure the dead link is turned off!
                             document.getElementById('step-dead-link').classList.remove('active');
                         }
 
@@ -589,7 +580,6 @@
                             roundData.course = allAvailableCourses[roundData.course] || { name: "Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; 
                         }
 
-                        // SPECTATOR MODE LOCKOUT
                         if (isSpectator) {
                             document.getElementById('admin-finalize-container').style.display = 'none';
                             const dashBtns = document.querySelectorAll('#step-dashboard button');
@@ -609,7 +599,6 @@
                             if (document.getElementById('step-dashboard').classList.contains('active')) viewDashboard(); 
                         }
                     } else { 
-                        // DOCUMENT DOES NOT EXIST YET (OFFLINE CACHE OR NOT STARTED)
                         if (isSpectator) {
                             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                             document.getElementById('step-dead-link').classList.add('active'); 
@@ -626,7 +615,9 @@
                             document.getElementById('step-dead-title').innerText = "⏳ Waiting for Admin...";
                             document.getElementById('step-dead-sub').innerText = "The tournament hasn't been officially started yet. Hang tight!";
                         } else {
-                            document.getElementById('step-1').classList.add('active'); 
+                            if(!document.getElementById('step-2').classList.contains('active') && !document.getElementById('step-2-half').classList.contains('active') && !document.getElementById('step-add-course').classList.contains('active') && !document.getElementById('step-8').classList.contains('active') && !document.getElementById('step-9').classList.contains('active')) {
+                                document.getElementById('step-1').classList.add('active'); 
+                            }
                         }
                     }
                 } catch (e) { 
@@ -759,6 +750,7 @@
                 }
             }
             tempRosterCache['isScrambled'] = document.getElementById('is-scrambled').value;
+            localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
         }
 
         function backToStep1() { 
@@ -819,6 +811,7 @@
                     tempRosterCache[`cart${c}-p${p}`] = document.getElementById(`cart${c}-p${p}`).value; 
                 } 
             }
+            localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
         }
 
         function updateDropdownOptions() {
@@ -925,11 +918,9 @@
             roundData.currentHole = getHoleSequence()[0]; 
             currentTeamFilter = "ALL";
             
-            // Scrub undefined data to prevent Firebase sync failure
             let cleanRoundData = JSON.parse(JSON.stringify(roundData));
             let cleanScoresDb = JSON.parse(JSON.stringify(scoresDb));
             
-            // CACHE TRAP FIX: Force active state before navigating
             activeTournamentRef.set({ roundData: cleanRoundData, scoresDb: cleanScoresDb, isArchived: false }).then(() => {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                 renderPillNav(); 
@@ -948,93 +939,88 @@
         // TEXT SHARE ENGINE
         // ==========================================
         function shareRoundInfo() {
-            try {
-                saveRosterCache(); 
-                savePairingsCache(); 
-                
-                let courseSel = document.getElementById('course-selector');
-                let course = courseSel ? (courseSel.options[courseSel.selectedIndex]?.text || "Golf Course") : "Golf Course";
-                let dateVal = document.getElementById('round-date')?.value; 
-                let dateStr = dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString();
-                
-                let mode = document.getElementById('hole-format')?.value || '18'; 
-                let nineType = document.getElementById('nine-hole-type')?.value || 'nassau';
-                let segments = (mode === '9' && nineType === 'straight') ? 1 : 3; 
-                
-                let formatCount = 0; 
-                let fStrs = [];
-                
-                let betInput = document.getElementById('bet-amount')?.value || 0;
-                let skinsInput = document.getElementById('skins-amount')?.value || 0;
-                let bet = parseInt(betInput) || 0; 
-                let skins = parseInt(skinsInput) || 0;
-                
-                if(document.getElementById('fmt-1')?.checked) { formatCount++; fStrs.push(`• 1-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-1-birdies')?.checked?' (All Birdies Count)':''}`); }
-                if(document.getElementById('fmt-2')?.checked) { formatCount++; fStrs.push(`• 2-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-2-birdies')?.checked?' (All Birdies Count)':''}`); }
-                if(document.getElementById('fmt-3')?.checked) { formatCount++; fStrs.push(`• 3-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-3-birdies')?.checked?' (All Birdies Count)':''}`); }
-                
-                let gCount = parseInt(document.getElementById('group-count')?.value || 0); 
-                let pCount = parseInt(document.getElementById('players-per-group')?.value || 0);
-                let teamLines = []; 
-                let totalP = 0;
-                
-                for(let g=1; g<=gCount; g++) { 
-                    let names = []; 
-                    for(let p=1; p<=pCount; p++) { 
-                        let n = tempRosterCache[`g${g}-p${p}-name`]; 
-                        if(n && n.trim() !== "") { 
-                            names.push(n.split(' ')[0]); 
-                            if(!tempRosterCache[`g${g}-p${p}-ghost`]) totalP++; 
-                        } 
-                    } 
-                    if(names.length > 0) teamLines.push({id: g, names: names.join(', '), time: tempRosterCache[`g${g}-time`] || '08:00 AM'}); 
-                }
-
-                let isScrambled = document.getElementById('is-scrambled')?.value === 'yes';
-                
-                let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\n🏆 CHOOSE-UP TOURNAMENT 🏆\nDate: ${dateStr}\nCourse: ${course}\n`;
-                if (mode === '9') st += `Format: 9 Holes (${nineType === 'nassau' ? '4/5 Nassau Split' : 'Straight 9'})\n\n`; else st += `Format: 18 Holes\n\n`;
-                
-                let totPer = (segments * formatCount * bet) + skins;
-                st += `💰 THE ACTION:\nEntry Fee: $${totPer}/player\n(Team: $${totPer-skins} | Skins: $${skins})\n\n`; 
-                st += fStrs.join('\n') + `\n\n`;
-
-                if(!isScrambled) { 
-                    st += `🏌️‍♂️ PAIRINGS & TEAMS:\n`; 
-                    teamLines.forEach(t => { 
-                        let friendlyTime = formatFriendlyTime(t.time);
-                        st += `Team ${t.id} (${friendlyTime}):\n${t.names}\n\n`; 
-                    }); 
-                } else {
-                    st += `🤝 THE DRAFTED TEAMS (For the Money):\n`; 
-                    teamLines.forEach(t => { st += `Team ${t.id}: ${t.names}\n`; }); 
-                    st += `\n🏌️‍♂️ PHYSICAL PAIRINGS & TEE TIMES:\n`;
-                    let cartCount = parseInt(document.getElementById('cart-group-count')?.value || 0);
-                    for(let c=1; c<=cartCount; c++) {
-                        let cNames = []; 
-                        let cTime = tempRosterCache[`cart${c}-time`] || '08:00';
-                        for(let p=1; p<=4; p++) { 
-                            let val = tempRosterCache[`cart${c}-p${p}`]; 
-                            if(val) { 
-                                let pts = val.split('-'); 
-                                let cachedName = tempRosterCache[`g${pts[0]}-p${pts[1]}-name`] || '';
-                                cNames.push(cachedName.split(' ')[0]); 
-                            } 
-                        }
-                        let friendlyTime = formatFriendlyTime(cTime);
-                        if(cNames.length > 0) st += `Cart ${c} (${friendlyTime}):\n${cNames.join(', ')}\n\n`;
-                    }
-                }
-                
-                st += `📲 PRO TIP: To use the scoring link like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
-
-                document.getElementById('share-modal-title').innerText = "Share Pre-Round Info";
-                document.getElementById('share-text-content').value = st;
-                document.getElementById('share-modal').classList.add('active');
-            } catch (err) {
-                console.error("Text Gen Error: ", err);
-                alert("Text generation error. Please check your team inputs and try again.");
+            saveRosterCache(); 
+            if(document.getElementById('is-scrambled')?.value === 'yes') {
+                savePairingsCache();
             }
+            
+            let courseSel = document.getElementById('course-selector');
+            let course = courseSel && courseSel.selectedIndex >= 0 ? courseSel.options[courseSel.selectedIndex].text : "Golf Course";
+            let dateVal = document.getElementById('round-date')?.value; 
+            let dateStr = dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString();
+            
+            let mode = document.getElementById('hole-format')?.value || '18'; 
+            let nineType = document.getElementById('nine-hole-type')?.value || 'nassau';
+            let segments = (mode === '9' && nineType === 'straight') ? 1 : 3; 
+            
+            let formatCount = 0; 
+            let fStrs = [];
+            
+            let bet = parseInt(document.getElementById('bet-amount')?.value) || 0; 
+            let skins = parseInt(document.getElementById('skins-amount')?.value) || 0;
+            
+            if(document.getElementById('fmt-1')?.checked) { formatCount++; fStrs.push(`• 1-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-1-birdies')?.checked?' (All Birdies Count)':''}`); }
+            if(document.getElementById('fmt-2')?.checked) { formatCount++; fStrs.push(`• 2-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-2-birdies')?.checked?' (All Birdies Count)':''}`); }
+            if(document.getElementById('fmt-3')?.checked) { formatCount++; fStrs.push(`• 3-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-3-birdies')?.checked?' (All Birdies Count)':''}`); }
+            
+            let gCount = parseInt(document.getElementById('group-count')?.value || 0); 
+            let pCount = parseInt(document.getElementById('players-per-group')?.value || 0);
+            let teamLines = []; 
+            let totalP = 0;
+            
+            for(let g=1; g<=gCount; g++) { 
+                let names = []; 
+                for(let p=1; p<=pCount; p++) { 
+                    let n = tempRosterCache[`g${g}-p${p}-name`]; 
+                    if(n && typeof n === 'string' && n.trim() !== "") { 
+                        names.push(n.split(' ')[0]); 
+                        if(!tempRosterCache[`g${g}-p${p}-ghost`]) totalP++; 
+                    } 
+                } 
+                if(names.length > 0) teamLines.push({id: g, names: names.join(', '), time: tempRosterCache[`g${g}-time`] || '08:00 AM'}); 
+            }
+
+            let isScrambled = document.getElementById('is-scrambled')?.value === 'yes';
+            
+            let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\n🏆 CHOOSE-UP TOURNAMENT 🏆\nDate: ${dateStr}\nCourse: ${course}\n`;
+            if (mode === '9') st += `Format: 9 Holes (${nineType === 'nassau' ? '4/5 Nassau Split' : 'Straight 9'})\n\n`; else st += `Format: 18 Holes\n\n`;
+            
+            let totPer = (segments * formatCount * bet) + skins;
+            st += `💰 THE ACTION:\nEntry Fee: $${totPer}/player\n(Team: $${totPer-skins} | Skins: $${skins})\n\n`; 
+            st += fStrs.join('\n') + `\n\n`;
+
+            if(!isScrambled) { 
+                st += `🏌️‍♂️ PAIRINGS & TEAMS:\n`; 
+                teamLines.forEach(t => { 
+                    let friendlyTime = formatFriendlyTime(t.time);
+                    st += `Team ${t.id} (${friendlyTime}):\n${t.names}\n\n`; 
+                }); 
+            } else {
+                st += `🤝 THE DRAFTED TEAMS (For the Money):\n`; 
+                teamLines.forEach(t => { st += `Team ${t.id}: ${t.names}\n`; }); 
+                st += `\n🏌️‍♂️ PHYSICAL PAIRINGS & TEE TIMES:\n`;
+                let cartCount = parseInt(document.getElementById('cart-group-count')?.value || 0);
+                for(let c=1; c<=cartCount; c++) {
+                    let cNames = []; 
+                    let cTime = tempRosterCache[`cart${c}-time`] || '08:00';
+                    for(let p=1; p<=4; p++) { 
+                        let val = tempRosterCache[`cart${c}-p${p}`]; 
+                        if(val && typeof val === 'string') { 
+                            let pts = val.split('-'); 
+                            let cachedName = tempRosterCache[`g${pts[0]}-p${pts[1]}-name`] || '';
+                            cNames.push(cachedName.split(' ')[0]); 
+                        } 
+                    }
+                    let friendlyTime = formatFriendlyTime(cTime);
+                    if(cNames.length > 0) st += `Cart ${c} (${friendlyTime}):\n${cNames.join(', ')}\n\n`;
+                }
+            }
+            
+            st += `📲 PRO TIP: To use the scoring link like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
+
+            document.getElementById('share-modal-title').innerText = "Share Pre-Round Info";
+            document.getElementById('share-text-content').value = st;
+            document.getElementById('share-modal').classList.add('active');
         }
 
         function shareSpectatorLink() {
@@ -1921,21 +1907,12 @@
             switchScreen('step-3', 'step-7');
         }
 
-        function unlockAdmin() {
-            const pin = document.getElementById('adminPin').value;
-            if (pin === '1234') { 
-                isAdminUnlocked = true; 
-                document.getElementById('admin-unlock-section').style.display = 'none'; 
-                document.getElementById('admin-action-buttons').style.display = 'flex'; 
-            } else { 
-                alert("Incorrect PIN."); 
-            }
-        }
-
-        function validateAndFinalize(forceArchive = false) {
-            if (!isAdminUnlocked) {
-                alert("⚠️ You must unlock the Admin panel with the PIN (1234) before you can finalize the round!");
-                return;
+        function validateAndFinalize() {
+            let pin = prompt("🔒 Enter Admin PIN (1234) to Finalize Round:");
+            
+            if (pin !== '1234') { 
+                if (pin !== null) alert("Incorrect PIN. Access Denied."); 
+                return; 
             }
 
             let missingScores = false; 
@@ -1949,20 +1926,15 @@
             });
             
             if(missingScores) {
-                if (forceArchive) { 
-                    if(!confirm("⚠️ The round isn't finished yet. Are you sure you want to FORCE archive it?")) return; 
-                } else { 
-                    alert("⚠️ Cannot finalize!\n\nAll scores have not been entered yet. Use the 'Force Archive' button if you must bypass this."); 
-                    return; 
-                }
+                if(!confirm("⚠️ WARNING: Not all scores have been entered yet.\n\nAre you absolutely sure you want to FORCE ARCHIVE this incomplete round?")) return; 
             } else { 
-                if(!confirm("All scores verified! Are you absolutely sure you want to finalize the round and archive the board?")) return; 
+                if(!confirm("All scores verified! Are you sure you want to finalize the round and archive the board?")) return; 
             }
 
             saveToArchive(); 
             
-            // WIPE ROSTER CACHE
             tempRosterCache = {};
+            localStorage.removeItem('jbGolfRosterCache');
             document.getElementById('is-scrambled').value = 'no';
             
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
@@ -2043,4 +2015,3 @@
     </script>
 </body>
 </html>
-```eof
