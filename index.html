@@ -367,8 +367,11 @@
                 fetch('https://ntfy.sh/Jb-golf-alerts-19b71', {
                     method: 'POST',
                     body: alertMessage,
-                    headers: { 'Title': alertTitle, 'Tags': 'golf,bell' }
-                });
+                    headers: { 'Title': alertTitle, 'Tags': 'golf,bell' },
+                    mode: 'no-cors', // Tells browser this is a simple, one-way push
+                    cache: 'no-cache', // Prevents Safari from ignoring identical requests
+                    credentials: 'omit' // Prevents cross-site cookie blockers from flagging it
+                }).catch(err => console.log("Ntfy request blocked by browser:", err));
             }
         } catch (e) {
             console.log("Notification skipped");
