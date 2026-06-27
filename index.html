@@ -178,7 +178,7 @@
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
         <hr style="border-color: var(--border-color); margin: 25px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
-        
+        <button class="btn-secondary" onclick="sendNtfyAlert(true)" style="border-color: #ff00ff; color: #ff00ff; margin-top: 15px;">🔔 Test Ntfy Alert</button>
         <!-- THEME SWITCHER (ADMIN ONLY) -->
         <div class="theme-selector">
             <label style="margin-top:0;">Admin App Color Theme</label>
@@ -358,8 +358,8 @@
 
     <!-- JAVASCRIPT LOGIC -->
     <script>
-        // ==========================================
-        // NTFY LIVE ALERT ENGINE
+// ==========================================
+        // NTFY LIVE ALERT ENGINE (IOS BYPASS)
         // ==========================================
         async function sendNtfyAlert() {
             try {
@@ -367,36 +367,28 @@
                 const cartId = params.get('cart');
                 const isSpectator = params.get('spectator') === 'true';
                 
-                // Only send alert on initial load, not on refreshes/navigation
+                // Prevents spamming on refresh
                 if (sessionStorage.getItem('ntfyAlertSent')) return;
                 sessionStorage.setItem('ntfyAlertSent', 'true');
                 
                 let message = "";
-                let title = "⛳ Golf App Opened";
 
+                // We put the emojis directly in the text body since we can't use a Title header
                 if (cartId) {
-                    message = `Cart ${cartId} has just opened their live scorecard!`;
-                    title = `🛒 Cart ${cartId} Active`;
+                    message = `⛳ CART ${cartId} ACTIVE: They just opened their live scorecard!`;
                 } else if (isSpectator) {
-                    message = "A spectator has logged on to view the live leaderboard.";
-                    title = "👀 Spectator Online";
+                    message = "👀 SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
                 }
 
                 if (!message) return;
 
-                const response = await fetch('https://ntfy.sh/Jb-golf-alerts-19b71', {
+                // Stripped of headers and forced into no-cors mode to bypass ad-blockers
+                await fetch('https://ntfy.sh/Jb-golf-alerts-19b71', {
                     method: 'POST',
                     body: message,
-                    headers: { 
-                        'Title': title, 
-                        'Tags': 'golf,bell', 
-                        'Priority': cartId ? 'default' : 'low' 
-                    }
+                    mode: 'no-cors'
                 });
-
-                if (!response.ok) {
-                    console.warn("ntfy alert failed:", response.status);
-                }
+                
             } catch (e) {
                 console.log("Notification skipped:", e.message);
             }
