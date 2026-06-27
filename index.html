@@ -359,7 +359,7 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
 // ==========================================
-        // NTFY LIVE ALERT ENGINE (WITH TEST BUTTON)
+        // NTFY LIVE ALERT ENGINE (FORCE-PRIORITY)
         // ==========================================
         async function sendNtfyAlert(isTest = false) {
             try {
@@ -367,45 +367,36 @@
                 const cartId = params.get('cart');
                 const isSpectator = params.get('spectator') === 'true';
                 
+                if (sessionStorage.getItem('ntfyAlertSent')) return;
+                sessionStorage.setItem('ntfyAlertSent', 'true');
+                
                 let message = "";
-
                 if (isTest) {
-                    // If you clicked the pink button, force the message to send
-                    message = "🔔 TEST SUCCESS! Ntfy is bypassing ad-blockers perfectly.";
+                    message = "🔔 TEST SUCCESS! Ntfy is working.";
                 } else if (cartId) {
-                    // Normal behavior: only send once per cart load
-                    if (sessionStorage.getItem('ntfyAlertSent')) return;
-                    sessionStorage.setItem('ntfyAlertSent', 'true');
-                    message = `⛳ CART ${cartId} ACTIVE: They just opened their live scorecard!`;
+                    message = `🛒 CART ${cartId} ACTIVE: They just opened their live scorecard!`;
                 } else if (isSpectator) {
-                    // Normal behavior: only send once per spectator load
-                    if (sessionStorage.getItem('ntfyAlertSent')) return;
-                    sessionStorage.setItem('ntfyAlertSent', 'true');
                     message = "👀 SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
                 }
 
                 if (!message) return;
 
-                // Stripped of headers and forced into no-cors mode to bypass ad-blockers
+                // Using Headers to force High Priority
                 await fetch('https://ntfy.sh/Jb-golf-alerts-19b71', {
                     method: 'POST',
                     body: message,
-                    mode: 'no-cors'
+                    headers: {
+                        'Priority': 'high', // Forces sound/banner on iPhone
+                        'Click': 'https://jfb315-dotcom.github.io/golf/' // Links directly back to your site
+                    }
                 });
-
-                if (isTest) {
-                    alert("Test sent! Check your phone and the Ntfy.sh website right now.");
-                }
                 
+                if (isTest) alert("Test signal sent! If it didn't buzz, check your iPhone Ntfy App Permissions.");
             } catch (e) {
-                if (isTest) {
-                    alert("Error sending test: " + e.message);
-                }
                 console.log("Notification skipped:", e.message);
             }
         }
 
-        // Call it once on load
         window.addEventListener('load', () => {
             sendNtfyAlert();
         });
