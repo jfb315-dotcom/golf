@@ -121,10 +121,8 @@
 
     <img src="logo.png" class="app-logo" alt="JB Fishing and Golf">
 
-    <!-- WATERMARK IS FIXED BEHIND EVERYTHING -->
     <div class="hole-watermark" id="global-hole-watermark"></div>
 
-    <!-- SCREEN 1: SETUP -->
     <div id="step-1" class="screen card active">
         <h2>Tournament Setup</h2>
         <label>Select Course</label>
@@ -178,8 +176,9 @@
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
         <hr style="border-color: var(--border-color); margin: 25px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
+        
         <button class="btn-secondary" onclick="sendNtfyAlert(true)" style="border-color: #ff00ff; color: #ff00ff; margin-top: 15px;">🔔 Test Ntfy Alert</button>
-        <!-- THEME SWITCHER (ADMIN ONLY) -->
+
         <div class="theme-selector">
             <label style="margin-top:0;">Admin App Color Theme</label>
             <select id="app-theme-selector" onchange="changeTheme()" style="margin-bottom:0;">
@@ -195,7 +194,6 @@
         </div>
     </div>
 
-    <!-- SCREEN 1.5: ADD COURSE -->
     <div id="step-add-course" class="screen card">
         <h2>Create Custom Course</h2>
         <label>Course Name</label>
@@ -206,7 +204,6 @@
         <button class="btn-secondary" onclick="switchScreen('step-add-course', 'step-1')">Cancel</button>
     </div>
 
-    <!-- SCREEN 2: TEAM ROSTERS -->
     <div id="step-2" class="screen card">
         <h2>Draft Rosters (The Money)</h2>
         <label>Round Date</label>
@@ -230,7 +227,6 @@
         <button class="btn-primary" id="btn-step2-next" onclick="processStep2()">Start Round & Sync</button>
     </div>
 
-    <!-- SCREEN 2.5: PHYSICAL CARTS (SCRAMBLED ONLY) -->
     <div id="step-2-half" class="screen card">
         <h2>Set Physical Pairings</h2>
         <p style="font-size: 13px; color: var(--text-muted);">Assign players to physical carts so scorekeepers have the right names on their screens. Scores will invisibly route back to their money teams.</p>
@@ -248,7 +244,6 @@
         <button class="btn-primary" onclick="startRoundScrambled()">Start Round & Sync</button>
     </div>
 
-    <!-- SCREEN 3: LIVE SCORING -->
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
         <div class="sticky-top">
             <div id="pill-nav-container" class="pill-nav"></div>
@@ -279,7 +274,6 @@
         </div>
     </div>
 
-    <!-- SCREEN 4: DASHBOARD -->
     <div id="step-dashboard" class="screen" style="max-width: 1000px; margin: 0 auto;">
         <h2 style="text-align: center; color: white; margin-bottom: 20px;" id="dashboard-title">Tournament Dashboard</h2>
         <div id="dashboard-financial-summary"></div>
@@ -296,7 +290,6 @@
         </div>
     </div>
 
-    <!-- SCREEN 5: LINK SHARING -->
     <div id="step-7" class="screen card">
         <h2>Share Live Scoring Links</h2>
         <p style="font-size: 14px; color: var(--text-muted);">Send these links so each cart driver can enter their group's scores.</p>
@@ -304,7 +297,6 @@
         <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
     </div>
 
-    <!-- SCREEN 6: ARCHIVE LIST -->
     <div id="step-8" class="screen card">
         <h2>Archived Rounds</h2>
         <div id="archive-list-container"></div>
@@ -312,7 +304,6 @@
         <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
     </div>
     
-    <!-- SCREEN 7: ARCHIVE VIEW -->
     <div id="step-9" class="screen" style="max-width: 1000px; margin: 0 auto;">
         <h2 style="text-align: center; color: white; margin-bottom: 25px;">Archived Round Results</h2>
         <div id="archived-card-container"></div>
@@ -320,13 +311,11 @@
         <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 20px auto; display: block;">← Back to Archives</button>
     </div>
 
-    <!-- SCREEN 8: DEAD LINK / LOADING -->
     <div id="step-dead-link" class="screen card" style="text-align: center; padding: 40px 20px;">
         <h2 id="step-dead-title" style="color: var(--accent-gold); font-size: 2.2em; margin-bottom: 10px;">⏳ Loading...</h2>
         <p id="step-dead-sub" style="color: var(--text-muted); font-size: 0.9em; margin-top: 20px;">Checking tournament status.</p>
     </div>
 
-    <!-- SHARE MODAL -->
     <div id="share-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 id="share-modal-title" style="margin-top: 0; color: #fff; text-align: center;">Share Info</h2>
@@ -356,51 +345,7 @@
         </div>
     </div>
 
-    <!-- JAVASCRIPT LOGIC -->
     <script>
-// ==========================================
-        // NTFY LIVE ALERT ENGINE (FORCE-PRIORITY)
-        // ==========================================
-        async function sendNtfyAlert(isTest = false) {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                const cartId = params.get('cart');
-                const isSpectator = params.get('spectator') === 'true';
-                
-                if (sessionStorage.getItem('ntfyAlertSent')) return;
-                sessionStorage.setItem('ntfyAlertSent', 'true');
-                
-                let message = "";
-                if (isTest) {
-                    message = "🔔 TEST SUCCESS! Ntfy is working.";
-                } else if (cartId) {
-                    message = `🛒 CART ${cartId} ACTIVE: They just opened their live scorecard!`;
-                } else if (isSpectator) {
-                    message = "👀 SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
-                }
-
-                if (!message) return;
-
-                // Using Headers to force High Priority
-                await fetch('https://ntfy.sh/Jb-golf-alerts-19b71', {
-                    method: 'POST',
-                    body: message,
-                    headers: {
-                        'Priority': 'high', // Forces sound/banner on iPhone
-                        'Click': 'https://jfb315-dotcom.github.io/golf/' // Links directly back to your site
-                    }
-                    
-                });
-                
-                if (isTest) alert("Test signal sent! If it didn't buzz, check your iPhone Ntfy App Permissions.");
-            } catch (e) {
-                console.log("Notification skipped:", e.message);
-            }
-        }
-window.sendNtfyAlert = sendNtfyAlert;
-        window.addEventListener('load', () => {
-            sendNtfyAlert();
-        });
         // ==========================================
         // THEMES & POPUPS
         // ==========================================
@@ -2128,6 +2073,55 @@ window.sendNtfyAlert = sendNtfyAlert;
                 alert("⚠️ This round is from an older version of the app and is missing data for the new layout."); 
             }
         }
+
+        // ==========================================
+        // NTFY LIVE ALERT ENGINE (IOS BYPASS & TEST BUTTON)
+        // ==========================================
+        async function sendNtfyAlert(isTest = false) {
+            try {
+                const params = new URLSearchParams(window.location.search);
+                const cartId = params.get('cart');
+                const isSpectator = params.get('spectator') === 'true';
+                
+                let message = "";
+
+                if (isTest) {
+                    message = "🔔 TEST SUCCESS! Ntfy is bypassing ad-blockers perfectly.";
+                } else if (cartId) {
+                    if (sessionStorage.getItem('ntfyAlertSent')) return;
+                    sessionStorage.setItem('ntfyAlertSent', 'true');
+                    message = `⛳ CART ${cartId} ACTIVE: They just opened their live scorecard!`;
+                } else if (isSpectator) {
+                    if (sessionStorage.getItem('ntfyAlertSent')) return;
+                    sessionStorage.setItem('ntfyAlertSent', 'true');
+                    message = "👀 SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
+                }
+
+                if (!message) return;
+
+                await fetch('https://ntfy.sh/Jb-golf-alerts-19b71', {
+                    method: 'POST',
+                    body: message,
+                    mode: 'no-cors'
+                });
+
+                if (isTest) {
+                    alert("Test sent! Check your phone and the Ntfy.sh website right now.");
+                }
+                
+            } catch (e) {
+                if (isTest) {
+                    alert("Error sending test: " + e.message);
+                }
+                console.log("Notification skipped:", e.message);
+            }
+        }
+
+        window.sendNtfyAlert = sendNtfyAlert; // EXPOSE TO HTML BUTTON
+
+        window.addEventListener('load', () => {
+            sendNtfyAlert();
+        });
     </script>
 </body>
 </html>
