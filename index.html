@@ -389,6 +389,7 @@
                         'Priority': 'high', // Forces sound/banner on iPhone
                         'Click': 'https://jfb315-dotcom.github.io/golf/' // Links directly back to your site
                     }
+                    
                 });
                 
                 if (isTest) alert("Test signal sent! If it didn't buzz, check your iPhone Ntfy App Permissions.");
@@ -396,7 +397,7 @@
                 console.log("Notification skipped:", e.message);
             }
         }
-
+window.sendNtfyAlert = sendNtfyAlert;
         window.addEventListener('load', () => {
             sendNtfyAlert();
         });
