@@ -2075,49 +2075,48 @@
         }
 
         // ==========================================
-        // NTFY LIVE ALERT ENGINE (IOS BYPASS & TEST BUTTON)
+        // NTFY LIVE ALERT ENGINE (IOS BYPASS)
         // ==========================================
         async function sendNtfyAlert(isTest = false) {
             try {
                 const params = new URLSearchParams(window.location.search);
                 const cartId = params.get('cart');
                 const isSpectator = params.get('spectator') === 'true';
-                
-                let message = "";
 
+                if (sessionStorage.getItem('ntfyAlertSent') && !isTest) return;
+                if (!isTest) sessionStorage.setItem('ntfyAlertSent', 'true');
+
+                let message = "";
                 if (isTest) {
-                    message = "🔔 TEST SUCCESS! Ntfy is bypassing ad-blockers perfectly.";
+                    message = "TEST SUCCESS! Your phone is now waking up correctly.";
                 } else if (cartId) {
-                    if (sessionStorage.getItem('ntfyAlertSent')) return;
-                    sessionStorage.setItem('ntfyAlertSent', 'true');
-                    message = `⛳ CART ${cartId} ACTIVE: They just opened their live scorecard!`;
+                    message = `CART ${cartId} ACTIVE: They just opened their live scorecard!`;
                 } else if (isSpectator) {
-                    if (sessionStorage.getItem('ntfyAlertSent')) return;
-                    sessionStorage.setItem('ntfyAlertSent', 'true');
-                    message = "👀 SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
+                    message = "SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
                 }
 
                 if (!message) return;
 
-                await fetch('https://ntfy.sh/Jb-golf-alerts-19b71', {
+                // Pass Priority and Tags directly in the URL to bypass Apple's Header Stripping
+                const ntfyUrl = 'https://ntfy.sh/Jb-golf-alerts-19b71?priority=high&tags=golf,rotating_light&title=' + encodeURIComponent('⛳ Golf App Alert');
+
+                await fetch(ntfyUrl, {
                     method: 'POST',
                     body: message,
                     mode: 'no-cors'
                 });
 
                 if (isTest) {
-                    alert("Test sent! Check your phone and the Ntfy.sh website right now.");
+                    alert("Test sent! Check your phone.");
                 }
-                
+
             } catch (e) {
-                if (isTest) {
-                    alert("Error sending test: " + e.message);
-                }
+                if (isTest) alert("Error: " + e.message);
                 console.log("Notification skipped:", e.message);
             }
         }
 
-        window.sendNtfyAlert = sendNtfyAlert; // EXPOSE TO HTML BUTTON
+        window.sendNtfyAlert = sendNtfyAlert;
 
         window.addEventListener('load', () => {
             sendNtfyAlert();
