@@ -359,24 +359,28 @@
     <!-- JAVASCRIPT LOGIC -->
     <script>
 // ==========================================
-        // NTFY LIVE ALERT ENGINE (IOS BYPASS)
+        // NTFY LIVE ALERT ENGINE (WITH TEST BUTTON)
         // ==========================================
-        async function sendNtfyAlert() {
+        async function sendNtfyAlert(isTest = false) {
             try {
                 const params = new URLSearchParams(window.location.search);
                 const cartId = params.get('cart');
                 const isSpectator = params.get('spectator') === 'true';
                 
-                // Prevents spamming on refresh
-                if (sessionStorage.getItem('ntfyAlertSent')) return;
-                sessionStorage.setItem('ntfyAlertSent', 'true');
-                
                 let message = "";
 
-                // We put the emojis directly in the text body since we can't use a Title header
-                if (cartId) {
+                if (isTest) {
+                    // If you clicked the pink button, force the message to send
+                    message = "🔔 TEST SUCCESS! Ntfy is bypassing ad-blockers perfectly.";
+                } else if (cartId) {
+                    // Normal behavior: only send once per cart load
+                    if (sessionStorage.getItem('ntfyAlertSent')) return;
+                    sessionStorage.setItem('ntfyAlertSent', 'true');
                     message = `⛳ CART ${cartId} ACTIVE: They just opened their live scorecard!`;
                 } else if (isSpectator) {
+                    // Normal behavior: only send once per spectator load
+                    if (sessionStorage.getItem('ntfyAlertSent')) return;
+                    sessionStorage.setItem('ntfyAlertSent', 'true');
                     message = "👀 SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
                 }
 
@@ -388,8 +392,15 @@
                     body: message,
                     mode: 'no-cors'
                 });
+
+                if (isTest) {
+                    alert("Test sent! Check your phone and the Ntfy.sh website right now.");
+                }
                 
             } catch (e) {
+                if (isTest) {
+                    alert("Error sending test: " + e.message);
+                }
                 console.log("Notification skipped:", e.message);
             }
         }
@@ -398,7 +409,6 @@
         window.addEventListener('load', () => {
             sendNtfyAlert();
         });
-
         // ==========================================
         // THEMES & POPUPS
         // ==========================================
