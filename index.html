@@ -1195,7 +1195,7 @@
         function getParText(score, par) { if(!score) return ""; let d = score - par; if(d===0) return "Par"; if(d===-1) return "Birdie"; if(d===-2) return "Eagle"; if(d<=-3) return "Albatross"; if(d===1) return "Bogey"; if(d===2) return "Dbl Bogey"; return `+${d}`; }
         function getParColor(score, par) { if(!score) return ""; let d = score - par; if(d<0) return "#39ff14"; if(d>0) return "#ff6b6b"; return "#f5eedc"; }
 
-        function renderScoreEntry() {
+      function renderScoreEntry() {
             let hole = roundData.currentHole; 
             let par = roundData.course.pars[hole-1];
             document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`; 
@@ -1206,8 +1206,12 @@
             
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
+                    // UPDATED LAYOUT: Flexbox header to align Captain to the right
                     html += `<div class="team-card" style="border-left-color: ${group.color};">
-                        <div class="team-header"><h3 style="color: ${group.color}; margin: 0 0 5px 0; font-size: 1.5em; text-transform: uppercase;">Team ${group.id}</h3></div>`;
+                        <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
+                            <h3 style="color: ${group.color}; margin: 0; font-size: 1.5em; text-transform: uppercase;">Team ${group.id}</h3>
+                            <span style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Capt: ${group.captain.split(' ')[0]}</span>
+                        </div>`;
                     
                     group.players.forEach(player => {
                         let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
@@ -1227,8 +1231,23 @@
             } else {
                 let cart = roundData.carts.find(c => c.id == currentTeamFilter);
                 if(cart) {
+                    // Grab cart driver name for the header
+                    let cartCaptain = "Player";
+                    if(cart.players && cart.players.length > 0) {
+                        let pObj = cart.players[0];
+                        let gObj = roundData.groups.find(g => g.id === pObj.g);
+                        if(gObj) {
+                            let plObj = gObj.players.find(p => p.id === pObj.p);
+                            if(plObj) cartCaptain = plObj.name.split(' ')[0];
+                        }
+                    }
+
+                    // UPDATED LAYOUT: Flexbox header to align Driver to the right
                     html += `<div class="team-card" style="border-left-color: var(--accent-gold);">
-                        <div class="team-header"><h3 style="color: var(--accent-gold); margin: 0 0 5px 0; font-size: 1.5em; text-transform: uppercase;">Cart ${cart.id}</h3></div>`;
+                        <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
+                            <h3 style="color: var(--accent-gold); margin: 0; font-size: 1.5em; text-transform: uppercase;">Cart ${cart.id}</h3>
+                            <span style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Driver: ${cartCaptain}</span>
+                        </div>`;
                     
                     cart.players.forEach((cp, idx) => {
                         let group = roundData.groups.find(g => g.id === cp.g); 
