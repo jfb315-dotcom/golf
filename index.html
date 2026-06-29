@@ -481,8 +481,9 @@
         function getOrderedSegments(rData) {
             if (rData.playMode === '9') {
                 if (rData.nineHoleType === 'nassau') {
-                    if (rData.startType === 'back') return [{ s: 10, e: 13, label: 'Back 4', id: 1, type: 'seg1' }, { s: 14, e: 18, label: 'Back 5', id: 2, type: 'seg2' }];
-                    else return [{ s: 1, e: 4, label: 'Front 4', id: 1, type: 'seg1' }, { s: 5, e: 9, label: 'Front 5', id: 2, type: 'seg2' }];
+                    // CHANGED: Labels are now strictly "First 4" and "Last 5" regardless of starting nine
+                    if (rData.startType === 'back') return [{ s: 10, e: 13, label: 'First 4', id: 1, type: 'seg1' }, { s: 14, e: 18, label: 'Last 5', id: 2, type: 'seg2' }];
+                    else return [{ s: 1, e: 4, label: 'First 4', id: 1, type: 'seg1' }, { s: 5, e: 9, label: 'Last 5', id: 2, type: 'seg2' }];
                 } else {
                     if (rData.startType === 'back') return [{ s: 10, e: 18, label: 'Back 9', id: 1, type: 'back' }];
                     return [{ s: 1, e: 9, label: 'Front 9', id: 2, type: 'front' }];
