@@ -1564,16 +1564,23 @@
             return cls; 
         }
 
-        function generateScorecardHTML(rData, sDb) {
+      function generateScorecardHTML(rData, sDb) {
             let fullHTML = ''; 
+            let summaryHTML = ''; // This will hold our new top-level Leaderboard
             let isBackStart18 = (rData.playMode === '18' && rData.startType === 'back'); 
             let orderedSegments = getOrderedSegments(rData);
             
             let formatWinners = {}; 
+            let teamScores = {}; // Stores all the final math for the Summary Table
+            
+            // MATH ENGINE: Calculate all scores and winners first
             rData.formats.forEach(f => {
                 formatWinners[f] = { overall: { min: Infinity, count: 0 } }; 
                 orderedSegments.forEach(seg => { formatWinners[f][seg.type] = { min: Infinity, count: 0 }; });
                 rData.groups.forEach(g => {
+                    if (!teamScores[g.id]) teamScores[g.id] = {};
+                    if (!teamScores[g.id][f]) teamScores[g.id][f] = {};
+
                     let overallNet = 0; let overallPlayed = 0;
                     orderedSegments.forEach(seg => {
                         let segNet = 0; let segPlayed = 0;
@@ -1587,12 +1594,19 @@
                                 segNet += net; segPlayed++; 
                             }
                         }
+                        // Save this segment's score for the summary table
+                        teamScores[g.id][f][seg.type] = { net: segNet, played: segPlayed };
+
                         if(segPlayed > 0) {
                             if (segNet < formatWinners[f][seg.type].min) { formatWinners[f][seg.type].min = segNet; formatWinners[f][seg.type].count = 1; }
                             else if (segNet === formatWinners[f][seg.type].min) { formatWinners[f][seg.type].count++; }
                             overallNet += segNet; overallPlayed += segPlayed;
                         }
                     });
+                    
+                    // Save the overall score for the summary table
+                    teamScores[g.id][f].overall = { net: overallNet, played: overallPlayed };
+
                     if(overallPlayed > 0) { 
                         if (overallNet < formatWinners[f].overall.min) { formatWinners[f].overall.min = overallNet; formatWinners[f].overall.count = 1; } 
                         else if (overallNet === formatWinners[f].overall.min) { formatWinners[f].overall.count++; } 
@@ -1600,6 +1614,73 @@
                 });
             });
 
+            // ======= 1. BUILD THE NEW SUMMARY LEADERBOARD =======
+            summaryHTML += `<div style="background: var(--bg-table); border-radius: 8px; border-top: 5px solid var(--accent-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
+                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
+                    <h3 style="color: var(--accent-gold); margin: 0; font-size: 1.6em; text-transform: uppercase; font-weight: bold;">🏆 Leaderboard Summary</h3>
+                </div>
+                <div class="table-wrapper">
+                    <table style="width: 100%; text-align: center; border-collapse: collapse;">
+                        <thead>
+                            <tr>
+                                <th rowspan="2" style="text-align:left; background:var(--bg-dark); color:var(--accent-gold); border-color:var(--border-color);">Team</th>`;
+
+            // Draw Top Headers (e.g., "1-Ball Match", "2-Ball Match")
+            rData.formats.forEach(f => {
+                let cols = orderedSegments.length + (orderedSegments.length > 1 ? 1 : 0);
+                summaryHTML += `<th colspan="${cols}" style="background:var(--bg-dark); color:var(--text-main); border-color:var(--border-color); border-left: 2px solid var(--border-color);">${f}-Ball Match</th>`;
+            });
+            summaryHTML += `</tr><tr>`;
+
+            // Draw Sub-Headers (e.g., "First 4", "Last 5", "OVERALL")
+            rData.formats.forEach(f => {
+                orderedSegments.forEach((seg, idx) => {
+                    let borderStyle = (idx === 0) ? "border-left: 2px solid var(--border-color);" : "";
+                    summaryHTML += `<th style="background:var(--bg-card); color:var(--text-muted); border-color:var(--border-color); font-size:12px; ${borderStyle}">${seg.label}</th>`;
+                });
+                if (orderedSegments.length > 1) {
+                    summaryHTML += `<th style="background:var(--bg-card); color:var(--accent-gold); border-color:var(--border-color); font-size:12px;">OVERALL</th>`;
+                }
+            });
+            summaryHTML += `</tr></thead><tbody>`;
+
+            // Draw the scores for each team with the Pulsing animations
+            rData.groups.forEach(g => {
+                summaryHTML += `<tr>
+                    <td style="text-align:left; font-weight:bold; color:${g.color}; white-space:nowrap; border-color:var(--border-color);">T${g.id} (${g.captain.split(' ')[0]})</td>`;
+
+                rData.formats.forEach(f => {
+                    orderedSegments.forEach((seg, idx) => {
+                        let scoreObj = teamScores[g.id][f][seg.type];
+                        let cellContent = "-"; let pulseClass = "";
+                        let borderStyle = (idx === 0) ? "border-left: 2px solid var(--border-color);" : "";
+
+                        if (scoreObj.played > 0) {
+                            cellContent = formatNetToPar(scoreObj.net);
+                            if (scoreObj.net === formatWinners[f][seg.type].min) {
+                                pulseClass = (formatWinners[f][seg.type].count > 1) ? "tie-pulse" : "winner-pulse";
+                            }
+                        }
+                        summaryHTML += `<td class="${scoreObj.played > 0 ? formatNetToParCSS(scoreObj.net) : ''} ${pulseClass}" style="border-color:var(--border-color); ${borderStyle} ${pulseClass ? '--team-color:'+g.color+';' : ''}">${cellContent}</td>`;
+                    });
+
+                    if (orderedSegments.length > 1) {
+                        let scoreObj = teamScores[g.id][f].overall;
+                        let cellContent = "-"; let pulseClass = "";
+                        if (scoreObj.played > 0) {
+                            cellContent = formatNetToPar(scoreObj.net);
+                            if (scoreObj.net === formatWinners[f].overall.min) {
+                                pulseClass = (formatWinners[f].overall.count > 1) ? "tie-pulse" : "winner-pulse";
+                            }
+                        }
+                        summaryHTML += `<td class="${scoreObj.played > 0 ? formatNetToParCSS(scoreObj.net) : ''} ${pulseClass}" style="border-color:var(--border-color); background:rgba(0,0,0,0.2); font-weight:bold; ${pulseClass ? '--team-color:'+g.color+';' : ''}">${cellContent}</td>`;
+                    }
+                });
+                summaryHTML += `</tr>`;
+            });
+            summaryHTML += `</tbody></table></div></div>`;
+
+            // ======= 2. BUILD THE INDIVIDUAL SCORECARDS =======
             let skinsWon = {};
             for(let h=1; h<=18; h++) {
                 let par = rData.course.pars[h-1]; let hs = [];
@@ -1728,7 +1809,9 @@
                 });
                 fullHTML += `</tbody></table></div></div>`;
             });
-            return fullHTML;
+            
+            // Return BOTH the Summary Table and the Individual Scorecards!
+            return summaryHTML + fullHTML;
         }
 
         function generateFinancialSummaryHTML(rData, sDb) {
