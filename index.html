@@ -50,10 +50,13 @@
         .live-buyin-val { color: #fff; font-size: 1.2em; margin-left: 5px;}
         
         .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 10px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
-        .pill-nav { display: flex; overflow-x: auto; gap: 10px; padding-bottom: 10px; scrollbar-width: none; }
+        .pill-nav { display: flex; overflow-x: auto; gap: 0; padding-bottom: 5px; scrollbar-width: none; }
         .pill-nav::-webkit-scrollbar { display: none; }
-        .pill { flex-shrink: 0; padding: 10px 20px; background: var(--bg-table); border-radius: 25px; border: 1px solid var(--border-color); color: var(--text-main); font-size: 15px; cursor: pointer; transition: all 0.2s; }
-        .pill.active { background: var(--accent-gold); color: #000; font-weight: bold; border-color: var(--accent-gold); }
+        .pill { flex: 1; text-align: center; padding: 10px 15px; background: var(--bg-table); border: 1px solid var(--border-color); color: var(--text-main); font-size: 14px; cursor: pointer; transition: all 0.2s; white-space: nowrap; }
+        .pill:not(:last-child) { border-right: none; }
+        .pill:first-child { border-top-left-radius: 6px; border-bottom-left-radius: 6px; }
+        .pill:last-child { border-top-right-radius: 6px; border-bottom-right-radius: 6px; }
+        .pill.active { background: var(--accent-gold); color: #000; font-weight: bold; border-color: var(--accent-gold); border-right: 1px solid var(--accent-gold); z-index: 2; position: relative; }
         
         .hole-nav { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);}
         .hole-nav button { background: var(--bg-table); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold; width: auto; margin: 0;}
@@ -177,8 +180,6 @@
         <hr style="border-color: var(--border-color); margin: 25px 0 20px 0;">
         <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
         
-        <button class="btn-secondary" onclick="sendNtfyAlert(true)" style="border-color: #ff00ff; color: #ff00ff; margin-top: 15px;">🔔 Test Ntfy Alert</button>
-
         <div class="theme-selector">
             <label style="margin-top:0;">Admin App Color Theme</label>
             <select id="app-theme-selector" onchange="changeTheme()" style="margin-bottom:0;">
@@ -444,8 +445,6 @@
         let activeViewScoresDb = null; 
         let tempRosterCache = {};
         
-        let jokeTracker = { hasBogeyed: false, hasBirdied: false };
-
         function toggle9HoleOptions() { 
             let fmt = document.getElementById('hole-format').value; 
             document.getElementById('nine-hole-match-type-container').style.display = (fmt === '9') ? 'block' : 'none'; 
@@ -1166,10 +1165,10 @@
         function renderPillNav() {
             if(lockedTeamId) { document.getElementById('pill-nav-container').style.display = 'none'; return; }
             let container = document.getElementById('pill-nav-container'); 
-            let html = `<div class="pill ${currentTeamFilter === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')"><b>ADMIN VIEW</b></div>`;
+            let html = `<div class="pill ${currentTeamFilter === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')">ALL (ADMIN)</div>`;
             roundData.carts.forEach(c => { 
                 let isSelected = currentTeamFilter == c.id; 
-                html += `<div class="pill ${isSelected ? 'active' : ''}" onclick="setTeamFilter(${c.id})"><b>CART ${c.id}</b></div>`; 
+                html += `<div class="pill ${isSelected ? 'active' : ''}" onclick="setTeamFilter(${c.id})">CART ${c.id}</div>`; 
             });
             container.innerHTML = html;
         }
@@ -1292,18 +1291,32 @@
             
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let diff = parsedVal - par;
-                if (parsedVal === 1) { showJokePopup('ace'); } 
-                else if (diff === -2) { showJokePopup('eagle'); } 
-                else if (diff === -1) { 
-                    let rPos = el.getAttribute('data-roster-pos');
-                    if(rPos && (rPos == 2 || rPos == 3) && !jokeTracker.hasBirdied) {
+                
+                // Attach jokes to the Cloud Database so they only ever fire once per team, across all devices
+                if (!roundData.jokeTracker) roundData.jokeTracker = {};
+                if (!roundData.jokeTracker[groupId]) roundData.jokeTracker[groupId] = { ace: false, eagle: false, birdie: false, bogey: false };
+                let jokes = roundData.jokeTracker[groupId];
+
+                if (parsedVal === 1 && !jokes.ace) { 
+                    showJokePopup('ace'); 
+                    jokes.ace = true; 
+                } 
+                else if (diff === -2 && !jokes.eagle) { 
+                    showJokePopup('eagle'); 
+                    jokes.eagle = true; 
+                } 
+                else if (diff === -1 && !jokes.birdie) { 
+                    let groupObj = roundData.groups.find(g => g.id === groupId);
+                    let pIndex = groupObj ? groupObj.players.findIndex(p => p.id === playerId) : 0;
+                    // Only roast if it's the C or D player (index 2 or 3)
+                    if(pIndex >= 2 && !jokes.birdie) {
                         showJokePopup('birdie');
-                        jokeTracker.hasBirdied = true;
+                        jokes.birdie = true;
                     }
                 } 
-                else if (diff >= 2 && !jokeTracker.hasBogeyed) { 
+                else if (diff >= 2 && !jokes.bogey) { 
                     showJokePopup('bogey'); 
-                    jokeTracker.hasBogeyed = true;
+                    jokes.bogey = true;
                 }
 
                 let missedHole = null; 
@@ -1984,7 +1997,6 @@
             // WIPE ROSTER AND JOKE CACHES ON FINALIZE
             tempRosterCache = {};
             localStorage.removeItem('jbGolfRosterCache');
-            jokeTracker = { hasBogeyed: false, hasBirdied: false };
             document.getElementById('is-scrambled').value = 'no';
             
             // RESET SETUP DEFAULTS
@@ -2073,54 +2085,6 @@
                 alert("⚠️ This round is from an older version of the app and is missing data for the new layout."); 
             }
         }
-
-        // ==========================================
-        // NTFY LIVE ALERT ENGINE (IOS BYPASS)
-        // ==========================================
-        async function sendNtfyAlert(isTest = false) {
-            try {
-                const params = new URLSearchParams(window.location.search);
-                const cartId = params.get('cart');
-                const isSpectator = params.get('spectator') === 'true';
-
-                if (sessionStorage.getItem('ntfyAlertSent') && !isTest) return;
-                if (!isTest) sessionStorage.setItem('ntfyAlertSent', 'true');
-
-                let message = "";
-                if (isTest) {
-                    message = "TEST SUCCESS! Your phone is now waking up correctly.";
-                } else if (cartId) {
-                    message = `CART ${cartId} ACTIVE: They just opened their live scorecard!`;
-                } else if (isSpectator) {
-                    message = "SPECTATOR ONLINE: Someone is viewing the live leaderboard.";
-                }
-
-                if (!message) return;
-
-                // Pass Priority and Tags directly in the URL to bypass Apple's Header Stripping
-                const ntfyUrl = 'https://ntfy.sh/Jb-golf-alerts-19b71?priority=high&tags=golf,rotating_light&title=' + encodeURIComponent('⛳ Golf App Alert');
-
-                await fetch(ntfyUrl, {
-                    method: 'POST',
-                    body: message,
-                    mode: 'no-cors'
-                });
-
-                if (isTest) {
-                    alert("Test sent! Check your phone.");
-                }
-
-            } catch (e) {
-                if (isTest) alert("Error: " + e.message);
-                console.log("Notification skipped:", e.message);
-            }
-        }
-
-        window.sendNtfyAlert = sendNtfyAlert;
-
-        window.addEventListener('load', () => {
-            sendNtfyAlert();
-        });
     </script>
 </body>
 </html>
