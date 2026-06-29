@@ -55,9 +55,9 @@
         }
         
         .app-logo {
-            width: 42px;
-            height: 42px;
-            border-radius: 8px;
+            width: 50px;
+            height: 50px;
+            border-radius: 10px;
             object-fit: contain;
         }
         
@@ -93,14 +93,15 @@
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
-            font-size: 280px;
+            font-size: 260px;
             font-weight: 900;
-            color: #334155;
-            opacity: 0.08;
-            z-index: 10;
+            color: var(--accent);
+            opacity: 0.09;
+            z-index: 5;
             pointer-events: none;
             user-select: none;
             font-family: 'Space Grotesk', system-ui, sans-serif;
+            line-height: 1;
         }
 
         .card {
@@ -925,7 +926,7 @@
     <div id="step-2" class="screen card">
         <h2>Draft Rosters (The Money)</h2>
         <label>Round Date</label>
-        <input type="date" id="round-date" style="margin-bottom: 18px;">
+        <input type="date" id="round-date" style="margin-bottom: 18px; width: 100%; box-sizing: border-box;">
         
         <div id="roster-container"></div>
         
@@ -1454,7 +1455,7 @@
                 html += `<div style="padding:18px; background:var(--bg-elevated); border-radius:12px; margin-bottom: 18px; border:1px solid var(--border);">`;
                 html += `<h3 style="margin-top:0; margin-bottom:12px; color:var(--accent); font-size:1.15rem;">Team ${g}</h3>`;
                 let savedTime = tempRosterCache[`g${g}-time`] || "08:00";
-                html += `<div id="g${g}-time-wrap"><label>Tee Time</label><input type="time" id="g${g}-time" value="${savedTime}"></div>`;
+                html += `<div id="g${g}-time-wrap" style="max-width: 160px;"><label>Tee Time</label><input type="time" id="g${g}-time" value="${savedTime}" style="width: 100%; box-sizing: border-box;"></div>`;
                 
                 for (let p = 1; p <= pCount; p++) {
                     let placeholder = p === 1 ? "Player 1 Full Name (Captain)" : `Player ${p} Full Name`;
@@ -1463,9 +1464,9 @@
                     let savedGhost = tempRosterCache[`g${g}-p${p}-ghost`] || "";
                     let isGhostProp = savedGhost ? `data-ghost="${savedGhost}" readonly style="color:var(--accent);"` : "";
                     
-                    html += `<div class="roster-player-block">
-                        <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}" value="${savedName}" ${isGhostProp} onchange="saveRosterCache()">
-                        <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="e.g. 4, 12" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()">
+                    html += `<div class="roster-player-block" style="max-width: 100%;">
+                        <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}" value="${savedName}" ${isGhostProp} onchange="saveRosterCache()" style="min-width: 0;">
+                        <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="e.g. 4, 12" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()" style="max-width: 90px; min-width: 70px;">
                     </div>`;
                 }
                 html += `</div>`;
