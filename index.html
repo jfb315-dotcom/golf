@@ -1183,14 +1183,21 @@
             setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 3000);
         }
 
-        function renderPillNav() {
-            if(lockedTeamId) { document.getElementById('pill-nav-container').style.display = 'none'; return; }
+       function renderPillNav() {
+            if(lockedTeamId) { 
+                document.getElementById('pill-nav-container').style.display = 'none'; 
+                return; 
+            }
             let container = document.getElementById('pill-nav-container'); 
+            
+            // We ensure classes are assigned correctly
             let html = `<div class="pill ${currentTeamFilter === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')">ALL (ADMIN)</div>`;
+            
             roundData.carts.forEach(c => { 
                 let isSelected = currentTeamFilter == c.id; 
                 html += `<div class="pill ${isSelected ? 'active' : ''}" onclick="setTeamFilter(${c.id})">CART ${c.id}</div>`; 
             });
+            
             container.innerHTML = html;
         }
 
