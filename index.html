@@ -879,9 +879,12 @@
             }
         }
 
-        function startRoundScrambled() { buildRoundDataAndStart(true); }
+ function startRoundScrambled() { buildRoundDataAndStart(true); }
 
         function buildRoundDataAndStart(isScrambled) {
+            // ADD THIS LINE: This completely deletes the old scores from the previous round
+            scoresDb = {}; 
+
             roundData.date = document.getElementById('round-date').value || new Date().toLocaleDateString(); 
             roundData.isScrambled = isScrambled;
             roundData.formats = []; 
@@ -895,7 +898,7 @@
             });
             
             roundData.groups = []; 
-            roundData.carts = []; 
+            roundData.carts = [];
             
             if (Object.keys(scoresDb).length === 0) scoresDb = {};
             
@@ -1681,6 +1684,8 @@
                     let teamRow = `<tr class="team-math-row"><td style="text-align:left; border-color: var(--border-color); color:${g.color};">Team ${f}-Ball</td>`;
                     let totalNet = 0; let totalPlayed = 0; let isLastRow = (rData.formats.indexOf(f) === rData.formats.length - 1);
 
+                    let runningTeamScore = 0; // Tracks the cumulative score across all holes
+
                     orderedSegments.forEach(seg => {
                         let segNet = 0; let segPlayed = 0;
                         for(let h=seg.s; h<=seg.e; h++) {
@@ -1691,7 +1696,11 @@
                                 let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
                                 if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) holeNet += n; }); }
                                 segNet += holeNet; segPlayed++; 
-                                teamRow += `<td class="${formatNetToParCSS(holeNet)} ${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color);">${formatNetToPar(holeNet)}</td>`;
+                                
+                                runningTeamScore += holeNet; // Add this hole's math to the running total
+                                
+                                // Output the running total for this cell
+                                teamRow += `<td class="${formatNetToParCSS(runningTeamScore)} ${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color);">${formatNetToPar(runningTeamScore)}</td>`;
                             } else { 
                                 teamRow += `<td class="${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color); color:var(--text-muted);">-</td>`; 
                             }
