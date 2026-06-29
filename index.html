@@ -829,38 +829,50 @@
             </select>
         </div>
 
-        <!-- Team Formats & Rules - Simplified -->
-        <div style="margin-bottom: 18px;">
-            <label style="margin-bottom:8px;">TEAM FORMATS</label>
-            <div class="format-pills" style="gap:8px;">
-                <div class="format-pill-wrapper">
-                    <input type="checkbox" id="fmt-1" value="1-ball" onchange="calculateLiveBuyIn()" style="display:none;">
-                    <label for="fmt-1" class="format-pill">1-Ball</label>
+        <!-- Team Formats - Two Column (same size buttons + tighter spacing) -->
+        <div style="margin-bottom: 16px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 14px;">
+                
+                <!-- Left: Team Formats -->
+                <div>
+                    <label style="margin-bottom: 5px; display: block; font-size: 0.72rem;">TEAM FORMATS</label>
+                    
+                    <div class="format-pill-wrapper" style="margin-bottom: 5px;">
+                        <input type="checkbox" id="fmt-1" value="1-ball" onchange="calculateLiveBuyIn()" style="display:none;">
+                        <label for="fmt-1" class="format-pill" style="padding:9px 16px; min-width:90px; justify-content:center;">1-Ball</label>
+                    </div>
+                    
+                    <div class="format-pill-wrapper" style="margin-bottom: 5px;">
+                        <input type="checkbox" id="fmt-2" value="2-ball" checked onchange="calculateLiveBuyIn()" style="display:none;">
+                        <label for="fmt-2" class="format-pill" style="padding:9px 16px; min-width:90px; justify-content:center;">2-Ball</label>
+                    </div>
+                    
+                    <div class="format-pill-wrapper">
+                        <input type="checkbox" id="fmt-3" value="3-ball" checked onchange="calculateLiveBuyIn()" style="display:none;">
+                        <label for="fmt-3" class="format-pill" style="padding:9px 16px; min-width:90px; justify-content:center;">3-Ball</label>
+                    </div>
                 </div>
-                <div class="format-pill-wrapper">
-                    <input type="checkbox" id="fmt-2" value="2-ball" checked onchange="calculateLiveBuyIn()" style="display:none;">
-                    <label for="fmt-2" class="format-pill">2-Ball</label>
+                
+                <!-- Right: All Birdies Count -->
+                <div>
+                    <label style="margin-bottom: 5px; display: block; font-size: 0.72rem;">ALL BIRDIES COUNT</label>
+                    
+                    <div class="format-pill-wrapper" style="margin-bottom: 5px;">
+                        <input type="checkbox" id="fmt-1-birdies" style="display:none;" onchange="calculateLiveBuyIn()">
+                        <label for="fmt-1-birdies" class="format-pill birdie-pill" style="padding:9px 16px; min-width:90px; justify-content:center; font-size:13px;">1-Ball</label>
+                    </div>
+                    
+                    <div class="format-pill-wrapper" style="margin-bottom: 5px;">
+                        <input type="checkbox" id="fmt-2-birdies" checked style="display:none;" onchange="calculateLiveBuyIn()">
+                        <label for="fmt-2-birdies" class="format-pill birdie-pill" style="padding:9px 16px; min-width:90px; justify-content:center; font-size:13px;">2-Ball</label>
+                    </div>
+                    
+                    <div class="format-pill-wrapper">
+                        <input type="checkbox" id="fmt-3-birdies" checked style="display:none;" onchange="calculateLiveBuyIn()">
+                        <label for="fmt-3-birdies" class="format-pill birdie-pill" style="padding:9px 16px; min-width:90px; justify-content:center; font-size:13px;">3-Ball</label>
+                    </div>
                 </div>
-                <div class="format-pill-wrapper">
-                    <input type="checkbox" id="fmt-3" value="3-ball" checked onchange="calculateLiveBuyIn()" style="display:none;">
-                    <label for="fmt-3" class="format-pill">3-Ball</label>
-                </div>
-            </div>
-            
-            <div style="margin-top:10px; font-size:12.5px; color:var(--text-muted);">
-                <label style="display:inline; margin:0; font-size:12px; text-transform:none;">All Birdies Count:</label>
-                <span style="margin-left:8px;">
-                    <input type="checkbox" id="fmt-1-birdies" style="display:none;" onchange="calculateLiveBuyIn()">
-                    <label for="fmt-1-birdies" class="format-pill birdie-pill" style="padding:4px 10px; font-size:11.5px;">1-Ball</label>
-                </span>
-                <span style="margin-left:4px;">
-                    <input type="checkbox" id="fmt-2-birdies" checked style="display:none;" onchange="calculateLiveBuyIn()">
-                    <label for="fmt-2-birdies" class="format-pill birdie-pill" style="padding:4px 10px; font-size:11.5px;">2-Ball</label>
-                </span>
-                <span style="margin-left:4px;">
-                    <input type="checkbox" id="fmt-3-birdies" checked style="display:none;" onchange="calculateLiveBuyIn()">
-                    <label for="fmt-3-birdies" class="format-pill birdie-pill" style="padding:4px 10px; font-size:11.5px;">3-Ball</label>
-                </span>
+                
             </div>
         </div>
 
