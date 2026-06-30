@@ -1228,7 +1228,7 @@
         function getParText(score, par) { if(!score) return ""; let d = score - par; if(d===0) return "Par"; if(d===-1) return "Birdie"; if(d===-2) return "Eagle"; if(d<=-3) return "Albatross"; if(d===1) return "Bogey"; if(d===2) return "Dbl Bogey"; return `+${d}`; }
         function getParColor(score, par) { if(!score) return ""; let d = score - par; if(d<0) return "#39ff14"; if(d>0) return "#ff6b6b"; return "#f5eedc"; }
 
-      function renderScoreEntry() {
+function renderScoreEntry() {
             let hole = roundData.currentHole; 
             let par = roundData.course.pars[hole-1];
             document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`; 
@@ -1253,10 +1253,11 @@
                         let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
                         let disabledState = hasReadonlyLock ? "disabled" : "";
                         
+                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.select()" onclick="this.select()" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     }); 
                     html += `</div>`;
@@ -1292,10 +1293,11 @@
                         let teamTag = roundData.isScrambled ? `<span style="font-size:10px; color:${group.color};"> [T${group.id}]</span>` : '';
                         let disabledState = hasReadonlyLock ? "disabled" : "";
                         
+                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${teamTag}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.select()" onclick="this.select()" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     }); 
                     html += `</div>`;
