@@ -303,10 +303,12 @@
             <button class="btn-secondary" onclick="switchScreen('step-dashboard', 'step-3')">← Back to Scoring</button>
             <button class="btn-primary" onclick="openResultsShareModal()" style="background-color: var(--accent-gold); color: #000; margin-top: 0;">📤 Share Final Results</button>
             
-<div id="admin-finalize-container" style="display:none;">
+            <div id="admin-finalize-container">
                 <hr style="border-color: var(--border-color); width: 100%; margin: 20px 0;">
                 <button class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8c2d2d; color: white; margin-top: 0;">🛑 Finalize & Archive Round</button>
             </div>
+        </div>
+    </div>
 
     <div id="step-7" class="screen card">
         <h2>Share Live Scoring Links</h2>
@@ -1336,12 +1338,7 @@
             if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
             let parsedVal = parseInt(val);
             
-            // --- MOVED SPEED BUMP INSIDE: Now it only blocks score typing ---
             if(!isNaN(parsedVal) && parsedVal > 0) {
-                let currentTime = new Date().getTime();
-                if (currentTime - lastInputTime < 500) return; 
-                lastInputTime = currentTime;
-                
                 let diff = parsedVal - par;
                 
                 // Attach jokes to the Cloud Database so they only ever fire once per team, across all devices
@@ -1360,6 +1357,7 @@
                 else if (diff === -1 && !jokes.birdie) { 
                     let groupObj = roundData.groups.find(g => g.id === groupId);
                     let pIndex = groupObj ? groupObj.players.findIndex(p => p.id === playerId) : 0;
+                    // Only roast if it's the C or D player (index 2 or 3)
                     if(pIndex >= 2 && !jokes.birdie) {
                         showJokePopup('birdie');
                         jokes.birdie = true;
@@ -1462,17 +1460,18 @@
                             else viewDashboard(); 
                         }
                     } else { 
-                        // FIXED: Removed the 300ms setTimeout to prevent navigation hang.
-                        // This calls changeHole(1) instantly.
-                        changeHole(1);
                         setTimeout(() => { 
-                            let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
-                            if (nInp.length > 0 && !nInp[0].readOnly) { nInp[0].focus(); nInp[0].select(); } 
-                        }, 50); 
+                            changeHole(1); 
+                            setTimeout(() => { 
+                                let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
+                                if (nInp.length > 0 && !nInp[0].readOnly) { nInp[0].focus(); nInp[0].select(); } 
+                            }, 50); 
+                        }, 300); 
                     }
                 }
             }
         }
+
         function closeCompleteModalAndView() { 
             document.getElementById('complete-modal').classList.remove('active'); 
             viewDashboard(); 
@@ -1497,73 +1496,62 @@
         function formatNetToParCSS(net) { if(net === 0) return "even-par"; return net > 0 ? "over-par" : "under-par"; }
 
         function viewDashboard() {
-    const urlParams = new URLSearchParams(window.location.search);
-    activeViewRoundData = roundData; 
-    activeViewScoresDb = scoresDb;
-    document.getElementById('global-hole-watermark').style.display = 'none';
+            const urlParams = new URLSearchParams(window.location.search);
+            activeViewRoundData = roundData; 
+            activeViewScoresDb = scoresDb;
+            document.getElementById('global-hole-watermark').style.display = 'none';
 
-    // FIX: Force page to top so it's not confusing on mobile
-    window.scrollTo(0, 0);
+            if (urlParams.get('spectator') === 'true') {
+                document.getElementById('dashboard-title').innerText = "Live Spectator Leaderboard";
+            } else {
+                document.getElementById('dashboard-title').innerText = (lockedTeamId === null) ? "Live Tournament Dashboard" : "Live Scorecard";
+            }
+            
+            let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
+            let orderedSegments = getOrderedSegments(roundData); 
+            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
+            let totalBets = roundData.formats.length * betsPerFormat; 
+            let totalTeamPot = totalPlayers * roundData.betAmount * totalBets; 
+            let skinsPot = totalPlayers * roundData.skinsAmount;
+            
+            let rulesHTML = ''; 
+            roundData.formats.forEach(f => { 
+                let rS = (roundData.birdieRules && roundData.birdieRules[f]) ? `<span style="color:#39ff14; font-weight:bold;">ON</span>` : `<span style="color:#ff6b6b; font-weight:bold;">OFF</span>`; 
+                rulesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${f}-Ball All Birdies Count:</span> <span>${rS}</span></div>`; 
+            });
+            
+            let strokesHTML = ''; 
+            roundData.groups.forEach(g => { 
+                g.players.forEach(p => { 
+                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) { 
+                        strokesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${p.name.split(' ')[0]}:</span> <span>Hole(s) ${p.strokeHoles.join(', ')}</span></div>`; 
+                    } 
+                }); 
+            });
+            
+            if (strokesHTML !== '') { 
+                rulesHTML += `<div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 5px;">🎯 Handicap Strokes:</div>` + strokesHTML; 
+                rulesHTML += `<div style="font-size:11px; color:#ff6b6b; margin-top:8px; font-style:italic; line-height:1.3; background:var(--bg-table); padding:8px; border-radius:4px; border:1px solid var(--border-color);">🔴 = Net Score applied on this hole.<br>* Scorecard displays Gross/Net.<br>* Net scores do NOT count towards the Gross Skins pot.</div>`; 
+            }
 
-    // FIX: Show the floating navigation button
-    document.getElementById('floating-scoring-btn').style.display = 'block';
+            let finHTML = `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:20px; border-left:5px solid #3ea84e;">
+                <h3 style="margin-top:0; margin-bottom:10px; color:#7ced7e;">💰 Live Purse</h3>
+                <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Team Purse:</span> <b>$${totalTeamPot}</b></div>
+                <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Skins Pot:</span> <b>$${skinsPot}</b></div>
+                <hr style="border-color:var(--border-color); margin:10px 0;">
+                <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; color:var(--text-main); margin-bottom:5px;"><span>Total Buy-in Per Player:</span> <span style="color:var(--accent-gold); font-size:16px;">$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px;"><span>Individual Bet (Per Segment):</span> <span>$${roundData.betAmount}</span></div>
+                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px; margin-bottom:10px;"><span>Skins Buy-in:</span> <span>$${roundData.skinsAmount}</span></div>
+                <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>${rulesHTML}
+            </div>`;
+            
+            document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
+            document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb); 
+            document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
+            document.getElementById('step-dashboard').classList.add('active');
+        }
 
-    // FIX: Only show Finalize button if NOT using a cart-specific link
-    const finalizeContainer = document.getElementById('admin-finalize-container');
-    if (finalizeContainer) {
-        finalizeContainer.style.display = (lockedTeamId === null) ? 'block' : 'none';
-    }
-
-    if (urlParams.get('spectator') === 'true') {
-        document.getElementById('dashboard-title').innerText = "Live Spectator Leaderboard";
-    } else {
-        document.getElementById('dashboard-title').innerText = (lockedTeamId === null) ? "Live Tournament Dashboard" : "Live Scorecard";
-    }
-    
-    let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
-    let orderedSegments = getOrderedSegments(roundData); 
-    let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
-    let totalBets = roundData.formats.length * betsPerFormat; 
-    let totalTeamPot = totalPlayers * roundData.betAmount * totalBets; 
-    let skinsPot = totalPlayers * roundData.skinsAmount;
-    
-    let rulesHTML = ''; 
-    roundData.formats.forEach(f => { 
-        let rS = (roundData.birdieRules && roundData.birdieRules[f]) ? `<span style="color:#39ff14; font-weight:bold;">ON</span>` : `<span style="color:#ff6b6b; font-weight:bold;">OFF</span>`; 
-        rulesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${f}-Ball All Birdies Count:</span> <span>${rS}</span></div>`; 
-    });
-    
-    let strokesHTML = ''; 
-    roundData.groups.forEach(g => { 
-        g.players.forEach(p => { 
-            if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) { 
-                strokesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${p.name.split(' ')[0]}:</span> <span>Hole(s) ${p.strokeHoles.join(', ')}</span></div>`; 
-            } 
-        }); 
-    });
-    
-    if (strokesHTML !== '') { 
-        rulesHTML += `<div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 5px;">🎯 Handicap Strokes:</div>` + strokesHTML; 
-        rulesHTML += `<div style="font-size:11px; color:#ff6b6b; margin-top:8px; font-style:italic; line-height:1.3; background:var(--bg-table); padding:8px; border-radius:4px; border:1px solid var(--border-color);">🔴 = Net Score applied on this hole.<br>* Scorecard displays Gross/Net.<br>* Net scores do NOT count towards the Gross Skins pot.</div>`; 
-    }
-
-    let finHTML = `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:20px; border-left:5px solid #3ea84e;">
-        <h3 style="margin-top:0; margin-bottom:10px; color:#7ced7e;">💰 Live Purse</h3>
-        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Team Purse:</span> <b>$${totalTeamPot}</b></div>
-        <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Skins Pot:</span> <b>$${skinsPot}</b></div>
-        <hr style="border-color:var(--border-color); margin:10px 0;">
-        <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; color:var(--text-main); margin-bottom:5px;"><span>Total Buy-in Per Player:</span> <span style="color:var(--accent-gold); font-size:16px;">$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</span></div>
-        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px;"><span>Individual Bet (Per Segment):</span> <span>$${roundData.betAmount}</span></div>
-        <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px; margin-bottom:10px;"><span>Skins Buy-in:</span> <span>$${roundData.skinsAmount}</span></div>
-        <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>${rulesHTML}
-    </div>`;
-    
-    document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
-    document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb); 
-    document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
-    document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-    document.getElementById('step-dashboard').classList.add('active');
-}
         function getBorders(isActive, segId, type, h, seg, isLastRow) { 
             if (!isActive || segId === 0) return ""; 
             let cls = ""; 
