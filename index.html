@@ -197,7 +197,7 @@
 
         <button class="btn-primary" onclick="goToStep2()">Next: Rosters</button>
         <hr style="border-color: var(--border-color); margin: 25px 0 20px 0;">
-        <button class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
+        <button id="btn-archive" class="btn-secondary" onclick="viewArchiveList()">📁 View Archived Rounds</button>
         
         <div class="theme-selector">
             <label style="margin-top:0;">Admin App Color Theme</label>
@@ -454,7 +454,7 @@
         };
         const curatedColors = ['#00f3ff', '#39ff14', '#ff007f', '#ccff00', '#ff5e00', '#bf00ff'];
 
-        let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
+        let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, currentHoles: { admin: 1 }, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
         let scoresDb = {}; 
         let clipboards = {};
         let currentTeamFilter = "ALL"; 
@@ -482,18 +482,37 @@
         }
 
         function getOrderedSegments(rData) {
+            const isBackStart = rData.startType === 'back';
+
             if (rData.playMode === '9') {
                 if (rData.nineHoleType === 'nassau') {
-                    // CHANGED: Labels are now strictly "First 4" and "Last 5" regardless of starting nine
-                    if (rData.startType === 'back') return [{ s: 10, e: 13, label: 'First 4', id: 1, type: 'seg1' }, { s: 14, e: 18, label: 'Last 5', id: 2, type: 'seg2' }];
-                    else return [{ s: 1, e: 4, label: 'First 4', id: 1, type: 'seg1' }, { s: 5, e: 9, label: 'Last 5', id: 2, type: 'seg2' }];
+                    if (isBackStart) {
+                        return [
+                            { s: 10, e: 13, label: 'First 4 (10-13)', id: 1, type: 'seg1' },
+                            { s: 14, e: 18, label: 'Last 5 (14-18)', id: 2, type: 'seg2' }
+                        ];
+                    } else {
+                        return [
+                            { s: 1, e: 4, label: 'First 4 (1-4)', id: 1, type: 'seg1' },
+                            { s: 5, e: 9, label: 'Last 5 (5-9)', id: 2, type: 'seg2' }
+                        ];
+                    }
                 } else {
-                    if (rData.startType === 'back') return [{ s: 10, e: 18, label: 'Back 9', id: 1, type: 'back' }];
-                    return [{ s: 1, e: 9, label: 'Front 9', id: 2, type: 'front' }];
+                    if (isBackStart) return [{ s: 10, e: 18, label: 'Back 9 (10-18)', id: 1, type: 'back' }];
+                    return [{ s: 1, e: 9, label: 'Front 9 (1-9)', id: 2, type: 'front' }];
                 }
             } else {
-                if (rData.startType === 'back') return [{ s: 10, e: 18, label: 'Back 9', id: 1, type: 'back' }, { s: 1, e: 9, label: 'Front 9', id: 2, type: 'front' }];
-                else return [{ s: 1, e: 9, label: 'Front 9', id: 0, type: 'front' }, { s: 10, e: 18, label: 'Back 9', id: 0, type: 'back' }];
+                if (isBackStart) {
+                    return [
+                        { s: 10, e: 18, label: 'Back 9 (10-18)', id: 1, type: 'back' },
+                        { s: 1, e: 9, label: 'Front 9 (1-9)', id: 2, type: 'front' }
+                    ];
+                } else {
+                    return [
+                        { s: 1, e: 9, label: 'Front 9 (1-9)', id: 0, type: 'front' },
+                        { s: 10, e: 18, label: 'Back 9 (10-18)', id: 0, type: 'back' }
+                    ];
+                }
             }
         }
 
@@ -886,8 +905,14 @@
  function startRoundScrambled() { buildRoundDataAndStart(true); }
 
         function buildRoundDataAndStart(isScrambled) {
-            // ADD THIS LINE: This completely deletes the old scores from the previous round
-            scoresDb = {}; 
+            const isEditingMidRound = sessionStorage.getItem('isEditingMidRound') === 'true';
+            
+            if (!isEditingMidRound) {
+                // Only wipe scores when starting a brand new round
+                scoresDb = {}; 
+            } else {
+                // Keep existing scores when editing setup mid-round (bet amounts, formats, etc. can change safely)
+            }
 
             roundData.date = document.getElementById('round-date').value || new Date().toLocaleDateString(); 
             roundData.isScrambled = isScrambled;
@@ -962,6 +987,12 @@
 
             roundData.currentHole = getHoleSequence()[0]; 
             currentTeamFilter = "ALL";
+
+            // Initialize independent hole tracking per cart + admin
+            roundData.currentHoles = { admin: roundData.startHole };
+            roundData.carts.forEach(c => {
+                roundData.currentHoles[c.id] = roundData.startHole;
+            });
             
             let cleanRoundData = JSON.parse(JSON.stringify(roundData));
             let cleanScoresDb = JSON.parse(JSON.stringify(scoresDb));
@@ -987,7 +1018,45 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
             document.getElementById('global-hole-watermark').style.display = 'none';
+            
+            // Restore current format + birdie rules + money values so "All Birdies Count" state is correct
+            restoreSetupFormFromRoundData();
+            
             window.scrollTo(0,0);
+        }
+
+        function restoreSetupFormFromRoundData() {
+            if (!roundData || !roundData.formats) return;
+
+            // Money values
+            const betEl = document.getElementById('bet-amount');
+            const skinsEl = document.getElementById('skins-amount');
+            if (betEl) betEl.value = roundData.betAmount || 20;
+            if (skinsEl) skinsEl.value = roundData.skinsAmount || 10;
+
+            // Hole format & start type (be careful changing these mid-round)
+            const holeFmt = document.getElementById('hole-format');
+            const startType = document.getElementById('start-type');
+            if (holeFmt && roundData.playMode) holeFmt.value = roundData.playMode;
+            if (startType && roundData.startType) startType.value = roundData.startType;
+
+            // Restore which formats are active + their birdie rules
+            [1,2,3].forEach(f => {
+                const fmtChk = document.getElementById(`fmt-${f}`);
+                const birdieChk = document.getElementById(`fmt-${f}-birdies`);
+                
+                const isActive = roundData.formats.includes(f);
+                if (fmtChk) fmtChk.checked = isActive;
+                
+                if (birdieChk) {
+                    birdieChk.checked = !!(roundData.birdieRules && roundData.birdieRules[f]);
+                }
+            });
+
+            // Trigger live buy-in recalc
+            if (typeof calculateLiveBuyIn === 'function') {
+                calculateLiveBuyIn();
+            }
         }
 
         // ==========================================
@@ -1207,8 +1276,23 @@
         }
 
         function setTeamFilter(filterValue) { 
+            // Save current hole to the previous view before switching
+            if (roundData.currentHoles) {
+                const prevKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
+                if (prevKey) roundData.currentHoles[prevKey] = roundData.currentHole;
+            }
+            
             currentTeamFilter = filterValue; 
             localStorage.setItem('tournamentViewFilter', currentTeamFilter); 
+            
+            // Load the hole for the new view
+            if (roundData.currentHoles) {
+                const newKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
+                if (newKey && roundData.currentHoles[newKey]) {
+                    roundData.currentHole = roundData.currentHoles[newKey];
+                }
+            }
+            
             renderPillNav(); 
             renderScoreEntry(); 
         }
@@ -1219,6 +1303,13 @@
             let nextIdx = idx + direction;
             if(nextIdx >= 0 && nextIdx < seq.length) { 
                 roundData.currentHole = seq[nextIdx]; 
+                
+                // Persist to the current view's hole tracker
+                if (roundData.currentHoles) {
+                    const viewKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
+                    if (viewKey) roundData.currentHoles[viewKey] = roundData.currentHole;
+                }
+                
                 saveAppStateToCloud(); 
                 renderScoreEntry(); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
@@ -1234,7 +1325,7 @@ function renderScoreEntry() {
             document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`; 
             document.getElementById('current-par-display-top').innerText = `Par ${par}`;
             document.getElementById('global-hole-watermark').innerText = hole;
-            
+
             let html = ``;
             
             if (currentTeamFilter === "ALL") {
@@ -1346,31 +1437,36 @@ function renderScoreEntry() {
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let diff = parsedVal - par;
                 
-                // Attach jokes to the Cloud Database so they only ever fire once per team, across all devices
-                if (!roundData.jokeTracker) roundData.jokeTracker = {};
-                if (!roundData.jokeTracker[groupId]) roundData.jokeTracker[groupId] = { ace: false, eagle: false, birdie: false, bogey: false };
-                let jokes = roundData.jokeTracker[groupId];
+                // Only show roasts on cart views (not when Admin is on ALL tab)
+                // Each roast type only fires once per group per round (via jokeTracker synced in Firestore)
+                const isAdminView = (currentTeamFilter === "ALL");
+                
+                if (!isAdminView) {
+                    if (!roundData.jokeTracker) roundData.jokeTracker = {};
+                    if (!roundData.jokeTracker[groupId]) roundData.jokeTracker[groupId] = { ace: false, eagle: false, birdie: false, bogey: false };
+                    let jokes = roundData.jokeTracker[groupId];
 
-                if (parsedVal === 1 && !jokes.ace) { 
-                    showJokePopup('ace'); 
-                    jokes.ace = true; 
-                } 
-                else if (diff === -2 && !jokes.eagle) { 
-                    showJokePopup('eagle'); 
-                    jokes.eagle = true; 
-                } 
-                else if (diff === -1 && !jokes.birdie) { 
-                    let groupObj = roundData.groups.find(g => g.id === groupId);
-                    let pIndex = groupObj ? groupObj.players.findIndex(p => p.id === playerId) : 0;
-                    // Only roast if it's the C or D player (index 2 or 3)
-                    if(pIndex >= 2 && !jokes.birdie) {
-                        showJokePopup('birdie');
-                        jokes.birdie = true;
+                    if (parsedVal === 1 && !jokes.ace) { 
+                        showJokePopup('ace'); 
+                        jokes.ace = true; 
+                    } 
+                    else if (diff === -2 && !jokes.eagle) { 
+                        showJokePopup('eagle'); 
+                        jokes.eagle = true; 
+                    } 
+                    else if (diff === -1 && !jokes.birdie) { 
+                        let groupObj = roundData.groups.find(g => g.id === groupId);
+                        let pIndex = groupObj ? groupObj.players.findIndex(p => p.id === playerId) : 0;
+                        // Only roast if it's the C or D player (index 2 or 3)
+                        if(pIndex >= 2 && !jokes.birdie) {
+                            showJokePopup('birdie');
+                            jokes.birdie = true;
+                        }
+                    } 
+                    else if (diff >= 2 && !jokes.bogey) { 
+                        showJokePopup('bogey'); 
+                        jokes.bogey = true;
                     }
-                } 
-                else if (diff >= 2 && !jokes.bogey) { 
-                    showJokePopup('bogey'); 
-                    jokes.bogey = true;
                 }
 
                 let missedHole = null; 
@@ -1576,6 +1672,25 @@ function renderScoreEntry() {
             return cls; 
         }
 
+        // ==========================================
+        // CORE SCORING MATH - STABLE & WELL DOCUMENTED
+        // ==========================================
+        function calculateTeamHoleNet(rData, f, basePar, hs, birdieRuleActive) {
+            if (hs.length < f) return null;
+
+            let nets = hs.map(s => s - basePar).sort((a, b) => a - b);
+            let holeNet = nets.slice(0, f).reduce((a, b) => a + b, 0);
+
+            // Only add extra under-par scores if birdieRuleActive is explicitly true
+            if (birdieRuleActive === true) {
+                nets.slice(f).forEach(n => {
+                    if (n < 0) holeNet += n;
+                });
+            }
+
+            return holeNet;
+        }
+
       function generateScorecardHTML(rData, sDb) {
             let fullHTML = ''; 
             let summaryHTML = ''; // This will hold our new top-level Leaderboard
@@ -1706,8 +1821,20 @@ function renderScoreEntry() {
                 }
             }
 
-            if (rData.playMode === '18' && rData.startType === 'back') { fullHTML += `<div style="background: rgba(255, 107, 107, 0.1); border: 1px solid #ff6b6b; color: #ff6b6b; padding: 10px; border-radius: 6px; text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px;">🔄 SWAPPED NINES ACTIVE: MATCH STARTED ON HOLE 10</div>`; } 
-            else if (rData.playMode === '9' && rData.nineHoleType === 'nassau') { fullHTML += `<div style="background: rgba(212, 184, 114, 0.1); border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 10px; border-radius: 6px; text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px;">🏆 NASSAU 4/5 SPLIT MATCH ACTIVE</div>`; }
+            const isBackStart = rData.startType === 'back';
+            const isNineHoleNassau = rData.playMode === '9' && rData.nineHoleType === 'nassau';
+
+            if (isBackStart) {
+                const bannerText = isNineHoleNassau 
+                    ? '🔄 STARTED ON BACK NINE — First 4 (10-13) → Last 5 (14-18)'
+                    : '🔄 STARTED ON BACK NINE — Hole 10 → 18 then 1 → 9';
+
+                fullHTML += `<div style="background: rgba(255, 107, 107, 0.12); border: 2px solid #ff6b6b; color: #ff6b6b; padding: 12px 15px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 20px;">
+                    ${bannerText}
+                </div>`;
+            } else if (isNineHoleNassau) {
+                fullHTML += `<div style="background: rgba(212, 184, 114, 0.1); border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 10px; border-radius: 6px; text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px;">🏆 NASSAU 4/5 SPLIT MATCH ACTIVE</div>`;
+            }
 
             rData.groups.forEach(g => {
                 fullHTML += `<div style="background: var(--bg-table); border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
@@ -1778,28 +1905,36 @@ function renderScoreEntry() {
                     let teamRow = `<tr class="team-math-row"><td style="text-align:left; border-color: var(--border-color); color:${g.color};">Team ${f}-Ball</td>`;
                     let totalNet = 0; let totalPlayed = 0; let isLastRow = (rData.formats.indexOf(f) === rData.formats.length - 1);
 
-                    let runningTeamScore = 0; // Tracks the cumulative score across all holes
+                    // Running total WITHIN each segment (resets for each bet: First 4, Last 5, Front 9, Back 9, etc.)
+                    // This mirrors how Nassau bets restart on the back / new segment.
+                    let runningTeamScore = 0;
 
                     orderedSegments.forEach(seg => {
+                        runningTeamScore = 0; // Reset at the start of each new betting segment
+
                         let segNet = 0; let segPlayed = 0;
                         for(let h=seg.s; h<=seg.e; h++) {
                             let basePar = rData.course.pars[h-1]; let hs = [];
                             g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
                             if(hs.length >= f) {
-                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
-                                let holeNet = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                                if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) holeNet += n; }); }
-                                segNet += holeNet; segPlayed++; 
+                                const birdieRuleActive = !!(rData.birdieRules && rData.birdieRules[f]);
+                                const holeNet = calculateTeamHoleNet(rData, f, basePar, hs, birdieRuleActive);
                                 
-                                runningTeamScore += holeNet; // Add this hole's math to the running total
-                                
-                                // Output the running total for this cell
-                                teamRow += `<td class="${formatNetToParCSS(runningTeamScore)} ${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color);">${formatNetToPar(runningTeamScore)}</td>`;
+                                if (holeNet !== null) {
+                                    segNet += holeNet; 
+                                    segPlayed++; 
+                                    
+                                    runningTeamScore += holeNet;   // Running within THIS segment only
+                                    
+                                    // Show running cumulative up to this hole (within the current bet segment)
+                                    teamRow += `<td class="${formatNetToParCSS(runningTeamScore)} ${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color);">${formatNetToPar(runningTeamScore)}</td>`;
+                                }
                             } else { 
                                 teamRow += `<td class="${getBorders(true, seg.id, 'team_hole', h, seg, isLastRow)}" style="border-color:var(--border-color); color:var(--text-muted);">-</td>`; 
                             }
                         }
-                        totalNet += segNet; totalPlayed += segPlayed;
+                        totalNet += segNet; 
+                        totalPlayed += segPlayed;
                         
                         let isWinner = (segPlayed > 0 && segNet === formatWinners[f][seg.type].min); 
                         let isTie = isWinner && formatWinners[f][seg.type].count > 1;
@@ -1822,6 +1957,43 @@ function renderScoreEntry() {
                 fullHTML += `</tbody></table></div></div>`;
             });
             
+            // === SEGMENTS WON BOX (exact style requested) ===
+            if (orderedSegments.length > 1) {
+                let segmentsHTML = `<div style="background: var(--bg-card); border: 1px solid var(--accent-gold); border-radius: 8px; padding: 12px 15px; margin: 20px 0 10px; font-size: 14px;">`;
+                segmentsHTML += `<div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 8px;">🏆 Segments Won</div>`;
+                
+                rData.groups.forEach(g => {
+                    // Simple calculation: count wins (1 per segment win, 0.5 for ties)
+                    let wins = 0;
+                    rData.formats.forEach(f => {
+                        orderedSegments.forEach(seg => {
+                            if (teamScores[g.id] && teamScores[g.id][f] && teamScores[g.id][f][seg.type]) {
+                                const scoreObj = teamScores[g.id][f][seg.type];
+                                if (scoreObj.played > 0 && scoreObj.net === formatWinners[f][seg.type].min) {
+                                    wins += (formatWinners[f][seg.type].count > 1) ? 0.5 : 1;
+                                }
+                            }
+                        });
+                        // Overall
+                        if (teamScores[g.id] && teamScores[g.id][f] && teamScores[g.id][f].overall) {
+                            const overallObj = teamScores[g.id][f].overall;
+                            if (overallObj.played > 0 && overallObj.net === formatWinners[f].overall.min) {
+                                wins += (formatWinners[f].overall.count > 1) ? 0.5 : 1;
+                            }
+                        }
+                    });
+                    
+                    const displayName = g.captain ? g.captain.split(' ')[0] : `Team ${g.id}`;
+                    segmentsHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:4px;">`;
+                    segmentsHTML += `<span style="color:${g.color}; font-weight:bold;">Team ${g.id} (${displayName})</span>`;
+                    segmentsHTML += `<span style="color:var(--text-main); font-weight:bold;">${wins}</span>`;
+                    segmentsHTML += `</div>`;
+                });
+                segmentsHTML += `</div>`;
+                
+                summaryHTML += segmentsHTML;
+            }
+
             // Return BOTH the Summary Table and the Individual Scorecards!
             return summaryHTML + fullHTML;
         }
