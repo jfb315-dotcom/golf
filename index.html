@@ -1348,19 +1348,18 @@ function setTeamFilter(filterValue) {
         }
 
        function handleInputAdvance(el, groupId, playerId, hole, par) {
-            // --- SPEED BUMP: Prevents double-taps from skipping holes ---
-            let currentTime = new Date().getTime();
-            if (currentTime - lastInputTime < 500) return; 
-            lastInputTime = currentTime;
-            // -----------------------------------------------------------
-
             if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
             
             let val = el.value.trim(); 
             if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
             let parsedVal = parseInt(val);
             
+            // --- MOVED SPEED BUMP INSIDE: Now it only blocks score typing ---
             if(!isNaN(parsedVal) && parsedVal > 0) {
+                let currentTime = new Date().getTime();
+                if (currentTime - lastInputTime < 500) return; 
+                lastInputTime = currentTime;
+                
                 let diff = parsedVal - par;
                 
                 // Attach jokes to the Cloud Database
@@ -1481,7 +1480,6 @@ function setTeamFilter(filterValue) {
                             else viewDashboard(); 
                         }
                     } else { 
-                        // --- COOLDOWN TIMER ---
                         setTimeout(() => { 
                             changeHole(1); 
                             setTimeout(() => { 
