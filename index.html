@@ -294,7 +294,10 @@
         </div>
     </div>
 
-    <div id="step-dashboard" class="screen" style="max-width: 1000px; margin: 0 auto;">
+<div id="step-dashboard" class="screen" style="max-width: 1000px; margin: 0 auto;">
+        
+        <button id="floating-scoring-btn" onclick="switchScreen('step-dashboard', 'step-3')" style="position: fixed; bottom: 30px; right: 20px; z-index: 9999; background: var(--accent-gold); color: #000; border: none; border-radius: 30px; padding: 12px 20px; font-weight: bold; font-size: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; display: none;">✏️ Back to Scoring</button>
+
         <h2 style="text-align: center; color: white; margin-bottom: 20px;" id="dashboard-title">Tournament Dashboard</h2>
         <div id="dashboard-financial-summary"></div>
         <div id="dashboard-scorecards"></div>
@@ -1331,7 +1334,7 @@
             }).catch((error) => {});
         }
 
-        function handleInputAdvance(el, groupId, playerId, hole, par) {
+       function handleInputAdvance(el, groupId, playerId, hole, par) {
             if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
             
             let val = el.value.trim(); 
@@ -1460,18 +1463,19 @@
                             else viewDashboard(); 
                         }
                     } else { 
+                        // --- FIX IS HERE ---
+                        el.blur(); // Instantly removes focus so keyboard can't double-tap
                         setTimeout(() => { 
                             changeHole(1); 
                             setTimeout(() => { 
                                 let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
                                 if (nInp.length > 0 && !nInp[0].readOnly) { nInp[0].focus(); nInp[0].select(); } 
                             }, 50); 
-                        }, 300); 
+                        }, 50); // Sped up the animation delay from 300ms to 50ms so it feels instant
                     }
                 }
             }
         }
-
         function closeCompleteModalAndView() { 
             document.getElementById('complete-modal').classList.remove('active'); 
             viewDashboard(); 
@@ -1500,6 +1504,13 @@
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
             document.getElementById('global-hole-watermark').style.display = 'none';
+
+            // --- FIX IS HERE: Hide the floating button for spectators ---
+            let floatBtn = document.getElementById('floating-scoring-btn');
+            if (floatBtn) {
+                floatBtn.style.display = (urlParams.get('spectator') === 'true') ? 'none' : 'block';
+            }
+            // ------------------------------------------------------------
 
             if (urlParams.get('spectator') === 'true') {
                 document.getElementById('dashboard-title').innerText = "Live Spectator Leaderboard";
@@ -1551,7 +1562,6 @@
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
         }
-
         function getBorders(isActive, segId, type, h, seg, isLastRow) { 
             if (!isActive || segId === 0) return ""; 
             let cls = ""; 
