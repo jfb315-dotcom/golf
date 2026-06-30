@@ -680,6 +680,7 @@
         function switchScreen(hide, show) { 
             document.getElementById(hide).classList.remove('active'); 
             document.getElementById(show).classList.add('active'); 
+            document.getElementById('floating-scoring-btn').style.display = 'none';
             window.scrollTo(0,0); 
             if (show === 'step-3') { document.getElementById('global-hole-watermark').style.display = 'block'; }
             else { document.getElementById('global-hole-watermark').style.display = 'none'; }
@@ -1575,6 +1576,7 @@ function viewDashboard() {
             document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
+            document.getElementById('floating-scoring-btn').style.display = 'block';
         }
 
         function getBorders(isActive, segId, type, h, seg, isLastRow) { 
@@ -2253,5 +2255,13 @@ function validateAndFinalize() {
             }
         }
     </script>
+    <button id="floating-scoring-btn" 
+        onclick="switchScreen('step-dashboard', 'step-3')" 
+        style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; 
+               background: var(--accent-gold); color: #000; border: none; 
+               border-radius: 50px; padding: 15px 20px; font-weight: bold; 
+               box-shadow: 0 4px 15px rgba(0,0,0,0.5); display: none;">
+    ◀ Back to Scoring
+</button>
 </body>
 </html>
