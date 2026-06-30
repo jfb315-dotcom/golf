@@ -57,9 +57,17 @@
             border-radius: 12px !important; 
             border: 1px solid var(--border-color) !important;
             margin-bottom: 10px !important;
+            
+            /* ADD THESE THREE LINES */
+            overflow-x: auto !important; 
+            white-space: nowrap !important;
+            -webkit-overflow-scrolling: touch !important; /* Makes it smooth on iPhones */
         }
+        
         .pill { 
-            flex: 1 !important; 
+            /* CHANGE flex: 1 to 0 0 auto so they don't squish */
+            flex: 0 0 auto !important; 
+            min-width: 80px !important; /* Gives each pill enough room */
             text-align: center !important; 
             padding: 10px 15px !important; 
             background: transparent !important; 
@@ -71,6 +79,7 @@
             border-radius: 9px !important; 
             transition: all 0.2s ease !important; 
         }
+        
         .pill.active { 
             background: var(--accent-gold) !important; 
             color: #000 !important; 
@@ -453,6 +462,7 @@
 
         let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
         let scoresDb = {}; 
+        let lastInputTime = 0;
         let clipboards = {};
         let currentTeamFilter = "ALL"; 
         let lockedTeamId = null; 
@@ -1334,7 +1344,13 @@ function buildRoundDataAndStart(isScrambled) {
             }).catch((error) => {});
         }
 
-        function handleInputAdvance(el, groupId, playerId, hole, par) {
+       function handleInputAdvance(el, groupId, playerId, hole, par) {
+            // --- SPEED BUMP: Prevents double-taps from skipping holes ---
+            let currentTime = new Date().getTime();
+            if (currentTime - lastInputTime < 500) return; 
+            lastInputTime = currentTime;
+            // -----------------------------------------------------------
+
             if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
             
             let val = el.value.trim(); 
@@ -1344,7 +1360,7 @@ function buildRoundDataAndStart(isScrambled) {
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let diff = parsedVal - par;
                 
-                // Attach jokes to the Cloud Database so they only ever fire once per team, across all devices
+                // Attach jokes to the Cloud Database
                 if (!roundData.jokeTracker) roundData.jokeTracker = {};
                 if (!roundData.jokeTracker[groupId]) roundData.jokeTracker[groupId] = { ace: false, eagle: false, birdie: false, bogey: false };
                 let jokes = roundData.jokeTracker[groupId];
@@ -1360,7 +1376,6 @@ function buildRoundDataAndStart(isScrambled) {
                 else if (diff === -1 && !jokes.birdie) { 
                     let groupObj = roundData.groups.find(g => g.id === groupId);
                     let pIndex = groupObj ? groupObj.players.findIndex(p => p.id === playerId) : 0;
-                    // Only roast if it's the C or D player (index 2 or 3)
                     if(pIndex >= 2 && !jokes.birdie) {
                         showJokePopup('birdie');
                         jokes.birdie = true;
@@ -1463,13 +1478,14 @@ function buildRoundDataAndStart(isScrambled) {
                             else viewDashboard(); 
                         }
                     } else { 
+                        // --- COOLDOWN TIMER ---
                         setTimeout(() => { 
                             changeHole(1); 
                             setTimeout(() => { 
                                 let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
                                 if (nInp.length > 0 && !nInp[0].readOnly) { nInp[0].focus(); nInp[0].select(); } 
                             }, 50); 
-                        }, 300); 
+                        }, 500); 
                     }
                 }
             }
