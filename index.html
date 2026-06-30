@@ -62,7 +62,9 @@
             overflow-x: auto !important; 
             white-space: nowrap !important;
             -webkit-overflow-scrolling: touch !important; /* Makes it smooth on iPhones */
-        }
+        mask-image: linear-gradient(to right, black 85%, transparent 100%);
+    -webkit-mask-image: linear-gradient(to right, black 85%, transparent 100%);
+}
         
         .pill { 
             /* CHANGE flex: 1 to 0 0 auto so they don't squish */
@@ -1216,23 +1218,23 @@ function buildRoundDataAndStart(isScrambled) {
             container.innerHTML = html;
         }
 
-        function setTeamFilter(filterValue) { 
+function setTeamFilter(filterValue) { 
             currentTeamFilter = filterValue; 
             localStorage.setItem('tournamentViewFilter', currentTeamFilter); 
             renderPillNav(); 
             renderScoreEntry(); 
-        }
 
-        function changeHole(direction) {
-            let seq = getHoleSequence(); 
-            let idx = seq.indexOf(roundData.currentHole); 
-            let nextIdx = idx + direction;
-            if(nextIdx >= 0 && nextIdx < seq.length) { 
-                roundData.currentHole = seq[nextIdx]; 
-                saveAppStateToCloud(); 
-                renderScoreEntry(); 
-                window.scrollTo({ top: 0, behavior: 'smooth' }); 
+            // --- AUTO-SCROLL FIX ---
+            // This finds the button you just clicked and slides it to the center
+            let activePill = document.querySelector('.pill.active');
+            if (activePill) {
+                activePill.scrollIntoView({ 
+                    behavior: 'smooth', 
+                    block: 'nearest', 
+                    inline: 'center' 
+                });
             }
+            // -----------------------
         }
 
         function getParText(score, par) { if(!score) return ""; let d = score - par; if(d===0) return "Par"; if(d===-1) return "Birdie"; if(d===-2) return "Eagle"; if(d<=-3) return "Albatross"; if(d===1) return "Bogey"; if(d===2) return "Dbl Bogey"; return `+${d}`; }
