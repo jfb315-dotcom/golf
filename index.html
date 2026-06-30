@@ -1213,23 +1213,27 @@
             renderScoreEntry(); 
         }
 
-        function changeHole(direction) {
+       function changeHole(direction) {
+            // FIX #4: Use local tracking so phones don't pull each other around
+            if (!window.localHole || !getHoleSequence().includes(window.localHole)) {
+                window.localHole = roundData.currentHole || getHoleSequence()[0];
+            }
             let seq = getHoleSequence(); 
-            let idx = seq.indexOf(roundData.currentHole); 
+            let idx = seq.indexOf(window.localHole); 
             let nextIdx = idx + direction;
             if(nextIdx >= 0 && nextIdx < seq.length) { 
-                roundData.currentHole = seq[nextIdx]; 
-                saveAppStateToCloud(); 
+                window.localHole = seq[nextIdx]; 
                 renderScoreEntry(); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
         }
 
-        function getParText(score, par) { if(!score) return ""; let d = score - par; if(d===0) return "Par"; if(d===-1) return "Birdie"; if(d===-2) return "Eagle"; if(d<=-3) return "Albatross"; if(d===1) return "Bogey"; if(d===2) return "Dbl Bogey"; return `+${d}`; }
-        function getParColor(score, par) { if(!score) return ""; let d = score - par; if(d<0) return "#39ff14"; if(d>0) return "#ff6b6b"; return "#f5eedc"; }
-
-function renderScoreEntry() {
-            let hole = roundData.currentHole; 
+        function renderScoreEntry() {
+            // FIX #4: Force rendering based on the local phone's hole
+            if (!window.localHole || !getHoleSequence().includes(window.localHole)) {
+                window.localHole = roundData.currentHole || getHoleSequence()[0] || 1;
+            }
+            let hole = window.localHole; 
             let par = roundData.course.pars[hole-1];
             document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`; 
             document.getElementById('current-par-display-top').innerText = `Par ${par}`;
@@ -1239,7 +1243,6 @@ function renderScoreEntry() {
             
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
-                    // UPDATED LAYOUT: Flexbox header to align Captain to the right
                     html += `<div class="team-card" style="border-left-color: ${group.color};">
                         <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
                             <h3 style="color: ${group.color}; margin: 0; font-size: 1.5em; text-transform: uppercase;">Team ${group.id}</h3>
@@ -1253,7 +1256,6 @@ function renderScoreEntry() {
                         let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
                         let disabledState = hasReadonlyLock ? "disabled" : "";
                         
-                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
@@ -1265,7 +1267,6 @@ function renderScoreEntry() {
             } else {
                 let cart = roundData.carts.find(c => c.id == currentTeamFilter);
                 if(cart) {
-                    // Grab cart driver name for the header
                     let cartCaptain = "Player";
                     if(cart.players && cart.players.length > 0) {
                         let pObj = cart.players[0];
@@ -1276,7 +1277,6 @@ function renderScoreEntry() {
                         }
                     }
 
-                    // UPDATED LAYOUT: Flexbox header to align Driver to the right
                     html += `<div class="team-card" style="border-left-color: var(--accent-gold);">
                         <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
                             <h3 style="color: var(--accent-gold); margin: 0; font-size: 1.5em; text-transform: uppercase;">Cart ${cart.id}</h3>
@@ -1293,7 +1293,6 @@ function renderScoreEntry() {
                         let teamTag = roundData.isScrambled ? `<span style="font-size:10px; color:${group.color};"> [T${group.id}]</span>` : '';
                         let disabledState = hasReadonlyLock ? "disabled" : "";
                         
-                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${teamTag}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
@@ -1308,7 +1307,11 @@ function renderScoreEntry() {
 
         function updateUIWithoutLosingFocus() {
             try {
-                let hole = roundData.currentHole; 
+                // FIX #4: Update scores in the background based on the local hole
+                if (!window.localHole || !getHoleSequence().includes(window.localHole)) {
+                    window.localHole = roundData.currentHole || getHoleSequence()[0] || 1;
+                }
+                let hole = window.localHole; 
                 let par = roundData.course.pars[hole-1];
                 roundData.groups.forEach(g => {
                     g.players.forEach(p => {
@@ -1337,7 +1340,7 @@ function renderScoreEntry() {
         }
 
        function handleInputAdvance(el, groupId, playerId, hole, par) {
-            if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
+            if (hasReadonlyLock) return; 
             
             let val = el.value.trim(); 
             if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
@@ -1345,33 +1348,17 @@ function renderScoreEntry() {
             
             if(!isNaN(parsedVal) && parsedVal > 0) {
                 let diff = parsedVal - par;
-                
-                // Attach jokes to the Cloud Database so they only ever fire once per team, across all devices
                 if (!roundData.jokeTracker) roundData.jokeTracker = {};
                 if (!roundData.jokeTracker[groupId]) roundData.jokeTracker[groupId] = { ace: false, eagle: false, birdie: false, bogey: false };
                 let jokes = roundData.jokeTracker[groupId];
 
-                if (parsedVal === 1 && !jokes.ace) { 
-                    showJokePopup('ace'); 
-                    jokes.ace = true; 
-                } 
-                else if (diff === -2 && !jokes.eagle) { 
-                    showJokePopup('eagle'); 
-                    jokes.eagle = true; 
-                } 
+                if (parsedVal === 1 && !jokes.ace) { showJokePopup('ace'); jokes.ace = true; } 
+                else if (diff === -2 && !jokes.eagle) { showJokePopup('eagle'); jokes.eagle = true; } 
                 else if (diff === -1 && !jokes.birdie) { 
                     let groupObj = roundData.groups.find(g => g.id === groupId);
                     let pIndex = groupObj ? groupObj.players.findIndex(p => p.id === playerId) : 0;
-                    // Only roast if it's the C or D player (index 2 or 3)
-                    if(pIndex >= 2 && !jokes.birdie) {
-                        showJokePopup('birdie');
-                        jokes.birdie = true;
-                    }
-                } 
-                else if (diff >= 2 && !jokes.bogey) { 
-                    showJokePopup('bogey'); 
-                    jokes.bogey = true;
-                }
+                    if(pIndex >= 2 && !jokes.birdie) { showJokePopup('birdie'); jokes.birdie = true; }
+                } else if (diff >= 2 && !jokes.bogey) { showJokePopup('bogey'); jokes.bogey = true; }
 
                 let missedHole = null; 
                 let seq = getHoleSequence(); 
@@ -1379,11 +1366,7 @@ function renderScoreEntry() {
                 for (let i = 0; i < currentIndex; i++) { 
                     if (!scoresDb[groupId]?.[playerId]?.[seq[i]]) { missedHole = seq[i]; break; } 
                 }
-                if (missedHole) { 
-                    el.value = ''; 
-                    alert(`⚠️ Wait! You skipped Hole ${missedHole}. Use the 'Prev' button to go back.`); 
-                    return; 
-                }
+                if (missedHole) { el.value = ''; alert(`⚠️ Wait! You skipped Hole ${missedHole}. Use the 'Prev' button to go back.`); return; }
             }
 
             if(!isNaN(parsedVal) && parsedVal > 0) {
@@ -1404,10 +1387,8 @@ function renderScoreEntry() {
                         if (!scoresDb[ghostGroup.id][ghostPlayer.id]) scoresDb[ghostGroup.id][ghostPlayer.id] = {};
                         if (!isNaN(parsedVal) && parsedVal > 0) { scoresDb[ghostGroup.id][ghostPlayer.id][hole] = parsedVal; } 
                         else { delete scoresDb[ghostGroup.id][ghostPlayer.id][hole]; }
-                        
                         let ghostInput = document.getElementById(`score-input-${ghostGroup.id}-${ghostPlayer.id}`);
                         if (ghostInput) ghostInput.value = (isNaN(parsedVal) || parsedVal <= 0) ? '' : parsedVal;
-                        
                         let ghostInd = document.getElementById(`par-ind-${ghostGroup.id}-${ghostPlayer.id}`);
                         if (ghostInd) { ghostInd.innerText = getParText(val, par); ghostInd.style.color = getParColor(val, par); }
                     }
@@ -1421,8 +1402,7 @@ function renderScoreEntry() {
                 let idx = inputs.indexOf(el);
                 
                 if(idx > -1 && idx < inputs.length - 1) { 
-                    inputs[idx + 1].focus(); 
-                    inputs[idx + 1].select(); 
+                    inputs[idx + 1].focus(); inputs[idx + 1].select(); 
                 } else if (idx === inputs.length - 1) {
                     let seq = getHoleSequence();
                     if (hole === seq[seq.length - 1]) {
@@ -1461,19 +1441,18 @@ function renderScoreEntry() {
                             el.value = ''; 
                             alert(`⚠️ Missing Scores!\nYou skipped Hole ${firstMissingHole}. Use the 'Prev' button to go back.`); 
                         } else { 
-                            if (currentTeamFilter === "ALL") document.getElementById('complete-modal').classList.add('active'); 
-                            else viewDashboard(); 
+                            // FIX #3: Trigger the Round Complete Modal for EVERYONE, not just Admin
+                            document.getElementById('complete-modal').classList.add('active'); 
                         }
                     } else { 
-                        // --- FIX IS HERE ---
-                        el.blur(); // Instantly removes focus so keyboard can't double-tap
+                        el.blur(); 
                         setTimeout(() => { 
                             changeHole(1); 
                             setTimeout(() => { 
                                 let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
                                 if (nInp.length > 0 && !nInp[0].readOnly) { nInp[0].focus(); nInp[0].select(); } 
                             }, 50); 
-                        }, 50); // Sped up the animation delay from 300ms to 50ms so it feels instant
+                        }, 50); 
                     }
                 }
             }
@@ -1507,12 +1486,14 @@ function renderScoreEntry() {
             activeViewScoresDb = scoresDb;
             document.getElementById('global-hole-watermark').style.display = 'none';
 
-            // --- FIX IS HERE: Hide the floating button for spectators ---
             let floatBtn = document.getElementById('floating-scoring-btn');
             if (floatBtn) {
                 floatBtn.style.display = (urlParams.get('spectator') === 'true') ? 'none' : 'block';
             }
-            // ------------------------------------------------------------
+
+            // FIX #3: Lock finalize button to Admin only
+            const finalizeBtn = document.getElementById('admin-finalize-container');
+            if(finalizeBtn) finalizeBtn.style.display = (lockedTeamId === null) ? 'block' : 'none';
 
             if (urlParams.get('spectator') === 'true') {
                 document.getElementById('dashboard-title').innerText = "Live Spectator Leaderboard";
