@@ -1516,11 +1516,15 @@ function setTeamFilter(filterValue) {
         function formatNetToPar(net) { if(net === 0) return "E"; return net > 0 ? `+${net}` : `${net}`; }
         function formatNetToParCSS(net) { if(net === 0) return "even-par"; return net > 0 ? "over-par" : "under-par"; }
 
-        function viewDashboard() {
+function viewDashboard() {
             const urlParams = new URLSearchParams(window.location.search);
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
             document.getElementById('global-hole-watermark').style.display = 'none';
+
+            // --- THIS LINE FORCES THE PAGE TO THE TOP ---
+            window.scrollTo(0, 0);
+            // --------------------------------------------
 
             if (urlParams.get('spectator') === 'true') {
                 document.getElementById('dashboard-title').innerText = "Live Spectator Leaderboard";
