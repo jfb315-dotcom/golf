@@ -882,9 +882,12 @@
 
  function startRoundScrambled() { buildRoundDataAndStart(true); }
 
-        function buildRoundDataAndStart(isScrambled) {
-            // ADD THIS LINE: This completely deletes the old scores from the previous round
-            scoresDb = {}; 
+function buildRoundDataAndStart(isScrambled) {
+            // SAFEGUARD: Only wipe scores if the round is not already in progress.
+            // If roundData.groups has items, a match is ongoing; do NOT wipe the scores!
+            if (roundData.groups.length === 0) {
+                scoresDb = {}; 
+            }
 
             roundData.date = document.getElementById('round-date').value || new Date().toLocaleDateString(); 
             roundData.isScrambled = isScrambled;
@@ -2106,7 +2109,7 @@
             switchScreen('step-3', 'step-7');
         }
 
-        function validateAndFinalize() {
+function validateAndFinalize() {
             let pin = prompt("🔒 Enter Admin PIN (1234) to Finalize Round:");
             
             if (pin !== '1234') { 
@@ -2146,6 +2149,11 @@
             document.getElementById('fmt-1').checked = false;
             document.getElementById('fmt-2').checked = true;
             document.getElementById('fmt-3').checked = true;
+
+            // --- THIS IS THE KEY FIX ---
+            // This clears the groups, which tells the Start function 
+            // that it is time to wipe the old scores and start fresh.
+            roundData.groups = [];
             
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-1').classList.add('active'); 
@@ -2159,7 +2167,6 @@
 
             setTimeout(() => { if(confirm("Round Finalized successfully! Generate text results to copy/share?")) { openResultsShareModal(); } }, 150);
         }
-
         function saveToArchive() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
             archive.push({ date: roundData.date || new Date().toLocaleDateString(), course: roundData.course, roundData: roundData, scoresDb: scoresDb });
