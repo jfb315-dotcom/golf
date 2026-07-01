@@ -16,7 +16,7 @@
         .skin-orbit { position: absolute; top: 50%; left: 50%; width: 36px; height: 36px; animation: rotate-orbit 7s linear infinite; pointer-events: none; overflow: visible; }
         .skin-orbit text { fill: var(--accent-gold); font-size: 21px; font-weight: bold; text-shadow: 1px 1px 2px #000; }
         
-        .joke-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; padding: 25px 20px; border-radius: 12px; font-weight: 900; font-size: 22px; text-align: center; width: 85%; max-width: 400px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 99999; pointer-events: none; line-height: 1.4; box-sizing: border-box; }
+        .joke-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; padding: 25px 20px; border-radius: 12px; font-weight: 900; font-size: 22px; text-align: center; width: 85%; max-width: 400px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 999999; pointer-events: none; line-height: 1.4; box-sizing: border-box; }
         .joke-toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
         .toast-bad { background: #132116; border: 3px solid #ff5e00; color: #ff5e00; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(255, 94, 0, 0.5); }
         .toast-birdie { background: #132116; border: 3px solid #39ff14; color: #39ff14; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(57, 255, 20, 0.5); }
@@ -1268,14 +1268,11 @@
             toast.className = "joke-toast toast-birdie"; 
             toast.style.borderColor = "#39ff14";
             toast.style.color = "#39ff14";
-            toast.innerText = "Scoring complete — going to next hole"; 
+            toast.innerText = "✓ Scores complete — tap Next ▶"; 
             document.body.appendChild(toast);
             
             setTimeout(() => { toast.classList.add('show'); }, 50); 
-            setTimeout(() => { 
-                toast.classList.remove('show'); 
-                setTimeout(() => toast.remove(), 400); 
-            }, 2500); // Show for 2.5 seconds then auto-advance
+            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2500); // 2.5 seconds as set by user
         }
 
        function renderPillNav() {
@@ -1365,10 +1362,11 @@ function renderScoreEntry() {
                         let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
                         let disabledState = hasReadonlyLock ? "disabled" : "";
                         
+                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     }); 
                     html += `</div>`;
@@ -1404,10 +1402,11 @@ function renderScoreEntry() {
                         let teamTag = roundData.isScrambled ? `<span style="font-size:10px; color:${group.color};"> [T${group.id}]</span>` : '';
                         let disabledState = hasReadonlyLock ? "disabled" : "";
                         
+                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${teamTag}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     }); 
                     html += `</div>`;
@@ -1583,7 +1582,7 @@ function renderScoreEntry() {
                         // --- FIX IS HERE ---
                         el.blur(); // Instantly removes focus so keyboard can't double-tap
                         
-                        // Show "Scoring complete — going to next hole" for cart views
+                        // Show "hole complete" message for cart views
                         if (lockedTeamId !== null || currentTeamFilter !== "ALL") {
                             showHoleCompleteToast();
                         }
@@ -1594,10 +1593,10 @@ function renderScoreEntry() {
                                 let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
                                 if (nInp.length > 0 && !nInp[0].readOnly) { 
                                     nInp[0].focus(); 
-                                    // Do not auto-select
+                                    // Do not auto-select text
                                 } 
                             }, 50); 
-                        }, 2200); // Advance after the 2-second popup finishes
+                        }, 2200); // 2200ms delay (set by user)
                     }
                 }
             }
