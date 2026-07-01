@@ -1268,7 +1268,7 @@
             toast.className = "joke-toast toast-birdie"; 
             toast.style.borderColor = "#39ff14";
             toast.style.color = "#39ff14";
-            toast.innerText = "Scoring complete — going to next hole"; 
+            toast.innerText = "Hole complete — moving ahead"; 
             document.body.appendChild(toast);
             
             setTimeout(() => { toast.classList.add('show'); }, 50); 
@@ -1337,82 +1337,173 @@
         function getParText(score, par) { if(!score) return ""; let d = score - par; if(d===0) return "Par"; if(d===-1) return "Birdie"; if(d===-2) return "Eagle"; if(d<=-3) return "Albatross"; if(d===1) return "Bogey"; if(d===2) return "Dbl Bogey"; return `+${d}`; }
         function getParColor(score, par) { if(!score) return ""; let d = score - par; if(d<0) return "#39ff14"; if(d>0) return "#ff6b6b"; return "#f5eedc"; }
 
+        function getThreeHoles() {
+            let seq = getHoleSequence();
+            let idx = seq.indexOf(roundData.currentHole);
+            if (idx === -1) idx = 0;
+
+            let prevHole = (idx > 0) ? seq[idx - 1] : null;
+            let nextHole = (idx < seq.length - 1) ? seq[idx + 1] : null;
+
+            return {
+                prev: prevHole,
+                current: roundData.currentHole,
+                next: nextHole
+            };
+        }
+
 function renderScoreEntry() {
-            let hole = roundData.currentHole; 
+            let hole = roundData.currentHole;
             let par = roundData.course.pars[hole-1];
-            document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`; 
+
+            document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`;
             document.getElementById('current-par-display-top').innerText = `Par ${par}`;
             document.getElementById('global-hole-watermark').innerText = hole;
 
-            let html = ``;
-            
+            let html = '';
+
+            // === CLEAN PILL STYLE PREVIOUS HOLE SUMMARY (Cart views only) ===
+            let seq = getHoleSequence();
+            let currentIdx = seq.indexOf(hole);
+            if (currentIdx > 0 && currentTeamFilter !== "ALL") {
+                let prevHole = seq[currentIdx - 1];
+                html += `<div class="team-card" style="border-left-color: #666; margin-bottom: 15px; opacity: 0.95; padding: 12px 15px;">
+                    <div style="font-weight: 900; color: #f4a261; margin-bottom: 10px; font-size: 15px;">Previous Hole ${prevHole}</div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
+
+                if (currentTeamFilter === "ALL") {
+                    roundData.groups.forEach(group => {
+                        group.players.forEach(player => {
+                            let score = scoresDb[group.id]?.[player.id]?.[prevHole] || '-';
+                            html += `<span style="background: #1e3b4d; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 14px; white-space: nowrap;">
+                                ${player.name.split(' ')[0]}: <b>${score}</b>
+                            </span>`;
+                        });
+                    });
+                } else {
+                    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
+                    if (cart) {
+                        cart.players.forEach(cp => {
+                            let group = roundData.groups.find(g => g.id === cp.g);
+                            let player = group.players.find(p => p.id === cp.p);
+                            let score = scoresDb[group.id]?.[player.id]?.[prevHole] || '-';
+                            html += `<span style="background: #1e3b4d; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 14px; white-space: nowrap;">
+                                ${player.name.split(' ')[0]}: <b>${score}</b>
+                            </span>`;
+                        });
+                    }
+                }
+                html += `</div></div>`;
+            }
+
+            // === CURRENT HOLE (Full Detail) ===
+            html += renderFullHoleDetail(hole);
+
+            document.getElementById('entry-container').innerHTML = html;
+        }
+
+        // Compact summary for Previous / Next holes
+        function renderCompactHoleSummary(holeNum, label) {
+            let html = `<div class="team-card" style="border-left-color: #666; opacity: 0.85; margin-bottom: 15px;">
+                <div class="team-header" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px;">
+                    <span style="color:#aaa; font-size:14px; font-weight:bold;">${label} Hole ${holeNum}</span>
+                </div>`;
+
+            // Show Team net summaries for this hole
+            roundData.groups.forEach(group => {
+                let summary = '';
+                roundData.formats.forEach(f => {
+                    let basePar = roundData.course.pars[holeNum-1];
+                    let hs = [];
+                    group.players.forEach(p => {
+                        let score = scoresDb[group.id]?.[p.id]?.[holeNum];
+                        if (score) hs.push(getPlayerNetScore(roundData, p, holeNum, score));
+                    });
+                    if (hs.length >= f) {
+                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
+                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
+                        if (roundData.birdieRules && roundData.birdieRules[f]) {
+                            nets.slice(f).forEach(n => { if(n < 0) net += n; });
+                        }
+                        summary += `<span style="margin-right:12px; color:#ccc;">${f}-Ball: <b style="color:#fff;">${formatNetToPar(net)}</b></span>`;
+                    }
+                });
+                if (summary) {
+                    html += `<div style="font-size:13px; margin-bottom:6px; color:#ddd;">Team ${group.id}: ${summary}</div>`;
+                }
+            });
+
+            html += `</div>`;
+            return html;
+        }
+
+        // Full detailed scoring for the Current hole (original behavior)
+        function renderFullHoleDetail(hole) {
+            let par = roundData.course.pars[hole-1];
+            let html = '';
+
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
-                    // UPDATED LAYOUT: Flexbox header to align Captain to the right
                     html += `<div class="team-card" style="border-left-color: ${group.color};">
                         <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
                             <h3 style="color: ${group.color}; margin: 0; font-size: 1.5em; text-transform: uppercase;">Team ${group.id}</h3>
                             <span style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Capt: ${group.captain.split(' ')[0]}</span>
                         </div>`;
-                    
+
                     group.players.forEach(player => {
                         let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
                         let isGhostStyle = player.isGhost ? `background: var(--bg-dark) !important; pointer-events: none; color: var(--text-muted) !important; border-color: var(--bg-dark) !important;` : ``;
-                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field"; 
+                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field";
                         let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
                         let disabledState = hasReadonlyLock ? "disabled" : "";
-                        
-                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
+
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
                             <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
-                    }); 
+                    });
                     html += `</div>`;
                 });
             } else {
                 let cart = roundData.carts.find(c => c.id == currentTeamFilter);
-                if(cart) {
-                    // Grab cart driver name for the header
+                if (cart) {
                     let cartCaptain = "Player";
-                    if(cart.players && cart.players.length > 0) {
+                    if (cart.players && cart.players.length > 0) {
                         let pObj = cart.players[0];
                         let gObj = roundData.groups.find(g => g.id === pObj.g);
-                        if(gObj) {
+                        if (gObj) {
                             let plObj = gObj.players.find(p => p.id === pObj.p);
-                            if(plObj) cartCaptain = plObj.name.split(' ')[0];
+                            if (plObj) cartCaptain = plObj.name.split(' ')[0];
                         }
                     }
 
-                    // UPDATED LAYOUT: Flexbox header to align Driver to the right
                     html += `<div class="team-card" style="border-left-color: var(--accent-gold);">
                         <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
                             <h3 style="color: var(--accent-gold); margin: 0; font-size: 1.5em; text-transform: uppercase;">Cart ${cart.id}</h3>
                             <span style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Driver: ${cartCaptain}</span>
                         </div>`;
-                    
+
                     cart.players.forEach((cp, idx) => {
-                        let group = roundData.groups.find(g => g.id === cp.g); 
+                        let group = roundData.groups.find(g => g.id === cp.g);
                         let player = group.players.find(p => p.id === cp.p);
                         let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
                         let isGhostStyle = player.isGhost ? `background: var(--bg-dark) !important; pointer-events: none; color: var(--text-muted) !important; border-color: var(--bg-dark) !important;` : ``;
-                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field"; 
+                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field";
                         let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
                         let teamTag = roundData.isScrambled ? `<span style="font-size:10px; color:${group.color};"> [T${group.id}]</span>` : '';
                         let disabledState = hasReadonlyLock ? "disabled" : "";
-                        
-                        // FIX: Removed onfocus="this.select()" and onclick="this.select()" below
+
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${teamTag}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
                             <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
-                    }); 
+                    });
                     html += `</div>`;
                 }
             }
-            document.getElementById('entry-container').innerHTML = html;
+            return html;
         }
 
         function updateUIWithoutLosingFocus() {
