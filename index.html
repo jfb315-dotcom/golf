@@ -614,18 +614,11 @@
                             return;
                         }
 
-                        // CLIPBOARD LOGIC
+                        // CLIPBOARD LOGIC - WEAKENED for testing (Admin + carts can coexist)
                         if (lockedTeamId !== null) {
-                            let currentOwner = clipboards[lockedTeamId];
-                            if (!currentOwner) {
-                                claimClipboard();
-                            } else if (currentOwner !== myClientId) {
-                                hasReadonlyLock = true;
-                                document.getElementById('clipboard-warning').style.display = 'block';
-                            } else {
-                                hasReadonlyLock = false;
-                                document.getElementById('clipboard-warning').style.display = 'none';
-                            }
+                            // Temporarily disabled strict ownership to reduce conflicts
+                            hasReadonlyLock = false;
+                            document.getElementById('clipboard-warning').style.display = 'none';
                         }
 
                         let isEditing = sessionStorage.getItem('isEditingMidRound') === 'true';
@@ -1238,41 +1231,13 @@
         // SCORING ENGINE & POPUPS
         // ==========================================
         function showJokePopup(type) {
-            let toast = document.createElement('div'); 
-            toast.className = "joke-toast"; 
-            let msg = "";
-            
-            if(type === 'ace') { 
-                msg = popups.ace[Math.floor(Math.random() * popups.ace.length)]; 
-                toast.classList.add('toast-ace'); 
-            } else if(type === 'eagle') { 
-                msg = popups.eagle[Math.floor(Math.random() * popups.eagle.length)]; 
-                toast.classList.add('toast-eagle'); 
-            } else if(type === 'birdie') { 
-                msg = popups.birdie[Math.floor(Math.random() * popups.birdie.length)]; 
-                toast.classList.add('toast-birdie'); 
-            } else { 
-                msg = popups.bogey[Math.floor(Math.random() * popups.bogey.length)]; 
-                toast.classList.add('toast-bad'); 
-            }
-            
-            toast.innerText = msg; 
-            document.body.appendChild(toast);
-            
-            setTimeout(() => { toast.classList.add('show'); }, 50); 
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 500); }, 3000);
+            // ROASTS TEMPORARILY DISABLED
+            return;
         }
 
         function showHoleCompleteToast() {
-            let toast = document.createElement('div'); 
-            toast.className = "joke-toast toast-birdie"; 
-            toast.style.borderColor = "#39ff14";
-            toast.style.color = "#39ff14";
-            toast.innerText = "Hole complete — moving ahead"; 
-            document.body.appendChild(toast);
-            
-            setTimeout(() => { toast.classList.add('show'); }, 50); 
-            setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 2500); // 2.5 seconds as set by user
+            // "Hole complete" popup TEMPORARILY DISABLED
+            return;
         }
 
        function renderPillNav() {
