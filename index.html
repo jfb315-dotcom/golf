@@ -1403,7 +1403,8 @@ function renderScoreEntry() {
 
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
-            function openHoleForScoring(holeNum) {
+           // Click handler for holes in the full scorecard
+function openHoleForScoring(holeNum) {
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
 
@@ -1424,6 +1425,9 @@ function renderScoreEntry() {
     document.getElementById('entry-container').innerHTML = html;
 }
 
+function closeHoleScoringAndReturn() {
+    renderFullScorecardForCart();
+}
 function closeHoleScoringAndReturn() {
     renderFullScorecardForCart();
 }
