@@ -828,16 +828,16 @@
             switchScreen('step-2', 'step-1'); 
         }
 
-        function processStep2() {
-            saveRosterCache(); 
-            let isScrambled = document.getElementById('is-scrambled').value === 'yes';
-            if(isScrambled) { 
-                renderPairingDropdowns(); 
-                switchScreen('step-2', 'step-2-half'); 
-            } else { 
-                buildRoundDataAndStart(false); 
-            }
-        }
+function processStep2() {
+    saveRosterCache(); 
+    let isScrambled = document.getElementById('is-scrambled').value === 'yes';
+    if(isScrambled) { 
+        renderPairingDropdowns(); 
+        switchScreen('step-2', 'step-2-half'); 
+    } else { 
+        buildRoundDataAndStart(false); 
+    }
+}
 
         function renderPairingDropdowns() {
             let cartCount = parseInt(document.getElementById('cart-group-count').value);
