@@ -1333,13 +1333,11 @@ function renderScoreEntry() {
     const container = document.getElementById('entry-container');
     if (!container) return;
 
-    // Force full list on any cart
     if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
         renderFullScorecardForCart();
         return;
     }
 
-    // ALL view
     let hole = roundData.currentHole;
     let par = roundData.course.pars[hole-1];
 
@@ -1351,7 +1349,7 @@ function renderScoreEntry() {
     html += renderFullHoleDetail(hole);
     container.innerHTML = html;
 }
-       function renderFullScorecardForCart() {
+      function renderFullScorecardForCart() {
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
     if (!cart) {
         document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
@@ -1366,7 +1364,7 @@ function renderScoreEntry() {
         </div>
     `;
 
-    html += `<div class="scorecard-list">`;
+    html += `<div class="scorecard-list" id="cart-scorecard-list">`;
 
     seq.forEach(holeNum => {
         let par = roundData.course.pars[holeNum - 1];
@@ -1385,30 +1383,42 @@ function renderScoreEntry() {
             }
         });
 
-        let scoresHTML = holeScores.join(' &nbsp;&nbsp; ');
+        let scoresHTML = holeScores.join(' &nbsp;&nbsp; ') || '<span style="color:#666;">No scores yet</span>';
 
-        let colorBar = hasScores ? 'background: #1e3b1e; border-left: 6px solid #39ff14;' : 
-                       isCurrent ? 'background: #3a2f1e; border-left: 6px solid #f4a261;' : 
-                       'background: #1e2a38; border-left: 6px solid #555;';
+        let rowStyle = 'cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s;';
+        let accentColor = '#f4a261';
+        if (hasScores) {
+            rowStyle += ' background: #1a3c2e; border-left: 6px solid #39ff14;';
+            accentColor = '#39ff14';
+        } else if (isCurrent) {
+            rowStyle += ' background: #3a2a1f; border-left: 6px solid #f4a261; box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);';
+            accentColor = '#f4a261';
+        } else {
+            rowStyle += ' background: #1e2a38;';
+        }
 
         html += `
-            <div style="cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; ${colorBar}">
+            <div class="scorecard-hole-row" onclick="openHoleForScoring(${holeNum})" style="${rowStyle}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <span style="font-size:18px; font-weight:900; color:#f4a261;">Hole ${holeNum}</span>
-                        <span style="font-size:13px; color:#888; margin-left:8px;">Par ${par}</span>
+                        <span style="font-size:19px; font-weight:900; color:${accentColor};">Hole ${holeNum}</span>
+                        <span style="font-size:13px; color:#888; margin-left:10px;">Par ${par}</span>
                     </div>
-                    <div style="font-size:13px; color:#ddd; text-align:right;">
-                        ${scoresHTML || '<span style="color:#666;">No scores yet</span>'}
+                    <div style="font-size:14px; color:#ddd; text-align:right; line-height:1.3;">
+                        ${scoresHTML}
                     </div>
                 </div>
-                <button onclick="openHoleForScoring(${holeNum})" style="margin-top:8px; width:100%; background:#f4a261; color:#000; border:none; padding:8px; border-radius:6px; font-weight:bold;">Enter/Edit Scores for Hole ${holeNum}</button>
             </div>
         `;
     });
 
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
+
+    setTimeout(() => {
+        const currentRow = document.querySelector('#cart-scorecard-list > div[style*="border-left: 6px solid #f4a261"]');
+        if (currentRow) currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
 }
 function openHoleForScoring(holeNum) {
     roundData.currentHole = holeNum;
