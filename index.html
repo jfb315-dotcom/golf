@@ -587,24 +587,18 @@
                             document.getElementById('step-dead-link').classList.remove('active');
                         }
 
-                        // Cleaner merge to keep things stable
-                        const incoming = data.roundData || {};
-                        
-                        // Preserve our local currentHoles and merge incoming ones
-                        if (roundData.currentHoles && incoming.currentHoles) {
-                            roundData.currentHoles = { ...roundData.currentHoles, ...incoming.currentHoles };
-                        } else if (incoming.currentHoles) {
-                            roundData.currentHoles = incoming.currentHoles;
+                        // Smarter merge so per-cart currentHoles don't get overwritten by other clients
+                        const incomingRound = data.roundData || {};
+                        if (incomingRound.currentHoles && roundData.currentHoles) {
+                            // Merge: keep our local cart holes, add/update any new ones from incoming
+                            roundData.currentHoles = { ...roundData.currentHoles, ...incomingRound.currentHoles };
+                        } else if (incomingRound.currentHoles) {
+                            roundData.currentHoles = incomingRound.currentHoles;
                         }
                         
-                        // Update other fields safely
-                        if (incoming) {
-                            Object.keys(incoming).forEach(key => {
-                                if (key !== 'currentHoles') {
-                                    roundData[key] = incoming[key];
-                                }
-                            });
-                        }
+                        // Copy other fields from incoming (but protect currentHoles from full overwrite)
+                        const protectedCurrentHoles = roundData.currentHoles;
+                        roundData = { ...incomingRound, currentHoles: protectedCurrentHoles || incomingRound.currentHoles || { admin: 1 } };
                         
                         scoresDb = data.scoresDb || {};
                         clipboards = data.clipboards || {};
@@ -834,16 +828,16 @@
             switchScreen('step-2', 'step-1'); 
         }
 
-        function processStep2() {
-            saveRosterCache(); 
-            let isScrambled = document.getElementById('is-scrambled').value === 'yes';
-            if(isScrambled) { 
-                renderPairingDropdowns(); 
-                switchScreen('step-2', 'step-2-half'); 
-            } else { 
-                buildRoundDataAndStart(false); 
-            }
-        }
+function processStep2() {
+    saveRosterCache(); 
+    let isScrambled = document.getElementById('is-scrambled').value === 'yes';
+    if(isScrambled) { 
+        renderPairingDropdowns(); 
+        switchScreen('step-2', 'step-2-half'); 
+    } else { 
+        buildRoundDataAndStart(false); 
+    }
+}
 
         function renderPairingDropdowns() {
             let cartCount = parseInt(document.getElementById('cart-group-count').value);
@@ -1025,20 +1019,8 @@
                 document.getElementById('global-hole-watermark').style.display = 'block';
                 window.scrollTo(0,0);
             }).catch(err => {
-                console.error("Database initialization failed (expected in local testing): ", err);
-                // For local HTML testing, still proceed to the scoring screen
-                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-                renderPillNav(); 
-                renderScoreEntry(); 
-                document.getElementById('step-dead-link').classList.remove('active');
-                document.getElementById('step-3').classList.add('active'); 
-                document.getElementById('global-hole-watermark').style.display = 'block';
-                window.scrollTo(0,0);
-                
-                // Only show alert if it looks like a real connection issue (not local file://)
-                if (!window.location.href.startsWith('file:')) {
-                    alert("Database sync failed. Please check your connection and try again.");
-                }
+                console.error("Database initialization failed: ", err);
+                alert("Database sync failed. Please check your connection and try again.");
             });
         }
         
@@ -1307,13 +1289,7 @@
             }
             
             renderPillNav(); 
-            
-            // Force the new full scorecard view immediately for carts
-            if (currentTeamFilter !== "ALL") {
-                renderFullScorecardForCart();
-            } else {
-                renderScoreEntry();
-            }
+            renderScoreEntry(); 
         }
 
         function changeHole(direction) {
@@ -1353,7 +1329,29 @@
             };
         }
 
-function renderFullScorecardForCart() {
+function renderScoreEntry() {
+    const container = document.getElementById('entry-container');
+    if (!container) return;
+
+    // Force full list on any cart
+    if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
+        renderFullScorecardForCart();
+        return;
+    }
+
+    // ALL view
+    let hole = roundData.currentHole;
+    let par = roundData.course.pars[hole-1];
+
+    document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`;
+    document.getElementById('current-par-display-top').innerText = `Par ${par}`;
+    document.getElementById('global-hole-watermark').innerText = hole;
+
+    let html = '';
+    html += renderFullHoleDetail(hole);
+    container.innerHTML = html;
+}
+       function renderFullScorecardForCart() {
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
     if (!cart) {
         document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
@@ -1368,7 +1366,7 @@ function renderFullScorecardForCart() {
         </div>
     `;
 
-    html += `<div class="scorecard-list" id="cart-scorecard-list">`;
+    html += `<div class="scorecard-list">`;
 
     seq.forEach(holeNum => {
         let par = roundData.course.pars[holeNum - 1];
@@ -1387,65 +1385,59 @@ function renderFullScorecardForCart() {
             }
         });
 
-        let scoresHTML = holeScores.join(' &nbsp;&nbsp; ') || '<span style="color:#666;">No scores yet</span>';
+        let scoresHTML = holeScores.join(' &nbsp;&nbsp; ');
 
-        let rowStyle = 'cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s;';
-        let accentColor = '#f4a261';
-        if (hasScores) {
-            rowStyle += ' background: #1a3c2e; border-left: 6px solid #39ff14;'; 
-            accentColor = '#39ff14';
-        } else if (isCurrent) {
-            rowStyle += ' background: #3a2a1f; border-left: 6px solid #f4a261; box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);'; 
-            accentColor = '#f4a261';
-        } else {
-            rowStyle += ' background: #1e2a38;'; 
-        }
+        let colorBar = hasScores ? 'background: #1e3b1e; border-left: 6px solid #39ff14;' : 
+                       isCurrent ? 'background: #3a2f1e; border-left: 6px solid #f4a261;' : 
+                       'background: #1e2a38; border-left: 6px solid #555;';
 
         html += `
-            <div class="scorecard-hole-row" onclick="openHoleForScoring(${holeNum})" style="${rowStyle}">
+            <div style="cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; ${colorBar}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
-                        <span style="font-size:19px; font-weight:900; color:${accentColor};">Hole ${holeNum}</span>
-                        <span style="font-size:13px; color:#888; margin-left:10px;">Par ${par}</span>
+                        <span style="font-size:18px; font-weight:900; color:#f4a261;">Hole ${holeNum}</span>
+                        <span style="font-size:13px; color:#888; margin-left:8px;">Par ${par}</span>
                     </div>
-                    <div style="font-size:14px; color:#ddd; text-align:right; line-height:1.3;">
-                        ${scoresHTML}
+                    <div style="font-size:13px; color:#ddd; text-align:right;">
+                        ${scoresHTML || '<span style="color:#666;">No scores yet</span>'}
                     </div>
                 </div>
+                <button onclick="openHoleForScoring(${holeNum})" style="margin-top:8px; width:100%; background:#f4a261; color:#000; border:none; padding:8px; border-radius:6px; font-weight:bold;">Enter/Edit Scores for Hole ${holeNum}</button>
             </div>
         `;
     });
 
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
-
-    // Auto-scroll to current hole
-    setTimeout(() => {
-        const currentRow = document.querySelector('#cart-scorecard-list > div[style*="border-left: 6px solid #f4a261"]');
-        if (currentRow) currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }, 100);
 }
-        function openHoleForScoring(holeNum) {
-            roundData.currentHole = holeNum; // temporarily set so existing logic works
-            let par = roundData.course.pars[holeNum - 1];
+function openHoleForScoring(holeNum) {
+    roundData.currentHole = holeNum;
+    let par = roundData.course.pars[holeNum - 1];
 
-            document.getElementById('current-hole-display-top').innerText = `Hole ${holeNum}`;
-            document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-            document.getElementById('global-hole-watermark').innerText = holeNum;
+    document.getElementById('current-hole-display-top').innerText = `Hole ${holeNum}`;
+    document.getElementById('current-par-display-top').innerText = `Par ${par}`;
+    document.getElementById('global-hole-watermark').innerText = holeNum;
 
-            let html = `
-                <div style="margin-bottom:12px;">
-                    <button onclick="closeHoleScoringAndReturn()" 
-                            style="background:#334455; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:14px;">
-                        ← Back to Full Scorecard
-                    </button>
-                </div>
-            `;
+    let html = `
+        <div style="margin-bottom:12px;">
+            <button onclick="closeHoleScoringAndReturn()" style="background:#334455; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:14px;">
+                ← Back to Full Scorecard
+            </button>
+        </div>
+    `;
 
-            html += renderFullHoleDetail(holeNum);
+    html += renderFullHoleDetail(holeNum);
 
-            document.getElementById('entry-container').innerHTML = html;
-        }
+    document.getElementById('entry-container').innerHTML = html;
+}
+
+function closeHoleScoringAndReturn() {
+    renderFullScorecardForCart();
+}
+function closeHoleScoringAndReturn() {
+    renderFullScorecardForCart();
+}
+
 
         function closeHoleScoringAndReturn() {
             renderFullScorecardForCart();
