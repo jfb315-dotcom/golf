@@ -1351,7 +1351,7 @@ function renderScoreEntry() {
     html += renderFullHoleDetail(hole);
     container.innerHTML = html;
 }
-        function renderFullScorecardForCart() {
+       function renderFullScorecardForCart() {
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
     if (!cart) {
         document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
@@ -1359,7 +1359,12 @@ function renderScoreEntry() {
     }
 
     let seq = getHoleSequence();
-    let html = `<div style="margin-bottom: 12px;"><h3 style="margin:0 0 8px 0; color: var(--accent-gold);">Cart ${cart.id} — Full Scorecard</h3><div style="font-size:13px; color:#aaa;">Tap any hole to enter or edit scores</div></div>`;
+    let html = `
+        <div style="margin-bottom: 12px;">
+            <h3 style="margin:0 0 8px 0; color: var(--accent-gold);">Cart ${cart.id} — Full Scorecard</h3>
+            <div style="font-size:13px; color:#aaa;">Tap any hole to enter or edit scores</div>
+        </div>
+    `;
 
     html += `<div class="scorecard-list">`;
 
@@ -1387,7 +1392,7 @@ function renderScoreEntry() {
                        'background: #1e2a38; border-left: 6px solid #555;';
 
         html += `
-            <div class="scorecard-hole-row" onclick="openHoleForScoring(${holeNum})" style="cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; ${colorBar}">
+            <div style="cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 12px 14px; margin-bottom: 8px; ${colorBar}">
                 <div style="display:flex; justify-content:space-between; align-items:center;">
                     <div>
                         <span style="font-size:18px; font-weight:900; color:#f4a261;">Hole ${holeNum}</span>
@@ -1397,13 +1402,14 @@ function renderScoreEntry() {
                         ${scoresHTML || '<span style="color:#666;">No scores yet</span>'}
                     </div>
                 </div>
+                <button onclick="openHoleForScoring(${holeNum})" style="margin-top:8px; width:100%; background:#f4a261; color:#000; border:none; padding:8px; border-radius:6px; font-weight:bold;">Enter/Edit Scores for Hole ${holeNum}</button>
             </div>
         `;
     });
 
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
-           // Click handler for holes in the full scorecard
+}
 function openHoleForScoring(holeNum) {
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
