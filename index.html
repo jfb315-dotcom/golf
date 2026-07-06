@@ -829,8 +829,11 @@
         }
 
 function processStep2() {
+    console.log("Next: Rosters button clicked");
     saveRosterCache(); 
+    console.log("saveRosterCache done");
     let isScrambled = document.getElementById('is-scrambled').value === 'yes';
+    console.log("isScrambled:", isScrambled);
     if(isScrambled) { 
         renderPairingDropdowns(); 
         switchScreen('step-2', 'step-2-half'); 
