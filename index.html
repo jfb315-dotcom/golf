@@ -1330,7 +1330,8 @@
         }
 
 function renderScoreEntry() {
-            const isCartView = (currentTeamFilter !== "ALL");
+            // Determine if we should show full scorecard (cart view)
+            const isCartView = (currentTeamFilter !== "ALL" && currentTeamFilter != null);
 
             if (isCartView) {
                 // NEW: Full Scorecard View for Carts
@@ -1438,6 +1439,14 @@ function renderScoreEntry() {
             });
 
             html += `</div>`;
+
+            // Basic styling for scorecard
+            const style = document.createElement('style');
+            style.innerHTML = `
+                .scorecard-list { margin-top: 10px; }
+                .scorecard-hole-row:hover { background: #2a3a4a !important; border-color: #f4a261 !important; }
+            `;
+            document.head.appendChild(style);
 
             document.getElementById('entry-container').innerHTML = html;
         }
