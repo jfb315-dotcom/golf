@@ -1330,6 +1330,8 @@ function processStep2() {
         }
 
 function renderScoreEntry() {
+    // Hide Prev/Next buttons on cart views (we have the full list now)
+document.querySelector('.hole-nav').style.display = 'none';
     const container = document.getElementById('entry-container');
     if (!container) return;
 
@@ -1355,6 +1357,10 @@ function renderScoreEntry() {
         document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
         return;
     }
+
+    // Hide Prev/Next buttons on cart views
+    const holeNav = document.querySelector('.hole-nav');
+    if (holeNav) holeNav.style.display = 'none';
 
     let seq = getHoleSequence();
     let html = `
@@ -1430,7 +1436,8 @@ function openHoleForScoring(holeNum) {
 
     let html = `
         <div style="margin-bottom:12px;">
-            <button onclick="closeHoleScoringAndReturn()" style="background:#334455; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:14px;">
+            <button onclick="closeHoleScoringAndReturn()" 
+                    style="background:#334455; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:14px;">
                 ← Back to Full Scorecard
             </button>
         </div>
@@ -1439,8 +1446,16 @@ function openHoleForScoring(holeNum) {
     html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
-}
 
+    // Auto-focus first score input when opening a hole
+    setTimeout(() => {
+        const firstInput = document.querySelector('.score-input-field');
+        if (firstInput && !firstInput.readOnly) {
+            firstInput.focus();
+            firstInput.setSelectionRange(firstInput.value.length, firstInput.value.length);
+        }
+    }, 100);
+}
 function closeHoleScoringAndReturn() {
     renderFullScorecardForCart();
 }
