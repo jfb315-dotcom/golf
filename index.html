@@ -1403,6 +1403,30 @@ function renderScoreEntry() {
 
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
+            function openHoleForScoring(holeNum) {
+    roundData.currentHole = holeNum;
+    let par = roundData.course.pars[holeNum - 1];
+
+    document.getElementById('current-hole-display-top').innerText = `Hole ${holeNum}`;
+    document.getElementById('current-par-display-top').innerText = `Par ${par}`;
+    document.getElementById('global-hole-watermark').innerText = holeNum;
+
+    let html = `
+        <div style="margin-bottom:12px;">
+            <button onclick="closeHoleScoringAndReturn()" style="background:#334455; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:14px;">
+                ← Back to Full Scorecard
+            </button>
+        </div>
+    `;
+
+    html += renderFullHoleDetail(holeNum);
+
+    document.getElementById('entry-container').innerHTML = html;
+}
+
+function closeHoleScoringAndReturn() {
+    renderFullScorecardForCart();
+}
 }
 
         function closeHoleScoringAndReturn() {
