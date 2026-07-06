@@ -587,7 +587,19 @@
                             document.getElementById('step-dead-link').classList.remove('active');
                         }
 
-                        roundData = data.roundData || roundData; 
+                        // Smarter merge so per-cart currentHoles don't get overwritten by other clients
+                        const incomingRound = data.roundData || {};
+                        if (incomingRound.currentHoles && roundData.currentHoles) {
+                            // Merge: keep our local cart holes, add/update any new ones from incoming
+                            roundData.currentHoles = { ...roundData.currentHoles, ...incomingRound.currentHoles };
+                        } else if (incomingRound.currentHoles) {
+                            roundData.currentHoles = incomingRound.currentHoles;
+                        }
+                        
+                        // Copy other fields from incoming (but protect currentHoles from full overwrite)
+                        const protectedCurrentHoles = roundData.currentHoles;
+                        roundData = { ...incomingRound, currentHoles: protectedCurrentHoles || incomingRound.currentHoles || { admin: 1 } };
+                        
                         scoresDb = data.scoresDb || {};
                         clipboards = data.clipboards || {};
                         
