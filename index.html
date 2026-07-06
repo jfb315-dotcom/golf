@@ -1353,162 +1353,78 @@
             };
         }
 
-function renderScoreEntry() {
-            const container = document.getElementById('entry-container');
-            if (!container) {
-                console.warn("entry-container not found");
-                return;
+function renderFullScorecardForCart() {
+    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
+    if (!cart) {
+        document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
+        return;
+    }
+
+    let seq = getHoleSequence();
+    let html = `
+        <div style="margin-bottom: 12px;">
+            <h3 style="margin:0 0 8px 0; color: var(--accent-gold);">Cart ${cart.id} — Full Scorecard</h3>
+            <div style="font-size:13px; color:#aaa;">Tap any hole to enter or edit scores</div>
+        </div>
+    `;
+
+    html += `<div class="scorecard-list" id="cart-scorecard-list">`;
+
+    seq.forEach(holeNum => {
+        let par = roundData.course.pars[holeNum - 1];
+        let holeScores = [];
+        let isCurrent = holeNum === roundData.currentHole;
+        let hasScores = false;
+
+        cart.players.forEach(cp => {
+            let group = roundData.groups.find(g => g.id === cp.g);
+            let player = group ? group.players.find(p => p.id === cp.p) : null;
+            if (player) {
+                let score = scoresDb[group.id]?.[player.id]?.[holeNum] || '';
+                if (score) hasScores = true;
+                let display = score ? score : '—';
+                holeScores.push(`${player.name.split(' ')[0]}: <b>${display}</b>`);
             }
+        });
 
-            // === FINAL RELIABLE FIX: Always show full hole list on any cart tab ===
-            if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
-                // Hide old navigation
-                const navButtons = document.querySelectorAll('#step-3 button');
-                navButtons.forEach(btn => {
-                    if (btn.innerText.includes('Prev') || btn.innerText.includes('Next')) {
-                        btn.style.display = 'none';
-                    }
-                });
+        let scoresHTML = holeScores.join(' &nbsp;&nbsp; ') || '<span style="color:#666;">No scores yet</span>';
 
-                if (lockedTeamId !== null && currentTeamFilter === "ALL") {
-                    currentTeamFilter = lockedTeamId;
-                }
-
-                renderFullScorecardForCart();
-                return;
-            } else {
-                // Show navigation on ALL view
-                const navButtons = document.querySelectorAll('#step-3 button');
-                navButtons.forEach(btn => btn.style.display = '');
-            }
-
-            // === ORIGINAL ADMIN / ALL VIEW (unchanged) ===
-            let hole = roundData.currentHole;
-            let par = roundData.course.pars[hole-1];
-
-            document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`;
-            document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-            document.getElementById('global-hole-watermark').innerText = hole;
-
-            let html = '';
-
-            // === CLEAN PILL STYLE PREVIOUS HOLE SUMMARY (Cart views only) ===
-            let seq = getHoleSequence();
-            let currentIdx = seq.indexOf(hole);
-            if (currentIdx > 0 && currentTeamFilter !== "ALL") {
-                let prevHole = seq[currentIdx - 1];
-                html += `<div class="team-card" style="border-left-color: #666; margin-bottom: 15px; opacity: 0.95; padding: 12px 15px;">
-                    <div style="font-weight: 900; color: #f4a261; margin-bottom: 10px; font-size: 15px;">Previous Hole ${prevHole}</div>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px;">`;
-
-                if (currentTeamFilter === "ALL") {
-                    roundData.groups.forEach(group => {
-                        group.players.forEach(player => {
-                            let score = scoresDb[group.id]?.[player.id]?.[prevHole] || '-';
-                            html += `<span style="background: #1e3b4d; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 14px; white-space: nowrap;">
-                                ${player.name.split(' ')[0]}: <b>${score}</b>
-                            </span>`;
-                        });
-                    });
-                } else {
-                    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
-                    if (cart) {
-                        cart.players.forEach(cp => {
-                            let group = roundData.groups.find(g => g.id === cp.g);
-                            let player = group.players.find(p => p.id === cp.p);
-                            let score = scoresDb[group.id]?.[player.id]?.[prevHole] || '-';
-                            html += `<span style="background: #1e3b4d; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 14px; white-space: nowrap;">
-                                ${player.name.split(' ')[0]}: <b>${score}</b>
-                            </span>`;
-                        });
-                    }
-                }
-                html += `</div></div>`;
-            }
-
-            // === CURRENT HOLE (Full Detail) ===
-            html += renderFullHoleDetail(hole);
-
-            document.getElementById('entry-container').innerHTML = html;
+        let rowStyle = 'cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s;';
+        let accentColor = '#f4a261';
+        if (hasScores) {
+            rowStyle += ' background: #1a3c2e; border-left: 6px solid #39ff14;'; 
+            accentColor = '#39ff14';
+        } else if (isCurrent) {
+            rowStyle += ' background: #3a2a1f; border-left: 6px solid #f4a261; box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);'; 
+            accentColor = '#f4a261';
+        } else {
+            rowStyle += ' background: #1e2a38;'; 
         }
 
-        // NEW: Full Scorecard View for Cart users (tap a hole to score it)
-        function renderFullScorecardForCart() {
-            let cart = roundData.carts.find(c => c.id == currentTeamFilter);
-            if (!cart) {
-                document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
-                return;
-            }
-
-            let seq = getHoleSequence();
-            let html = `
-                <div style="margin-bottom: 12px;">
-                    <h3 style="margin:0 0 8px 0; color: var(--accent-gold);">Cart ${cart.id} — Full Scorecard</h3>
-                    <div style="font-size:13px; color:#aaa;">Tap any hole to enter or edit scores</div>
-                </div>
-            `;
-
-            html += `<div class="scorecard-list">`;
-
-            seq.forEach(holeNum => {
-                let par = roundData.course.pars[holeNum - 1];
-                let holeScores = [];
-
-                cart.players.forEach(cp => {
-                    let group = roundData.groups.find(g => g.id === cp.g);
-                    let player = group ? group.players.find(p => p.id === cp.p) : null;
-                    if (player) {
-                        let score = scoresDb[group.id]?.[player.id]?.[holeNum] || '';
-                        let display = score ? score : '—';
-                        holeScores.push(`${player.name.split(' ')[0]}: <b>${display}</b>`);
-                    }
-                });
-
-                let scoresHTML = holeScores.join(' &nbsp;&nbsp; ') || '<span style="color:#666;">No scores yet</span>';
-
-                // Option 1: Color-coded status
-                let rowStyle = 'cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s;';
-                let accentColor = '#f4a261';
-
-                if (hasAnyScore) {
-                    rowStyle += ' background: #1a3c2e; border-left: 6px solid #39ff14;'; // Green for completed
-                    accentColor = '#39ff14';
-                } else if (holeNum === roundData.currentHole) {
-                    rowStyle += ' background: #3a2a1f; border-left: 6px solid #f4a261; box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);'; // Gold for current hole
-                    accentColor = '#f4a261';
-                } else {
-                    rowStyle += ' background: #1e2a38;'; // Neutral for not started
-                }
-
-                html += `
-                    <div class="scorecard-hole-row" onclick="openHoleForScoring(${holeNum})" style="${rowStyle}">
-                        <div style="display:flex; justify-content:space-between; align-items:center;">
-                            <div>
-                                <span style="font-size:19px; font-weight:900; color:${accentColor};">Hole ${holeNum}</span>
-                                <span style="font-size:13px; color:#888; margin-left:10px;">Par ${par}</span>
-                            </div>
-                            <div style="font-size:14px; color:#ddd; text-align:right; line-height:1.3;">
-                                ${scoresHTML}
-                            </div>
-                        </div>
+        html += `
+            <div class="scorecard-hole-row" onclick="openHoleForScoring(${holeNum})" style="${rowStyle}">
+                <div style="display:flex; justify-content:space-between; align-items:center;">
+                    <div>
+                        <span style="font-size:19px; font-weight:900; color:${accentColor};">Hole ${holeNum}</span>
+                        <span style="font-size:13px; color:#888; margin-left:10px;">Par ${par}</span>
                     </div>
-                `;
-            });
+                    <div style="font-size:14px; color:#ddd; text-align:right; line-height:1.3;">
+                        ${scoresHTML}
+                    </div>
+                </div>
+            </div>
+        `;
+    });
 
-            html += `</div>`;
+    html += `</div>`;
+    document.getElementById('entry-container').innerHTML = html;
 
-            // Basic styling for scorecard
-            const style = document.createElement('style');
-            style.innerHTML = `
-                .scorecard-list { margin-top: 10px; }
-                .scorecard-hole-row:hover { background: #2a3a4a !important; border-color: #f4a261 !important; }
-            `;
-            document.head.appendChild(style);
-
-            document.getElementById('entry-container').innerHTML = html;
-        }
-
-        // Open a specific hole for scoring (used from full scorecard)
+    // Auto-scroll to current hole
+    setTimeout(() => {
+        const currentRow = document.querySelector('#cart-scorecard-list > div[style*="border-left: 6px solid #f4a261"]');
+        if (currentRow) currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    }, 100);
+}
         function openHoleForScoring(holeNum) {
             roundData.currentHole = holeNum; // temporarily set so existing logic works
             let par = roundData.course.pars[holeNum - 1];
