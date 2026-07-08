@@ -1290,14 +1290,12 @@ function setTeamFilter(filterValue) {
     
     renderPillNav(); 
     
-    // Render the correct view
     if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
         renderFullScorecardForCart();
     } else {
         renderScoreEntry();
     }
 }
-
         function changeHole(direction) {
             let seq = getHoleSequence(); 
             let idx = seq.indexOf(roundData.currentHole); 
@@ -1364,7 +1362,7 @@ document.querySelector('.hole-nav').style.display = 'none';
         return;
     }
 
-    // Hide Prev/Next buttons on cart views
+    // Hide Prev/Next on cart views
     const holeNav = document.querySelector('.hole-nav');
     if (holeNav) holeNav.style.display = 'none';
 
@@ -1427,6 +1425,7 @@ document.querySelector('.hole-nav').style.display = 'none';
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
 
+    // Auto-scroll to current hole
     setTimeout(() => {
         const currentRow = document.querySelector('#cart-scorecard-list > div[style*="border-left: 6px solid #f4a261"]');
         if (currentRow) currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -1453,7 +1452,7 @@ function openHoleForScoring(holeNum) {
 
     document.getElementById('entry-container').innerHTML = html;
 
-    // Auto-focus first score input when opening a hole
+    // Auto-focus first score input
     setTimeout(() => {
         const firstInput = document.querySelector('.score-input-field');
         if (firstInput && !firstInput.readOnly) {
