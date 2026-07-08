@@ -1270,27 +1270,33 @@ function processStep2() {
             container.innerHTML = html;
         }
 
-        function setTeamFilter(filterValue) { 
-            // Save current hole to the previous view before switching
-            if (roundData.currentHoles) {
-                const prevKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
-                if (prevKey) roundData.currentHoles[prevKey] = roundData.currentHole;
-            }
-            
-            currentTeamFilter = filterValue; 
-            localStorage.setItem('tournamentViewFilter', currentTeamFilter); 
-            
-            // Load the hole for the new view
-            if (roundData.currentHoles) {
-                const newKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
-                if (newKey && roundData.currentHoles[newKey]) {
-                    roundData.currentHole = roundData.currentHoles[newKey];
-                }
-            }
-            
-            renderPillNav(); 
-            renderScoreEntry(); 
+function setTeamFilter(filterValue) { 
+    // Save current hole for the view we're leaving
+    if (roundData.currentHoles) {
+        const prevKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
+        if (prevKey) roundData.currentHoles[prevKey] = roundData.currentHole;
+    }
+    
+    currentTeamFilter = filterValue; 
+    localStorage.setItem('tournamentViewFilter', currentTeamFilter); 
+    
+    // Load the saved hole for the new view
+    if (roundData.currentHoles) {
+        const newKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
+        if (newKey && roundData.currentHoles[newKey]) {
+            roundData.currentHole = roundData.currentHoles[newKey];
         }
+    }
+    
+    renderPillNav(); 
+    
+    // Render the correct view
+    if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
+        renderFullScorecardForCart();
+    } else {
+        renderScoreEntry();
+    }
+}
 
         function changeHole(direction) {
             let seq = getHoleSequence(); 
