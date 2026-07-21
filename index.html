@@ -434,15 +434,42 @@
             if(display) { display.innerHTML = `Entry Fee Per Player: <span class="live-buyin-val">$${total}</span>`; }
         }
 
-        const firebaseConfig = { 
-            apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w", 
-            authDomain: "golf-327be.firebaseapp.com", 
-            projectId: "golf-327be", 
-            storageBucket: "golf-327be.firebasestorage.app", 
-            messagingSenderId: "481710804257", 
-            appId: "1:481710804257:web:84ab3594fcc80b7affc260" 
-        };
-        
+// ================== FIREBASE CONFIG + ANONYMOUS LOGIN ==================
+const firebaseConfig = {
+    apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
+    authDomain: "golf-327be.firebaseapp.com",
+    projectId: "golf-327be",
+    storageBucket: "golf-327be.firebasestorage.app",
+    messagingSenderId: "481710804257",
+    appId: "1:481710804257:web:84ab3594fcc80b7affc260"
+};
+
+// Initialize Firebase
+firebase.initializeApp(firebaseConfig);
+
+const auth = firebase.auth();
+const db = firebase.firestore();
+
+// === ANONYMOUS AUTO LOGIN (no visible login screen) ===
+auth.onAuthStateChanged(async (user) => {
+  if (!user) {
+    try {
+      const result = await auth.signInAnonymously();
+      console.log("✅ Anonymous user signed in for golf/fishing:", result.user.uid);
+      window.currentUserId = result.user.uid;
+      
+      // Call your main app initialization here if needed
+      // initializeTournamentApp();
+      
+    } catch (error) {
+      console.error("❌ Anonymous sign-in failed:", error);
+      alert("Could not connect to the database. Please refresh the page.");
+    }
+  } else {
+    console.log("✅ User is ready:", user.uid);
+    window.currentUserId = user.uid;
+  }
+});
         firebase.initializeApp(firebaseConfig); 
         firebase.firestore().enablePersistence().catch(err => { console.log("Offline skipped:", err.code); });
         
