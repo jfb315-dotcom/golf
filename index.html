@@ -444,23 +444,27 @@ const firebaseConfig = {
     appId: "1:481710804257:web:84ab3594fcc80b7affc260"
 };
 
-// Initialize Firebase
+// Initialize Firebase (only once)
 firebase.initializeApp(firebaseConfig);
 
 const auth = firebase.auth();
 const db = firebase.firestore();
 
-// === ANONYMOUS AUTO LOGIN (no visible login screen) ===
+// Enable offline persistence
+firebase.firestore().enablePersistence().catch(err => { 
+  console.log("Offline skipped:", err.code); 
+});
+
+// === ANONYMOUS AUTO LOGIN + APP STARTUP ===
+let appInitialized = false;
+
 auth.onAuthStateChanged(async (user) => {
   if (!user) {
     try {
       const result = await auth.signInAnonymously();
       console.log("✅ Anonymous user signed in for golf/fishing:", result.user.uid);
       window.currentUserId = result.user.uid;
-      
-      // Call your main app initialization here if needed
-      // initializeTournamentApp();
-      
+      initializeTournamentApp();
     } catch (error) {
       console.error("❌ Anonymous sign-in failed:", error);
       alert("Could not connect to the database. Please refresh the page.");
@@ -468,13 +472,23 @@ auth.onAuthStateChanged(async (user) => {
   } else {
     console.log("✅ User is ready:", user.uid);
     window.currentUserId = user.uid;
+    if (!appInitialized) {
+      initializeTournamentApp();
+    }
   }
 });
-        firebase.initializeApp(firebaseConfig); 
-        firebase.firestore().enablePersistence().catch(err => { console.log("Offline skipped:", err.code); });
-        
-        const db = firebase.firestore(); 
-        const activeTournamentRef = db.collection("tournaments").doc("active_round");
+
+function initializeTournamentApp() {
+  if (appInitialized) return;
+  appInitialized = true;
+  
+  console.log("🚀 Full app initialized - loading courses and tournaments");
+  
+  // Your original startup code
+  const activeTournamentRef = db.collection("tournaments").doc("active_round");
+  
+  // Add any other lines that load courses, setup UI, etc. here if they were right after the old config
+}
         
         const courseDatabase = {
             "cleveland_cc": { name: "Cleveland Country Club", pars: [5, 4, 4, 4, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 4, 3, 4] },
