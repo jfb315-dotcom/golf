@@ -434,7 +434,7 @@
             if(display) { display.innerHTML = `Entry Fee Per Player: <span class="live-buyin-val">$${total}</span>`; }
         }
 
-// ================== FIREBASE CONFIG + ANONYMOUS LOGIN (FIXED) ==================
+// ================== SIMPLE FIREBASE (NO LOGIN - GETS YOU BACK TO WORKING) ==================
 const firebaseConfig = {
     apiKey: "AIzaSyDnNHVSXJFkd2-Zynp1g9atJMO52CkhZ2w",
     authDomain: "golf-327be.firebaseapp.com",
@@ -444,69 +444,14 @@ const firebaseConfig = {
     appId: "1:481710804257:web:84ab3594fcc80b7affc260"
 };
 
-// Initialize Firebase
 firebase.initializeApp(firebaseConfig);
 
-const auth = firebase.auth();
 const db = firebase.firestore();
+const activeTournamentRef = db.collection("tournaments").doc("active_round");
 
-// Global reference so the app works again
-let activeTournamentRef = db.collection("tournaments").doc("active_round");
-
-// Enable offline persistence
 db.enablePersistence().catch(err => { 
   console.log("Offline skipped:", err.code); 
 });
-
-// === ANONYMOUS AUTO LOGIN + APP STARTUP ===
-let appInitialized = false;
-
-auth.onAuthStateChanged(async (user) => {
-  if (!user) {
-    try {
-      const result = await auth.signInAnonymously();
-      console.log("✅ Anonymous user signed in for golf/fishing:", result.user.uid);
-      window.currentUserId = result.user.uid;
-      initializeTournamentApp();
-    } catch (error) {
-      console.error("❌ Anonymous sign-in failed:", error);
-      alert("Could not connect to the database. Please refresh the page.");
-    }
-  } else {
-    console.log("✅ User is ready:", user.uid);
-    window.currentUserId = user.uid;
-    if (!appInitialized) {
-      initializeTournamentApp();
-    }
-  }
-});
-
-function initializeTournamentApp() {
-  if (appInitialized) return;
-  appInitialized = true;
-  
-  console.log("🚀 Full app initialized - loading courses and tournaments");
-  
-  refreshCourseDropdown();
-  calculateLiveBuyIn();
-  
-  // Start the live listener
-  activeTournamentRef.onSnapshot((doc) => {
-    try {
-      if (doc.exists) {
-        const data = doc.data(); 
-
-        if (data.isArchived) {
-          // Your original code from here on (keep it unchanged)
-        } else {
-          // Your original code from here on (keep it unchanged)
-        }
-      }
-    } catch (e) { 
-      console.error("Cloud Error: ", e);
-    }
-  });
-}
 
 // ================== COURSE DATABASE & OTHER CODE (unchanged) ==================
 const courseDatabase = {
