@@ -25,6 +25,7 @@
         @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
         
         .hole-detail { position: relative; }
+        .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid #ff6b6b; border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
         .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; line-height: 1; font-weight: 900; color: var(--accent-gold); opacity: 0.12; z-index: 15; pointer-events: none; user-select: none; }
         
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; transition: background-color 0.3s; position: relative; z-index: 10; }
@@ -235,6 +236,7 @@
         <input type="date" id="round-date" style="margin-bottom: 15px;">
         
         <div id="roster-container"></div>
+        <datalist id="saved-players-list"></datalist>
         
         <button class="btn-secondary" onclick="openPreRoundBlindDrawModal()" style="border-color: var(--accent-gold); color: var(--accent-gold); margin-top: 15px;">🔀 Assign Blind Draw (Ghost)</button>
         
@@ -281,6 +283,7 @@
                 <button onclick="changeHole(1)">Next ▶</button>
             </div>
             <div id="sync-status" style="text-align: center; font-size: 10px; color: #7ced7e; margin-top: 4px;">● Synced</div>
+            <div id="offline-banner" class="offline-banner" style="display:none;">📴 No signal. Scores are saved on this phone and will sync when signal returns. No need to re-enter them.</div>
         </div>
         
         <div id="clipboard-warning" class="clipboard-banner" style="display:none;">
@@ -304,6 +307,7 @@
         <button id="floating-scoring-btn" onclick="switchScreen('step-dashboard', 'step-3')" style="position: fixed; bottom: 30px; right: 20px; z-index: 9999; background: var(--accent-gold); color: #000; border: none; border-radius: 30px; padding: 12px 20px; font-weight: bold; font-size: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; display: none;">✏️ Back to Scoring</button>
 
         <h2 style="text-align: center; color: white; margin-bottom: 20px;" id="dashboard-title">Tournament Dashboard</h2>
+        <div id="dashboard-cart-progress"></div>
         <div id="dashboard-financial-summary"></div>
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts" class="card" style="max-width:100%; border-color: #3ea84e;"></div>
@@ -447,6 +451,7 @@ firebase.initializeApp(firebaseConfig);
 
 const db = firebase.firestore();
 const activeTournamentRef = db.collection("tournaments").doc("active_round");
+const savedPlayersRef = db.collection("tournaments").doc("saved_players");
 
 db.enablePersistence().catch(err => { 
   console.log("Offline skipped:", err.code); 
@@ -546,6 +551,7 @@ function toggle9HoleOptions() {
             document.getElementById('par-input-grid').innerHTML = parGridHTML; 
             refreshCourseDropdown(); 
             calculateLiveBuyIn();
+            loadSavedPlayers();
 
             const urlParams = new URLSearchParams(window.location.search); 
             const teamParam = urlParams.get('cart');
@@ -791,7 +797,7 @@ function toggle9HoleOptions() {
                     let isGhostProp = savedGhost ? `data-ghost="${savedGhost}" readonly style="color:var(--accent-gold);"` : "";
                     
                     html += `<div class="roster-player-block">
-                        <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}" value="${savedName}" ${isGhostProp} onchange="saveRosterCache()">
+                        <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}" value="${savedName}" ${isGhostProp} list="saved-players-list" autocomplete="off" onchange="applySavedPlayer(this); saveRosterCache()">
                         <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="e.g. 4, 12" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()">
                     </div>`;
                 }
@@ -810,6 +816,61 @@ function toggle9HoleOptions() {
             document.getElementById('is-scrambled').dispatchEvent(new Event('change'));
             
             switchScreen('step-1', 'step-2');
+        }
+
+        // ==========================================
+        // SAVED PLAYERS (names + usual strokes per course, shared via Firestore)
+        // ==========================================
+        let savedPlayers = {}; // { "mike smith": { name: "Mike Smith", strokes: { courseKey: "4, 12" } } }
+
+        function loadSavedPlayers() {
+            try { savedPlayers = JSON.parse(localStorage.getItem('savedPlayers')) || {}; } catch(e) { savedPlayers = {}; }
+            renderSavedPlayersList();
+            savedPlayersRef.get().then(doc => {
+                if (doc.exists && doc.data().players) {
+                    savedPlayers = doc.data().players;
+                    localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
+                    renderSavedPlayersList();
+                }
+            }).catch(err => console.log("Saved players offline: ", err));
+        }
+
+        function renderSavedPlayersList() {
+            let list = document.getElementById('saved-players-list');
+            if (!list) return;
+            list.innerHTML = '';
+            Object.values(savedPlayers).map(sp => sp.name).sort((a, b) => a.localeCompare(b)).forEach(name => {
+                let opt = document.createElement('option');
+                opt.value = name;
+                list.appendChild(opt);
+            });
+        }
+
+        // Picking a saved name fills in that player's usual strokes for the selected course
+        function applySavedPlayer(nameEl) {
+            let saved = savedPlayers[nameEl.value.trim().toLowerCase()];
+            let strokesEl = document.getElementById(nameEl.id.replace('-name', '-strokes'));
+            if (!saved || !strokesEl || strokesEl.value.trim() !== '') return;
+            let courseKey = document.getElementById('course-selector').value;
+            if (saved.strokes && saved.strokes[courseKey]) strokesEl.value = saved.strokes[courseKey];
+        }
+
+        function rememberRosterPlayers(gCount, pCount) {
+            let courseKey = document.getElementById('course-selector').value;
+            let updates = {};
+            for (let g = 1; g <= gCount; g++) {
+                for (let p = 1; p <= pCount; p++) {
+                    let name = (tempRosterCache[`g${g}-p${p}-name`] || '').trim();
+                    if (!name || tempRosterCache[`g${g}-p${p}-ghost`]) continue;
+                    let key = name.toLowerCase();
+                    updates[key] = { name: name, strokes: { [courseKey]: (tempRosterCache[`g${g}-p${p}-strokes`] || '').trim() } };
+                    savedPlayers[key] = { name: name, strokes: { ...(savedPlayers[key]?.strokes || {}), [courseKey]: updates[key].strokes[courseKey] } };
+                }
+            }
+            if (Object.keys(updates).length === 0) return;
+            localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
+            renderSavedPlayersList();
+            savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error("Saving players failed: ", err));
         }
 
         function saveRosterCache() {
@@ -956,6 +1017,7 @@ function processStep2() {
             
             const gCount = parseInt(document.getElementById('group-count').value); 
             const pCount = parseInt(document.getElementById('players-per-group').value);
+            if (!isEditingMidRound) rememberRosterPlayers(gCount, pCount);
             
             for (let g = 1; g <= gCount; g++) {
                 let teamPlayers = []; 
@@ -1321,8 +1383,7 @@ function setTeamFilter(filterValue) {
                 if (!roundData.currentHoles) roundData.currentHoles = {};
                 const viewKey = getViewKey();
                 roundData.currentHoles[viewKey] = roundData.currentHole;
-                activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'currentHoles', String(viewKey)), roundData.currentHole)
-                    .catch(err => console.error("Hole sync failed: ", err));
+                trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'currentHoles', String(viewKey)), roundData.currentHole));
 
                 renderScoreEntry(); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
@@ -1612,22 +1673,51 @@ function closeHoleScoringAndReturn() {
 
         // Writes only the given players' score on one hole, so carts scoring at the same time can't overwrite each other
         function saveScoresToCloud(players, hole) {
-            let status = document.getElementById('sync-status');
-            if(status) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
-
             let fieldsAndValues = [];
             players.forEach(([g, p]) => {
                 let score = scoresDb[g]?.[p]?.[hole];
                 fieldsAndValues.push(new firebase.firestore.FieldPath('scoresDb', String(g), String(p), String(hole)), score ? score : firebase.firestore.FieldValue.delete());
             });
 
-            activeTournamentRef.update(...fieldsAndValues).then(() => {
-                if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; }
+            trackCloudWrite(activeTournamentRef.update(...fieldsAndValues));
+        }
+
+        // Firestore keeps writes on the phone until it has signal, so a write still pending after a few seconds means no signal
+        const SLOW_SYNC_MS = 4000;
+        let pendingCloudWrites = 0;
+        let pendingSince = 0;
+        let lastWriteFailed = false;
+
+        function trackCloudWrite(promise) {
+            if (pendingCloudWrites === 0) pendingSince = Date.now();
+            pendingCloudWrites++;
+            updateSyncStatus();
+            setTimeout(updateSyncStatus, SLOW_SYNC_MS + 100);
+            promise.then(() => {
+                pendingCloudWrites--;
+                lastWriteFailed = false;
+                updateSyncStatus();
             }).catch((error) => {
-                console.error("Score sync failed: ", error);
-                if(status) { status.innerText = "⚠ Not saved - check connection"; status.style.color = "#ff6b6b"; }
+                pendingCloudWrites--;
+                lastWriteFailed = true;
+                console.error("Cloud sync failed: ", error);
+                updateSyncStatus();
             });
         }
+
+        function updateSyncStatus() {
+            let status = document.getElementById('sync-status');
+            let banner = document.getElementById('offline-banner');
+            if (!status || !banner) return;
+            let noSignal = !navigator.onLine || (pendingCloudWrites > 0 && Date.now() - pendingSince >= SLOW_SYNC_MS);
+            banner.style.display = noSignal ? 'block' : 'none';
+            if (lastWriteFailed) { status.innerText = "⚠ Not saved - check connection"; status.style.color = "#ff6b6b"; }
+            else if (noSignal) { status.innerText = "📴 Waiting for signal..."; status.style.color = "#ff6b6b"; }
+            else if (pendingCloudWrites > 0) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
+            else { status.innerText = "● Synced"; status.style.color = "#7ced7e"; }
+        }
+        window.addEventListener('online', updateSyncStatus);
+        window.addEventListener('offline', updateSyncStatus);
 
        function handleInputAdvance(el, groupId, playerId, hole, par) {
             if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
@@ -1866,12 +1956,50 @@ function closeHoleScoringAndReturn() {
                 <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>${rulesHTML}
             </div>`;
             
+            // Cart progress is an admin tool; carts and spectators don't need it
+            let showProgress = urlParams.get('spectator') !== 'true' && lockedTeamId === null;
+            document.getElementById('dashboard-cart-progress').innerHTML = showProgress ? generateCartProgressHTML(roundData, scoresDb) : '';
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
             document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb); 
             document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
         }
+        // Per cart: how far they've scored ("Thru") and any earlier holes still missing a score
+        function generateCartProgressHTML(rData, sDb) {
+            let seq = getHoleSequence();
+            let html = `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:20px; border-left:5px solid var(--accent-gold);">
+                <h3 style="margin-top:0; margin-bottom:10px; color:var(--accent-gold);">📋 Cart Progress</h3>`;
+
+            rData.carts.forEach(cart => {
+                let players = cart.players.map(cp => {
+                    let group = rData.groups.find(g => g.id === cp.g);
+                    return group ? { g: cp.g, p: group.players.find(x => x.id === cp.p) } : null;
+                }).filter(x => x && x.p && !x.p.isGhost);
+                if (players.length === 0) return;
+
+                let hasScore = (pl, h) => !!sDb[pl.g]?.[pl.p.id]?.[h];
+                let lastScoredIdx = -1;
+                seq.forEach((h, i) => { if (players.some(pl => hasScore(pl, h))) lastScoredIdx = i; });
+                let thruIdx = -1;
+                while (thruIdx + 1 < seq.length && players.every(pl => hasScore(pl, seq[thruIdx + 1]))) thruIdx++;
+
+                let missing = [];
+                for (let i = 0; i <= lastScoredIdx; i++) {
+                    let names = players.filter(pl => !hasScore(pl, seq[i])).map(pl => pl.p.name.split(' ')[0]);
+                    if (names.length > 0) missing.push(`Hole ${seq[i]} (${names.join(', ')})`);
+                }
+
+                let driver = players[0].p.name.split(' ')[0];
+                let thruText = thruIdx === seq.length - 1 ? 'Finished' : (thruIdx >= 0 ? `Thru ${seq[thruIdx]}` : 'Not started');
+                html += `<div style="padding:8px 0; border-top:1px solid var(--border-color); font-size:14px;">
+                    <div style="display:flex; justify-content:space-between;"><b>Cart ${cart.id} (${driver})</b><span style="color:var(--text-muted);">${thruText}</span></div>
+                    ${missing.length > 0 ? `<div style="color:#ff6b6b; font-size:13px; margin-top:4px;">⚠️ Missing: ${missing.join(', ')}</div>` : ''}
+                </div>`;
+            });
+            return html + `</div>`;
+        }
+
         function getBorders(isActive, segId, type, h, seg, isLastRow) { 
             if (!isActive || segId === 0) return ""; 
             let cls = ""; 
@@ -2210,6 +2338,106 @@ function closeHoleScoringAndReturn() {
             return summaryHTML + fullHTML;
         }
 
+        // Each real player's buy-in, winnings (skins + share of team bets) and net, all in cents
+        function calculatePlayerNets(rData, sDb) {
+            let realPlayers = [];
+            rData.groups.forEach(g => g.players.forEach(p => { if (!p.isGhost) realPlayers.push({ key: `${g.id}-${p.id}`, gid: g.id, name: p.name, color: g.color }); }));
+            let totalPlayers = realPlayers.length;
+            let orderedSegments = getOrderedSegments(rData);
+            let totalBets = rData.formats.length * (orderedSegments.length > 1 ? 3 : 1);
+
+            // Gross skins: lowest score under par, outright
+            let skinsByPlayer = {}; let totalSkins = 0;
+            for (let h = 1; h <= 18; h++) {
+                let par = rData.course.pars[h-1]; let hs = [];
+                rData.groups.forEach(g => g.players.forEach(p => { let sc = sDb[g.id]?.[p.id]?.[h]; if (sc && !p.isGhost) hs.push({ key: `${g.id}-${p.id}`, s: sc }); }));
+                if (hs.length === 0) continue;
+                let min = Math.min(...hs.map(x => x.s));
+                let winners = hs.filter(x => x.s === min);
+                if (min < par && winners.length === 1) { skinsByPlayer[winners[0].key] = (skinsByPlayer[winners[0].key] || 0) + 1; totalSkins++; }
+            }
+            // No skins won means the skins pot goes back to everyone, so it's left out of buy-ins
+            let skinsBuyIn = totalSkins > 0 ? rData.skinsAmount : 0;
+            let perSkinCents = totalSkins > 0 ? Math.round(totalPlayers * rData.skinsAmount * 100 / totalSkins) : 0;
+
+            // Team bets: each format/segment (plus overall) pot goes to the lowest team net, split on ties
+            let teamWinCents = {};
+            rData.groups.forEach(g => teamWinCents[g.id] = 0);
+            let potCents = totalPlayers * rData.betAmount * 100;
+            let teamSegNet = (g, f, seg) => {
+                let net = 0, played = 0;
+                for (let h = seg.s; h <= seg.e; h++) {
+                    let hs = [];
+                    g.players.forEach(p => { let sc = sDb[g.id]?.[p.id]?.[h]; if (sc) hs.push(getPlayerNetScore(rData, p, h, sc)); });
+                    let holeNet = calculateTeamHoleNet(rData, f, rData.course.pars[h-1], hs, !!(rData.birdieRules && rData.birdieRules[f]));
+                    if (holeNet !== null) { net += holeNet; played++; }
+                }
+                return { net, played };
+            };
+            let payBet = results => {
+                results = results.filter(r => r.played > 0);
+                if (results.length === 0 || potCents === 0) return;
+                let min = Math.min(...results.map(r => r.net));
+                let winners = results.filter(r => r.net === min);
+                winners.forEach(w => teamWinCents[w.id] += potCents / winners.length);
+            };
+            rData.formats.forEach(f => {
+                orderedSegments.forEach(seg => payBet(rData.groups.map(g => ({ id: g.id, ...teamSegNet(g, f, seg) }))));
+                if (orderedSegments.length > 1) {
+                    payBet(rData.groups.map(g => {
+                        let tot = { id: g.id, net: 0, played: 0 };
+                        orderedSegments.forEach(seg => { let r = teamSegNet(g, f, seg); tot.net += r.net; tot.played += r.played; });
+                        return tot;
+                    }));
+                }
+            });
+
+            let buyInCents = (rData.betAmount * totalBets + skinsBuyIn) * 100;
+            return realPlayers.map(rp => {
+                let teammates = realPlayers.filter(x => x.gid === rp.gid).length;
+                let wonCents = Math.round((skinsByPlayer[rp.key] || 0) * perSkinCents + teamWinCents[rp.gid] / teammates);
+                return { ...rp, buyInCents, wonCents, netCents: wonCents - buyInCents };
+            });
+        }
+
+        // Fewest payments that settle everyone up: biggest loser pays biggest winner, repeat
+        function calculateSettlements(nets) {
+            let owed = nets.filter(n => n.netCents > 0).map(n => ({ name: n.name, c: n.netCents })).sort((a, b) => b.c - a.c);
+            let owing = nets.filter(n => n.netCents < 0).map(n => ({ name: n.name, c: -n.netCents })).sort((a, b) => b.c - a.c);
+            let payments = [];
+            let i = 0, j = 0;
+            while (i < owing.length && j < owed.length) {
+                let amt = Math.min(owing[i].c, owed[j].c);
+                if (amt > 0) payments.push({ from: owing[i].name, to: owed[j].name, cents: amt });
+                owing[i].c -= amt; owed[j].c -= amt;
+                if (owing[i].c === 0) i++;
+                if (owed[j].c === 0) j++;
+            }
+            return payments;
+        }
+
+        function formatCents(c) { return `$${(Math.abs(c) / 100).toFixed(2)}`; }
+
+        function generateSettleUpHTML(rData, sDb) {
+            let nets = calculatePlayerNets(rData, sDb).sort((a, b) => b.netCents - a.netCents);
+            if (nets.length === 0) return '';
+            let html = `<div class="payout-header" style="margin-top:25px;">🤝 Settle Up</div>`;
+            html += `<div class="payout-row" style="color:var(--text-muted); font-size:12px;">Each player's winnings minus their buy-in</div>`;
+            nets.forEach(n => {
+                let color = n.netCents > 0 ? '#39ff14' : (n.netCents < 0 ? '#ff6b6b' : 'var(--text-muted)');
+                let sign = n.netCents > 0 ? '+' : (n.netCents < 0 ? '−' : '');
+                html += `<div class="payout-row"><span class="payout-winner" style="color:${n.color}">${n.name.split(' ')[0]}</span><span class="payout-amount" style="color:${color}">${sign}${formatCents(n.netCents)}</span></div>`;
+            });
+            let payments = calculateSettlements(nets);
+            if (payments.length > 0) {
+                html += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:12px;">Who pays who</div>`;
+                payments.forEach(pm => {
+                    html += `<div class="payout-row"><span>${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}</span><span class="payout-amount">${formatCents(pm.cents)}</span></div>`;
+                });
+            }
+            return html;
+        }
+
         function generateFinancialSummaryHTML(rData, sDb) {
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0); 
             if(totalPlayers === 0) return "<p>No data.</p>";
@@ -2326,7 +2554,7 @@ function closeHoleScoringAndReturn() {
                 });
             } else { teamHTML += `<div class="payout-row">No Team Bets configured.</div>`; }
 
-            return skinsHTML + teamHTML;
+            return skinsHTML + teamHTML + generateSettleUpHTML(rData, sDb);
         }
 
         // ==========================================
@@ -2459,6 +2687,17 @@ function closeHoleScoringAndReturn() {
                 if(team.t > 0) { st += `Team ${Object.keys(tp)[idx]} (Capt: ${team.n}):\n  Team Total Payout: $${team.t.toFixed(2)}\n  Per Player Piece: $${(team.t/team.c).toFixed(2)}\n`; }
             });
 
+            let nets = calculatePlayerNets(rData, sDb).sort((a, b) => b.netCents - a.netCents);
+            if (nets.length > 0) {
+                st += `\n🤝 SETTLE UP (winnings minus buy-in):\n`;
+                nets.forEach(n => { st += `  ${n.name.split(' ')[0]}: ${n.netCents > 0 ? '+' : (n.netCents < 0 ? '-' : '')}${formatCents(n.netCents)}\n`; });
+                let payments = calculateSettlements(nets);
+                if (payments.length > 0) {
+                    st += `\n💸 WHO PAYS WHO:\n`;
+                    payments.forEach(pm => { st += `  ${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}: ${formatCents(pm.cents)}\n`; });
+                }
+            }
+
             document.getElementById('share-modal-title').innerText = "Share Final Results";
             document.getElementById('share-text-content').value = st; 
             document.getElementById('share-modal').classList.add('active');
@@ -2503,7 +2742,7 @@ function closeHoleScoringAndReturn() {
         }
 
         function validateAndFinalize() {
-            let pin = prompt("🔒 Enter Admin PIN (1234) to Finalize Round:");
+            let pin = prompt("🔒 Enter Admin PIN to Finalize Round:");
             
             if (pin !== '1234') { 
                 if (pin !== null) alert("Incorrect PIN. Access Denied."); 
@@ -2586,7 +2825,7 @@ function closeHoleScoringAndReturn() {
         function deleteSelectedArchives() {
             let checkboxes = document.querySelectorAll('.archive-checkbox:checked'); 
             if(checkboxes.length === 0) { alert("Please select at least one round to delete."); return; }
-            if (prompt("Enter Admin PIN (1234) to delete selected rounds:") === "1234") {
+            if (prompt("Enter Admin PIN to delete selected rounds:") === "1234") {
                 let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; 
                 let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a,b) => b-a);
                 indices.forEach(idx => archive.splice(idx, 1)); 
