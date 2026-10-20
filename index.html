@@ -24,7 +24,8 @@
         .toast-ace { background: #000; border: 4px solid #fff; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 30px #00ffff; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 30px #00ffff; animation: flash-ace 0.5s infinite; }
         @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
         
-        .hole-watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; font-weight: 900; color: var(--accent-gold); opacity: 0.12; z-index: 15; pointer-events: none; user-select: none; }
+        .hole-detail { position: relative; }
+        .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; line-height: 1; font-weight: 900; color: var(--accent-gold); opacity: 0.12; z-index: 15; pointer-events: none; user-select: none; }
         
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; transition: background-color 0.3s; position: relative; z-index: 10; }
         .screen { display: none; position: relative; z-index: 10; } .screen.active { display: block; }
@@ -148,8 +149,6 @@
 <body>
 
     <img src="logo.png" class="app-logo" alt="JB Fishing and Golf">
-
-    <div class="hole-watermark" id="global-hole-watermark"></div>
 
     <div id="step-1" class="screen card active">
         <h2>Tournament Setup</h2>
@@ -576,7 +575,6 @@ function toggle9HoleOptions() {
                                     document.getElementById('step-dead-link').classList.add('active'); 
                                     document.getElementById('step-dead-title').innerText = "⛳ Round Complete";
                                     document.getElementById('step-dead-sub').innerText = "This tournament has been finalized and the 48-hour viewing window has expired.";
-                                    document.getElementById('global-hole-watermark').style.display = 'none';
                                     return;
                                 }
                             } else {
@@ -585,10 +583,8 @@ function toggle9HoleOptions() {
                                     document.getElementById('step-dead-link').classList.add('active'); 
                                     document.getElementById('step-dead-title').innerText = "⏳ Waiting for Admin...";
                                     document.getElementById('step-dead-sub').innerText = "The next tournament hasn't officially started yet. Hang tight!";
-                                    document.getElementById('global-hole-watermark').style.display = 'none';
                                 } else if (!document.getElementById('step-8').classList.contains('active') && !document.getElementById('step-9').classList.contains('active') && !document.getElementById('step-add-course').classList.contains('active')) {
                                     document.getElementById('step-1').classList.add('active'); 
-                                    document.getElementById('global-hole-watermark').style.display = 'none';
                                 }
                                 return;
                             }
@@ -670,7 +666,6 @@ function toggle9HoleOptions() {
                             renderScoreEntry();
                             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                             document.getElementById('step-3').classList.add('active');
-                            document.getElementById('global-hole-watermark').style.display = 'block';
                         } else {
                             if (document.getElementById('step-3').classList.contains('active')) {
                                 updateUIWithoutLosingFocus();
@@ -683,12 +678,10 @@ function toggle9HoleOptions() {
                             document.getElementById('step-dead-link').classList.add('active'); 
                             document.getElementById('step-dead-title').innerText = "👀 Waiting for Round...";
                             document.getElementById('step-dead-sub').innerText = "The tournament hasn't been started yet.";
-                            document.getElementById('global-hole-watermark').style.display = 'none';
                             return;
                         }
 
                         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-                        document.getElementById('global-hole-watermark').style.display = 'none';
                         if (lockedTeamId !== null) {
                             document.getElementById('step-dead-link').classList.add('active'); 
                             document.getElementById('step-dead-title').innerText = "⏳ Waiting for Admin...";
@@ -721,8 +714,6 @@ function toggle9HoleOptions() {
             document.getElementById(hide).classList.remove('active'); 
             document.getElementById(show).classList.add('active'); 
             window.scrollTo(0,0); 
-            if (show === 'step-3') { document.getElementById('global-hole-watermark').style.display = 'block'; }
-            else { document.getElementById('global-hole-watermark').style.display = 'none'; }
         }
         
         function refreshCourseDropdown() { 
@@ -1037,7 +1028,6 @@ function processStep2() {
                 renderScoreEntry(); 
                 document.getElementById('step-dead-link').classList.remove('active');
                 document.getElementById('step-3').classList.add('active'); 
-                document.getElementById('global-hole-watermark').style.display = 'block';
                 window.scrollTo(0,0);
             }).catch(err => {
                 console.error("Database initialization failed: ", err);
@@ -1049,7 +1039,6 @@ function processStep2() {
             sessionStorage.setItem('isEditingMidRound', 'true');
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
-            document.getElementById('global-hole-watermark').style.display = 'none';
             
             // Restore current format + birdie rules + money values so "All Birdies Count" state is correct
             restoreSetupFormFromRoundData();
@@ -1376,7 +1365,6 @@ function renderScoreEntry() {
 
     document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`;
     document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-    document.getElementById('global-hole-watermark').innerText = hole;
 
     let html = '';
     html += renderFullHoleDetail(hole);
@@ -1464,7 +1452,6 @@ function openHoleForScoring(holeNum) {
 
     document.getElementById('current-hole-display-top').innerText = `Hole ${holeNum}`;
     document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-    document.getElementById('global-hole-watermark').innerText = holeNum;
 
     let html = `
         <div style="margin-bottom:12px;">
@@ -1538,7 +1525,7 @@ function closeHoleScoringAndReturn() {
         // Full detailed scoring for the Current hole (original behavior)
         function renderFullHoleDetail(hole) {
             let par = roundData.course.pars[hole-1];
-            let html = '';
+            let html = `<div class="hole-detail"><div class="hole-watermark">${hole}</div>`;
 
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
@@ -1558,7 +1545,7 @@ function closeHoleScoringAndReturn() {
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.dataset.orig = this.value; this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     });
                     html += `</div>`;
@@ -1595,12 +1582,13 @@ function closeHoleScoringAndReturn() {
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${teamTag}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.dataset.orig = this.value; this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     });
                     html += `</div>`;
                 }
             }
+            html += `</div>`;
             return html;
         }
 
@@ -1644,16 +1632,8 @@ function closeHoleScoringAndReturn() {
        function handleInputAdvance(el, groupId, playerId, hole, par) {
             if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
 
-            let val = el.value.replace(/\D/g, '');
-            // Typing into a box that already had a score replaces it rather than appending
-            let orig = el.dataset.orig || '';
-            if (orig && val.length > orig.length && val.startsWith(orig)) val = val.slice(orig.length);
-            el.dataset.orig = '';
-            // Allow 10-19; any other multi-digit entry keeps only the last digit typed
-            if (val.length > 2 || (val.length === 2 && val[0] !== '1')) val = val.slice(-1);
-            el.value = val;
-            // A lone "1" might be the start of 10-19, so wait for the next digit before advancing
-            let isEntryComplete = val.length === 2 || (val.length === 1 && val !== '1');
+            let val = el.value.trim(); 
+            if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
             let parsedVal = parseInt(val);
             
             if(!isNaN(parsedVal) && parsedVal > 0) {
@@ -1736,7 +1716,7 @@ function closeHoleScoringAndReturn() {
 
             saveScoresToCloud(changedPlayers, hole);
 
-            if(isEntryComplete) {
+            if(val.length === 1) {
                 let inputs = Array.from(document.querySelectorAll('.score-input-field')); 
                 let idx = inputs.indexOf(el);
                 
@@ -1834,7 +1814,6 @@ function closeHoleScoringAndReturn() {
             const urlParams = new URLSearchParams(window.location.search);
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
-            document.getElementById('global-hole-watermark').style.display = 'none';
 
             // --- FIX IS HERE: Hide the floating button for spectators ---
             let floatBtn = document.getElementById('floating-scoring-btn');
@@ -2566,7 +2545,6 @@ function closeHoleScoringAndReturn() {
             
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-1').classList.add('active'); 
-            document.getElementById('global-hole-watermark').style.display = 'none';
             window.scrollTo(0,0);
             
             activeTournamentRef.update({ 
