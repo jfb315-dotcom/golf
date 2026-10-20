@@ -472,7 +472,10 @@ let currentTeamFilter = "ALL";
 let lockedTeamId = null; 
 let myClientId = Math.random().toString(36).substr(2, 9);
 let hasReadonlyLock = false;
-       
+let liveRoundInCloud = false; // true while an unarchived round exists in Firestore
+let hasLoadedRound = false;
+let loadedRoundId = null;
+
 let allAvailableCourses = {}; 
 let activeViewRoundData = null; 
 let activeViewScoresDb = null; 
@@ -561,8 +564,9 @@ function toggle9HoleOptions() {
 
             activeTournamentRef.onSnapshot((doc) => {
                 try {
+                    liveRoundInCloud = doc.exists && !doc.data().isArchived;
                     if (doc.exists) {
-                        const data = doc.data(); 
+                        const data = doc.data();
 
                         if (data.isArchived) {
                             if (isSpectator) {
@@ -603,6 +607,7 @@ function toggle9HoleOptions() {
                         
                         // Copy other fields from incoming (but protect currentHoles from full overwrite)
                         const protectedCurrentHoles = roundData.currentHoles;
+                        const localCurrentHole = roundData.currentHole;
                         roundData = { ...incomingRound, currentHoles: protectedCurrentHoles || incomingRound.currentHoles || { admin: 1 } };
                         
                         scoresDb = data.scoresDb || {};
@@ -612,7 +617,16 @@ function toggle9HoleOptions() {
                         if(!roundData.startType) { roundData.startType = (roundData.startHole === 10) ? 'back' : 'front'; } 
                         if(!roundData.startHole) { roundData.startHole = 1; roundData.endHole = 18; } 
                         if(!roundData.nineHoleType) { roundData.nineHoleType = 'straight'; }
-                        
+
+                        // Each device keeps its own current hole; only take the cloud's value on first load or a new round
+                        if (hasLoadedRound && incomingRound.roundId === loadedRoundId && localCurrentHole) {
+                            roundData.currentHole = localCurrentHole;
+                        } else {
+                            roundData.currentHole = roundData.currentHoles[getViewKey()] || incomingRound.currentHole || roundData.startHole;
+                        }
+                        hasLoadedRound = true;
+                        loadedRoundId = incomingRound.roundId;
+
                         if(!roundData.groups) roundData.groups = [];
                         if(!roundData.carts && roundData.groups.length > 0) { 
                             roundData.carts = roundData.groups.map(g => ({ id: g.id, time: '', players: g.players.map(p => ({g: g.id, p: p.id})) })); 
@@ -924,8 +938,10 @@ function processStep2() {
             const isEditingMidRound = sessionStorage.getItem('isEditingMidRound') === 'true';
             
             if (!isEditingMidRound) {
+                if (liveRoundInCloud && !confirm("⚠️ A round is already in progress.\n\nStarting a new round will ERASE all of its scores for every cart. Continue?")) return;
                 // Only wipe scores when starting a brand new round
-                scoresDb = {}; 
+                scoresDb = {};
+                roundData.roundId = Date.now();
             } else {
                 // Keep existing scores when editing setup mid-round (bet amounts, formats, etc. can change safely)
             }
@@ -1275,7 +1291,11 @@ function processStep2() {
             container.innerHTML = html;
         }
 
-function setTeamFilter(filterValue) { 
+function getViewKey() {
+    return (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
+}
+
+function setTeamFilter(filterValue) {
     // Save current hole for the view we're leaving
     if (roundData.currentHoles) {
         const prevKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
@@ -1309,12 +1329,12 @@ function setTeamFilter(filterValue) {
                 roundData.currentHole = seq[nextIdx]; 
                 
                 // Persist to the current view's hole tracker
-                if (roundData.currentHoles) {
-                    const viewKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
-                    if (viewKey) roundData.currentHoles[viewKey] = roundData.currentHole;
-                }
-                
-                saveAppStateToCloud(); 
+                if (!roundData.currentHoles) roundData.currentHoles = {};
+                const viewKey = getViewKey();
+                roundData.currentHoles[viewKey] = roundData.currentHole;
+                activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'currentHoles', String(viewKey)), roundData.currentHole)
+                    .catch(err => console.error("Hole sync failed: ", err));
+
                 renderScoreEntry(); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
@@ -1339,15 +1359,17 @@ function setTeamFilter(filterValue) {
         }
 
 function renderScoreEntry() {
-    // Hide Prev/Next buttons on cart views (we have the full list now)
-document.querySelector('.hole-nav').style.display = 'none';
     const container = document.getElementById('entry-container');
     if (!container) return;
 
+    // Prev/Next only on the admin view; cart views use the full hole list instead
+    const holeNav = document.querySelector('.hole-nav');
     if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
+        holeNav.style.display = 'none';
         renderFullScorecardForCart();
         return;
     }
+    holeNav.style.display = '';
 
     let hole = roundData.currentHole;
     let par = roundData.course.pars[hole-1];
@@ -1536,7 +1558,7 @@ function closeHoleScoringAndReturn() {
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.dataset.orig = this.value; this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     });
                     html += `</div>`;
@@ -1573,7 +1595,7 @@ function closeHoleScoringAndReturn() {
                         html += `<div class="player-row">
                             <span class="player-name">${player.name}${teamTag}${netDot}</span>
                             <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.dataset.orig = this.value; this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
                         </div>`;
                     });
                     html += `</div>`;
@@ -1600,23 +1622,38 @@ function closeHoleScoringAndReturn() {
             } catch(err) {}
         }
 
-        function saveAppStateToCloud() {
-            let status = document.getElementById('sync-status'); 
+        // Writes only the given players' score on one hole, so carts scoring at the same time can't overwrite each other
+        function saveScoresToCloud(players, hole) {
+            let status = document.getElementById('sync-status');
             if(status) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
-            
-            let cleanRoundData = JSON.parse(JSON.stringify(roundData));
-            let cleanScoresDb = JSON.parse(JSON.stringify(scoresDb));
-            
-            activeTournamentRef.update({ roundData: cleanRoundData, scoresDb: cleanScoresDb }).then(() => { 
-                if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; } 
-            }).catch((error) => {});
+
+            let fieldsAndValues = [];
+            players.forEach(([g, p]) => {
+                let score = scoresDb[g]?.[p]?.[hole];
+                fieldsAndValues.push(new firebase.firestore.FieldPath('scoresDb', String(g), String(p), String(hole)), score ? score : firebase.firestore.FieldValue.delete());
+            });
+
+            activeTournamentRef.update(...fieldsAndValues).then(() => {
+                if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; }
+            }).catch((error) => {
+                console.error("Score sync failed: ", error);
+                if(status) { status.innerText = "⚠ Not saved - check connection"; status.style.color = "#ff6b6b"; }
+            });
         }
 
        function handleInputAdvance(el, groupId, playerId, hole, par) {
             if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
-            
-            let val = el.value.trim(); 
-            if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
+
+            let val = el.value.replace(/\D/g, '');
+            // Typing into a box that already had a score replaces it rather than appending
+            let orig = el.dataset.orig || '';
+            if (orig && val.length > orig.length && val.startsWith(orig)) val = val.slice(orig.length);
+            el.dataset.orig = '';
+            // Allow 10-19; any other multi-digit entry keeps only the last digit typed
+            if (val.length > 2 || (val.length === 2 && val[0] !== '1')) val = val.slice(-1);
+            el.value = val;
+            // A lone "1" might be the start of 10-19, so wait for the next digit before advancing
+            let isEntryComplete = val.length === 2 || (val.length === 1 && val !== '1');
             let parsedVal = parseInt(val);
             
             if(!isNaN(parsedVal) && parsedVal > 0) {
@@ -1662,7 +1699,7 @@ function closeHoleScoringAndReturn() {
                 }
                 if (missedHole) { 
                     el.value = ''; 
-                    alert(`⚠️ Wait! You skipped Hole ${missedHole}. Use the 'Prev' button to go back.`); 
+                    alert(`⚠️ Wait! You skipped Hole ${missedHole}. Go back and enter Hole ${missedHole} first.`);
                     return; 
                 }
             }
@@ -1678,9 +1715,11 @@ function closeHoleScoringAndReturn() {
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`); 
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
+            let changedPlayers = [[groupId, playerId]];
             roundData.groups.forEach(ghostGroup => {
                 ghostGroup.players.forEach(ghostPlayer => {
                     if (ghostPlayer.isGhost && ghostPlayer.sourceG === groupId && ghostPlayer.sourceP === playerId) {
+                        changedPlayers.push([ghostGroup.id, ghostPlayer.id]);
                         if (!scoresDb[ghostGroup.id]) scoresDb[ghostGroup.id] = {}; 
                         if (!scoresDb[ghostGroup.id][ghostPlayer.id]) scoresDb[ghostGroup.id][ghostPlayer.id] = {};
                         if (!isNaN(parsedVal) && parsedVal > 0) { scoresDb[ghostGroup.id][ghostPlayer.id][hole] = parsedVal; } 
@@ -1695,9 +1734,9 @@ function closeHoleScoringAndReturn() {
                 });
             });
 
-            setTimeout(() => { saveAppStateToCloud(); }, 10);
+            saveScoresToCloud(changedPlayers, hole);
 
-            if(val.length === 1) {
+            if(isEntryComplete) {
                 let inputs = Array.from(document.querySelectorAll('.score-input-field')); 
                 let idx = inputs.indexOf(el);
                 
@@ -1740,7 +1779,7 @@ function closeHoleScoringAndReturn() {
 
                         if (missingScores) { 
                             el.value = ''; 
-                            alert(`⚠️ Missing Scores!\nYou skipped Hole ${firstMissingHole}. Use the 'Prev' button to go back.`); 
+                            alert(`⚠️ Missing Scores!\nYou skipped Hole ${firstMissingHole}. Go back and enter Hole ${firstMissingHole} first.`);
                         } else { 
                             if (currentTeamFilter === "ALL") document.getElementById('complete-modal').classList.add('active'); 
                             else viewDashboard(); 
