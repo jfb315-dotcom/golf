@@ -24,7 +24,8 @@
         .toast-ace { background: #000; border: 4px solid #fff; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 30px #00ffff; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 30px #00ffff; animation: flash-ace 0.5s infinite; }
         @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
         
-        .hole-watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; font-weight: 900; color: var(--accent-gold); opacity: 0.12; z-index: 15; pointer-events: none; user-select: none; }
+        .hole-detail { position: relative; }
+        .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; line-height: 1; font-weight: 900; color: var(--accent-gold); opacity: 0.12; z-index: 15; pointer-events: none; user-select: none; }
         
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; transition: background-color 0.3s; position: relative; z-index: 10; }
         .screen { display: none; position: relative; z-index: 10; } .screen.active { display: block; }
@@ -148,8 +149,6 @@
 <body>
 
     <img src="logo.png" class="app-logo" alt="JB Fishing and Golf">
-
-    <div class="hole-watermark" id="global-hole-watermark"></div>
 
     <div id="step-1" class="screen card active">
         <h2>Tournament Setup</h2>
@@ -472,7 +471,10 @@ let currentTeamFilter = "ALL";
 let lockedTeamId = null; 
 let myClientId = Math.random().toString(36).substr(2, 9);
 let hasReadonlyLock = false;
-       
+let liveRoundInCloud = false; // true while an unarchived round exists in Firestore
+let hasLoadedRound = false;
+let loadedRoundId = null;
+
 let allAvailableCourses = {}; 
 let activeViewRoundData = null; 
 let activeViewScoresDb = null; 
@@ -561,8 +563,9 @@ function toggle9HoleOptions() {
 
             activeTournamentRef.onSnapshot((doc) => {
                 try {
+                    liveRoundInCloud = doc.exists && !doc.data().isArchived;
                     if (doc.exists) {
-                        const data = doc.data(); 
+                        const data = doc.data();
 
                         if (data.isArchived) {
                             if (isSpectator) {
@@ -572,7 +575,6 @@ function toggle9HoleOptions() {
                                     document.getElementById('step-dead-link').classList.add('active'); 
                                     document.getElementById('step-dead-title').innerText = "⛳ Round Complete";
                                     document.getElementById('step-dead-sub').innerText = "This tournament has been finalized and the 48-hour viewing window has expired.";
-                                    document.getElementById('global-hole-watermark').style.display = 'none';
                                     return;
                                 }
                             } else {
@@ -581,10 +583,8 @@ function toggle9HoleOptions() {
                                     document.getElementById('step-dead-link').classList.add('active'); 
                                     document.getElementById('step-dead-title').innerText = "⏳ Waiting for Admin...";
                                     document.getElementById('step-dead-sub').innerText = "The next tournament hasn't officially started yet. Hang tight!";
-                                    document.getElementById('global-hole-watermark').style.display = 'none';
                                 } else if (!document.getElementById('step-8').classList.contains('active') && !document.getElementById('step-9').classList.contains('active') && !document.getElementById('step-add-course').classList.contains('active')) {
                                     document.getElementById('step-1').classList.add('active'); 
-                                    document.getElementById('global-hole-watermark').style.display = 'none';
                                 }
                                 return;
                             }
@@ -603,6 +603,7 @@ function toggle9HoleOptions() {
                         
                         // Copy other fields from incoming (but protect currentHoles from full overwrite)
                         const protectedCurrentHoles = roundData.currentHoles;
+                        const localCurrentHole = roundData.currentHole;
                         roundData = { ...incomingRound, currentHoles: protectedCurrentHoles || incomingRound.currentHoles || { admin: 1 } };
                         
                         scoresDb = data.scoresDb || {};
@@ -612,7 +613,16 @@ function toggle9HoleOptions() {
                         if(!roundData.startType) { roundData.startType = (roundData.startHole === 10) ? 'back' : 'front'; } 
                         if(!roundData.startHole) { roundData.startHole = 1; roundData.endHole = 18; } 
                         if(!roundData.nineHoleType) { roundData.nineHoleType = 'straight'; }
-                        
+
+                        // Each device keeps its own current hole; only take the cloud's value on first load or a new round
+                        if (hasLoadedRound && incomingRound.roundId === loadedRoundId && localCurrentHole) {
+                            roundData.currentHole = localCurrentHole;
+                        } else {
+                            roundData.currentHole = roundData.currentHoles[getViewKey()] || incomingRound.currentHole || roundData.startHole;
+                        }
+                        hasLoadedRound = true;
+                        loadedRoundId = incomingRound.roundId;
+
                         if(!roundData.groups) roundData.groups = [];
                         if(!roundData.carts && roundData.groups.length > 0) { 
                             roundData.carts = roundData.groups.map(g => ({ id: g.id, time: '', players: g.players.map(p => ({g: g.id, p: p.id})) })); 
@@ -656,7 +666,6 @@ function toggle9HoleOptions() {
                             renderScoreEntry();
                             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                             document.getElementById('step-3').classList.add('active');
-                            document.getElementById('global-hole-watermark').style.display = 'block';
                         } else {
                             if (document.getElementById('step-3').classList.contains('active')) {
                                 updateUIWithoutLosingFocus();
@@ -669,12 +678,10 @@ function toggle9HoleOptions() {
                             document.getElementById('step-dead-link').classList.add('active'); 
                             document.getElementById('step-dead-title').innerText = "👀 Waiting for Round...";
                             document.getElementById('step-dead-sub').innerText = "The tournament hasn't been started yet.";
-                            document.getElementById('global-hole-watermark').style.display = 'none';
                             return;
                         }
 
                         document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
-                        document.getElementById('global-hole-watermark').style.display = 'none';
                         if (lockedTeamId !== null) {
                             document.getElementById('step-dead-link').classList.add('active'); 
                             document.getElementById('step-dead-title').innerText = "⏳ Waiting for Admin...";
@@ -707,8 +714,6 @@ function toggle9HoleOptions() {
             document.getElementById(hide).classList.remove('active'); 
             document.getElementById(show).classList.add('active'); 
             window.scrollTo(0,0); 
-            if (show === 'step-3') { document.getElementById('global-hole-watermark').style.display = 'block'; }
-            else { document.getElementById('global-hole-watermark').style.display = 'none'; }
         }
         
         function refreshCourseDropdown() { 
@@ -924,8 +929,10 @@ function processStep2() {
             const isEditingMidRound = sessionStorage.getItem('isEditingMidRound') === 'true';
             
             if (!isEditingMidRound) {
+                if (liveRoundInCloud && !confirm("⚠️ A round is already in progress.\n\nStarting a new round will ERASE all of its scores for every cart. Continue?")) return;
                 // Only wipe scores when starting a brand new round
-                scoresDb = {}; 
+                scoresDb = {};
+                roundData.roundId = Date.now();
             } else {
                 // Keep existing scores when editing setup mid-round (bet amounts, formats, etc. can change safely)
             }
@@ -1021,7 +1028,6 @@ function processStep2() {
                 renderScoreEntry(); 
                 document.getElementById('step-dead-link').classList.remove('active');
                 document.getElementById('step-3').classList.add('active'); 
-                document.getElementById('global-hole-watermark').style.display = 'block';
                 window.scrollTo(0,0);
             }).catch(err => {
                 console.error("Database initialization failed: ", err);
@@ -1033,7 +1039,6 @@ function processStep2() {
             sessionStorage.setItem('isEditingMidRound', 'true');
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
-            document.getElementById('global-hole-watermark').style.display = 'none';
             
             // Restore current format + birdie rules + money values so "All Birdies Count" state is correct
             restoreSetupFormFromRoundData();
@@ -1275,7 +1280,11 @@ function processStep2() {
             container.innerHTML = html;
         }
 
-function setTeamFilter(filterValue) { 
+function getViewKey() {
+    return (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
+}
+
+function setTeamFilter(filterValue) {
     // Save current hole for the view we're leaving
     if (roundData.currentHoles) {
         const prevKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
@@ -1309,12 +1318,12 @@ function setTeamFilter(filterValue) {
                 roundData.currentHole = seq[nextIdx]; 
                 
                 // Persist to the current view's hole tracker
-                if (roundData.currentHoles) {
-                    const viewKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
-                    if (viewKey) roundData.currentHoles[viewKey] = roundData.currentHole;
-                }
-                
-                saveAppStateToCloud(); 
+                if (!roundData.currentHoles) roundData.currentHoles = {};
+                const viewKey = getViewKey();
+                roundData.currentHoles[viewKey] = roundData.currentHole;
+                activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'currentHoles', String(viewKey)), roundData.currentHole)
+                    .catch(err => console.error("Hole sync failed: ", err));
+
                 renderScoreEntry(); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
             }
@@ -1339,22 +1348,23 @@ function setTeamFilter(filterValue) {
         }
 
 function renderScoreEntry() {
-    // Hide Prev/Next buttons on cart views (we have the full list now)
-document.querySelector('.hole-nav').style.display = 'none';
     const container = document.getElementById('entry-container');
     if (!container) return;
 
+    // Prev/Next only on the admin view; cart views use the full hole list instead
+    const holeNav = document.querySelector('.hole-nav');
     if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
+        holeNav.style.display = 'none';
         renderFullScorecardForCart();
         return;
     }
+    holeNav.style.display = '';
 
     let hole = roundData.currentHole;
     let par = roundData.course.pars[hole-1];
 
     document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`;
     document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-    document.getElementById('global-hole-watermark').innerText = hole;
 
     let html = '';
     html += renderFullHoleDetail(hole);
@@ -1442,7 +1452,6 @@ function openHoleForScoring(holeNum) {
 
     document.getElementById('current-hole-display-top').innerText = `Hole ${holeNum}`;
     document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-    document.getElementById('global-hole-watermark').innerText = holeNum;
 
     let html = `
         <div style="margin-bottom:12px;">
@@ -1516,7 +1525,7 @@ function closeHoleScoringAndReturn() {
         // Full detailed scoring for the Current hole (original behavior)
         function renderFullHoleDetail(hole) {
             let par = roundData.course.pars[hole-1];
-            let html = '';
+            let html = `<div class="hole-detail"><div class="hole-watermark">${hole}</div>`;
 
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
@@ -1579,6 +1588,7 @@ function closeHoleScoringAndReturn() {
                     html += `</div>`;
                 }
             }
+            html += `</div>`;
             return html;
         }
 
@@ -1600,21 +1610,28 @@ function closeHoleScoringAndReturn() {
             } catch(err) {}
         }
 
-        function saveAppStateToCloud() {
-            let status = document.getElementById('sync-status'); 
+        // Writes only the given players' score on one hole, so carts scoring at the same time can't overwrite each other
+        function saveScoresToCloud(players, hole) {
+            let status = document.getElementById('sync-status');
             if(status) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
-            
-            let cleanRoundData = JSON.parse(JSON.stringify(roundData));
-            let cleanScoresDb = JSON.parse(JSON.stringify(scoresDb));
-            
-            activeTournamentRef.update({ roundData: cleanRoundData, scoresDb: cleanScoresDb }).then(() => { 
-                if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; } 
-            }).catch((error) => {});
+
+            let fieldsAndValues = [];
+            players.forEach(([g, p]) => {
+                let score = scoresDb[g]?.[p]?.[hole];
+                fieldsAndValues.push(new firebase.firestore.FieldPath('scoresDb', String(g), String(p), String(hole)), score ? score : firebase.firestore.FieldValue.delete());
+            });
+
+            activeTournamentRef.update(...fieldsAndValues).then(() => {
+                if(status) { status.innerText = "● Synced"; status.style.color = "#7ced7e"; }
+            }).catch((error) => {
+                console.error("Score sync failed: ", error);
+                if(status) { status.innerText = "⚠ Not saved - check connection"; status.style.color = "#ff6b6b"; }
+            });
         }
 
        function handleInputAdvance(el, groupId, playerId, hole, par) {
             if (hasReadonlyLock) return; // Hard stop if they don't own the clipboard
-            
+
             let val = el.value.trim(); 
             if (val.length > 1) { val = val.charAt(val.length - 1); el.value = val; } 
             let parsedVal = parseInt(val);
@@ -1662,7 +1679,7 @@ function closeHoleScoringAndReturn() {
                 }
                 if (missedHole) { 
                     el.value = ''; 
-                    alert(`⚠️ Wait! You skipped Hole ${missedHole}. Use the 'Prev' button to go back.`); 
+                    alert(`⚠️ Wait! You skipped Hole ${missedHole}. Go back and enter Hole ${missedHole} first.`);
                     return; 
                 }
             }
@@ -1678,9 +1695,11 @@ function closeHoleScoringAndReturn() {
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`); 
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
             
+            let changedPlayers = [[groupId, playerId]];
             roundData.groups.forEach(ghostGroup => {
                 ghostGroup.players.forEach(ghostPlayer => {
                     if (ghostPlayer.isGhost && ghostPlayer.sourceG === groupId && ghostPlayer.sourceP === playerId) {
+                        changedPlayers.push([ghostGroup.id, ghostPlayer.id]);
                         if (!scoresDb[ghostGroup.id]) scoresDb[ghostGroup.id] = {}; 
                         if (!scoresDb[ghostGroup.id][ghostPlayer.id]) scoresDb[ghostGroup.id][ghostPlayer.id] = {};
                         if (!isNaN(parsedVal) && parsedVal > 0) { scoresDb[ghostGroup.id][ghostPlayer.id][hole] = parsedVal; } 
@@ -1695,7 +1714,7 @@ function closeHoleScoringAndReturn() {
                 });
             });
 
-            setTimeout(() => { saveAppStateToCloud(); }, 10);
+            saveScoresToCloud(changedPlayers, hole);
 
             if(val.length === 1) {
                 let inputs = Array.from(document.querySelectorAll('.score-input-field')); 
@@ -1740,7 +1759,7 @@ function closeHoleScoringAndReturn() {
 
                         if (missingScores) { 
                             el.value = ''; 
-                            alert(`⚠️ Missing Scores!\nYou skipped Hole ${firstMissingHole}. Use the 'Prev' button to go back.`); 
+                            alert(`⚠️ Missing Scores!\nYou skipped Hole ${firstMissingHole}. Go back and enter Hole ${firstMissingHole} first.`);
                         } else { 
                             if (currentTeamFilter === "ALL") document.getElementById('complete-modal').classList.add('active'); 
                             else viewDashboard(); 
@@ -1795,7 +1814,6 @@ function closeHoleScoringAndReturn() {
             const urlParams = new URLSearchParams(window.location.search);
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
-            document.getElementById('global-hole-watermark').style.display = 'none';
 
             // --- FIX IS HERE: Hide the floating button for spectators ---
             let floatBtn = document.getElementById('floating-scoring-btn');
@@ -2527,7 +2545,6 @@ function closeHoleScoringAndReturn() {
             
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-1').classList.add('active'); 
-            document.getElementById('global-hole-watermark').style.display = 'none';
             window.scrollTo(0,0);
             
             activeTournamentRef.update({ 
