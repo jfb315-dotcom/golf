@@ -106,7 +106,20 @@
         .score-keypad button:active { background: rgba(255,255,255,0.18); }
         .score-keypad .key-clear { background: transparent; color: var(--text-muted); font-size: 16px; font-weight: 600; }
         .score-keypad .key-wide { grid-column: span 2; background: var(--accent-gold); color: var(--bg-dark); font-size: 17px; font-weight: 700; letter-spacing: 0.03em; }
-        #step-3:has(.score-keypad) > .btn-success { display: none; } /* the keypad has its own Standings key */
+        #step-3:not(.admin-view):has(.score-keypad) > .btn-success { display: none; } /* the cart keypad has its own Standings key */
+
+        /* Admin: every team on one screen, so slimmer header, rows and a 2-row keypad */
+        #step-3.admin-view .hole-nav h2 { font-size: 40px; }
+        #step-3.admin-view .hole-nav-btn { width: 44px; height: 44px; }
+        #step-3.admin-view .team-card { margin-bottom: 8px; }
+        #step-3.admin-view .team-label { font-size: 12px; padding-bottom: 2px; }
+        #step-3.admin-view .score-row { min-height: 46px; margin-bottom: 2px; border-radius: 12px; scroll-margin-bottom: 150px; }
+        #step-3.admin-view .score-row .player-name { font-size: 18px; }
+        #step-3.admin-view .score-row input.score-circle { width: 38px; height: 38px; font-size: 21px; }
+        #step-3.admin-view .score-keypad { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding-top: 8px; padding-bottom: calc(8px + env(safe-area-inset-bottom)); }
+        #step-3.admin-view .score-keypad button { height: 50px; font-size: 24px; border-radius: 14px; }
+        #step-3.admin-view .score-keypad .key-clear { font-size: 15px; background: rgba(255,255,255,0.04); }
+        #step-3.admin-view .score-keypad .key-wide { display: none; }
         .back-link { background: none; border: none; color: var(--accent-gold); font-size: 16px; font-weight: 600; padding: 8px 0; margin: 0 0 8px; cursor: pointer; }
         
         .team-card { background: var(--bg-table); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #4a6e50; position: relative; overflow: hidden; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
@@ -1359,7 +1372,7 @@ function processStep2() {
             let container = document.getElementById('pill-nav-container'); 
             
             // We ensure classes are assigned correctly
-            let html = `<div class="pill ${currentTeamFilter === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')">ALL (ADMIN)</div>`;
+            let html = `<div class="pill ${currentTeamFilter === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')">ADMIN</div>`;
             
             roundData.carts.forEach(c => { 
                 let isSelected = currentTeamFilter == c.id; 
@@ -1465,7 +1478,10 @@ function renderScoreEntry() {
 }
 
 function setHoleHeader(hole, par) {
-    let who = (currentTeamFilter === "ALL" && lockedTeamId === null) ? 'All teams' : `Cart ${currentTeamFilter}`;
+    let isAdminView = currentTeamFilter === "ALL" && lockedTeamId === null;
+    let who = isAdminView ? 'All teams' : `Cart ${currentTeamFilter}`;
+    // The admin sees every team at once, so its screen uses a compact layout
+    document.getElementById('step-3').classList.toggle('admin-view', isAdminView);
     document.getElementById('current-hole-display-top').innerText = hole;
     document.getElementById('current-par-display-top').innerText = `${who} · Par ${par}`;
 }
