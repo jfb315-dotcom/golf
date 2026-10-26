@@ -26,7 +26,7 @@
         
         .hole-detail { position: relative; }
         .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid #ff6b6b; border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
-        .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; line-height: 1; font-weight: 900; color: var(--accent-gold); opacity: 0.12; z-index: 15; pointer-events: none; user-select: none; }
+        .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; line-height: 1; font-weight: 900; color: var(--accent-gold); opacity: 0.07; z-index: 0; pointer-events: none; user-select: none; }
         
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; transition: background-color 0.3s; position: relative; z-index: 10; }
         .screen { display: none; position: relative; z-index: 10; } .screen.active { display: block; }
@@ -60,6 +60,7 @@
             border: 1px solid var(--border-color) !important;
             margin-bottom: 10px !important;
         }
+        .pill-nav:empty { display: none !important; } /* cart links have no tabs */
         .pill { 
             flex: 1 !important; 
             text-align: center !important; 
@@ -79,9 +80,34 @@
             box-shadow: 0 2px 6px rgba(0,0,0,0.4) !important; 
         }
         
-        .hole-nav { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); padding: 12px; border-radius: 8px; border: 1px solid var(--border-color);}
-        .hole-nav button { background: var(--bg-table); color: var(--text-main); border: none; padding: 10px 20px; border-radius: 4px; font-size: 18px; cursor: pointer; font-weight: bold; width: auto; margin: 0;}
-        .hole-nav h2 { margin: 0; color: var(--accent-gold); text-align: center; font-size: 1.4em;}
+        .hole-nav { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+        .hole-nav-btn { width: 48px; height: 48px; border-radius: 24px; border: 1px solid var(--border-color); background: transparent; color: var(--text-main); display: flex; align-items: center; justify-content: center; padding: 0; margin: 0; cursor: pointer; }
+        .hole-nav-center { text-align: center; }
+        .hole-nav-label { font-size: 12px; font-weight: bold; letter-spacing: 0.14em; color: var(--text-muted); text-transform: uppercase; }
+        .hole-nav h2 { margin: 0; color: var(--accent-gold); font-size: 56px; line-height: 1; font-weight: 900; }
+
+        /* Score entry: rows with a score circle, filled in from the on-screen keypad */
+        .hole-detail .team-card { background: transparent; box-shadow: none; border-left: none; padding: 0; margin-bottom: 18px; overflow: visible; }
+        .team-label { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; padding: 0 16px 6px; position: relative; z-index: 1; }
+        .score-row { display: flex; align-items: center; gap: 12px; min-height: 60px; margin: 0 0 4px; padding: 0 8px 0 16px; border-radius: 16px; cursor: pointer; position: relative; z-index: 1; color: var(--text-main); font-size: 16px; text-transform: none; font-weight: normal; scroll-margin-top: 200px; scroll-margin-bottom: 330px; }
+        .score-row.active { background: color-mix(in srgb, var(--accent-gold) 16%, transparent); }
+        .score-row.ghost { cursor: default; opacity: 0.6; }
+        .score-row .player-name { font-size: 20px; font-weight: 600; }
+        .score-row.active .player-name { font-weight: 800; }
+        .score-row .par-indicator { width: auto; font-size: 14px; text-transform: none; }
+        .score-row input.score-circle { width: 46px; height: 46px; border-radius: 50%; border: none; margin: 0; padding: 0; background: rgba(255,255,255,0.08); color: var(--text-main); font-size: 26px; font-weight: 800; text-align: center; flex-shrink: 0; caret-color: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; }
+        .score-row input.score-circle:focus { outline: none; }
+        .score-row input.score-circle.under { box-shadow: inset 0 0 0 2px #7ced7e; }
+        .score-row.active input.score-circle { box-shadow: inset 0 0 0 2px var(--accent-gold); color: var(--accent-gold); }
+        .stroke-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff6b6b; margin-left: 6px; vertical-align: middle; }
+        .team-tag { font-size: 12px; font-weight: bold; margin-left: 6px; }
+        .score-keypad { position: sticky; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; padding: 12px 0 calc(12px + env(safe-area-inset-bottom)); background: var(--bg-dark); }
+        .score-keypad button { height: 64px; border: none; border-radius: 18px; background: rgba(255,255,255,0.08); color: var(--text-main); font-size: 30px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
+        .score-keypad button:active { background: rgba(255,255,255,0.18); }
+        .score-keypad .key-clear { background: transparent; color: var(--text-muted); font-size: 16px; font-weight: 600; }
+        .score-keypad .key-wide { grid-column: span 2; background: var(--accent-gold); color: var(--bg-dark); font-size: 17px; font-weight: 700; letter-spacing: 0.03em; }
+        #step-3:has(.score-keypad) > .btn-success { display: none; } /* the keypad has its own Standings key */
+        .back-link { background: none; border: none; color: var(--accent-gold); font-size: 16px; font-weight: 600; padding: 8px 0; margin: 0 0 8px; cursor: pointer; }
         
         .team-card { background: var(--bg-table); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #4a6e50; position: relative; overflow: hidden; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
         .team-header { border-bottom: 1px solid var(--border-color); padding-bottom: 10px; margin-bottom: 10px; position: relative; z-index: 1;}
@@ -275,12 +301,12 @@
         <div class="sticky-top">
             <div id="pill-nav-container" class="pill-nav"></div>
             <div class="hole-nav" style="margin-top: 5px;">
-                <button onclick="changeHole(-1)">◀ Prev</button>
-                <div>
-                    <h2 id="current-hole-display-top">Hole 1</h2>
-                    <div id="current-par-display-top" style="text-align: center; color: var(--text-muted); font-size: 0.9em;">Par 4</div>
+                <button type="button" class="hole-nav-btn" onclick="changeHole(-1)" aria-label="Previous hole"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
+                <div class="hole-nav-center">
+                    <div id="current-par-display-top" class="hole-nav-label">Par 4</div>
+                    <h2 id="current-hole-display-top">1</h2>
                 </div>
-                <button onclick="changeHole(1)">Next ▶</button>
+                <button type="button" class="hole-nav-btn" onclick="changeHole(1)" aria-label="Next hole"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             </div>
             <div id="sync-status" style="text-align: center; font-size: 10px; color: #7ced7e; margin-top: 4px;">● Synced</div>
             <div id="offline-banner" class="offline-banner" style="display:none;">📴 No signal. Scores are saved on this phone and will sync when signal returns. No need to re-enter them.</div>
@@ -1385,6 +1411,11 @@ function setTeamFilter(filterValue) {
                 const viewKey = getViewKey();
                 roundData.currentHoles[viewKey] = roundData.currentHole;
                 trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'currentHoles', String(viewKey)), roundData.currentHole));
+                if (cartHoleOpen && (currentTeamFilter !== "ALL" || lockedTeamId !== null)) {
+                    openHoleForScoring(roundData.currentHole);
+                    window.scrollTo({ top: 0, behavior: 'smooth' });
+                    return;
+                }
 
                 renderScoreEntry(); 
                 window.scrollTo({ top: 0, behavior: 'smooth' }); 
@@ -1425,12 +1456,18 @@ function renderScoreEntry() {
     let hole = roundData.currentHole;
     let par = roundData.course.pars[hole-1];
 
-    document.getElementById('current-hole-display-top').innerText = `Hole ${hole}`;
-    document.getElementById('current-par-display-top').innerText = `Par ${par}`;
+    setHoleHeader(hole, par);
 
     let html = '';
     html += renderFullHoleDetail(hole);
     container.innerHTML = html;
+    activateFirstOpenScore();
+}
+
+function setHoleHeader(hole, par) {
+    let who = (currentTeamFilter === "ALL" && lockedTeamId === null) ? 'All teams' : `Cart ${currentTeamFilter}`;
+    document.getElementById('current-hole-display-top').innerText = hole;
+    document.getElementById('current-par-display-top').innerText = `${who} · Par ${par}`;
 }
       function renderFullScorecardForCart() {
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
@@ -1439,9 +1476,10 @@ function renderScoreEntry() {
         return;
     }
 
-    // Hide Prev/Next on cart views
+    // Hide Prev/Next on the cart's hole list
     const holeNav = document.querySelector('.hole-nav');
     if (holeNav) holeNav.style.display = 'none';
+    cartHoleOpen = false;
 
     let seq = getHoleSequence();
     let html = `
@@ -1508,46 +1546,24 @@ function renderScoreEntry() {
         if (currentRow) currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
+let cartHoleOpen = false; // a cart is on one hole's score entry rather than its hole list
+
 function openHoleForScoring(holeNum) {
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
+    cartHoleOpen = true;
+    document.querySelector('.hole-nav').style.display = '';
+    setHoleHeader(holeNum, par);
 
-    document.getElementById('current-hole-display-top').innerText = `Hole ${holeNum}`;
-    document.getElementById('current-par-display-top').innerText = `Par ${par}`;
-
-    let html = `
-        <div style="margin-bottom:12px;">
-            <button onclick="closeHoleScoringAndReturn()" 
-                    style="background:#334455; color:#fff; border:none; padding:8px 16px; border-radius:8px; font-size:14px;">
-                ← Back to Full Scorecard
-            </button>
-        </div>
-    `;
-
+    let html = `<button type="button" class="back-link" onclick="closeHoleScoringAndReturn()">‹ All holes</button>`;
     html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
-
-    // Auto-focus first score input
-    setTimeout(() => {
-        const firstInput = document.querySelector('.score-input-field');
-        if (firstInput && !firstInput.readOnly) {
-            firstInput.focus();
-            firstInput.setSelectionRange(firstInput.value.length, firstInput.value.length);
-        }
-    }, 100);
+    activateFirstOpenScore();
 }
 function closeHoleScoringAndReturn() {
     renderFullScorecardForCart();
 }
-function closeHoleScoringAndReturn() {
-    renderFullScorecardForCart();
-}
-
-
-        function closeHoleScoringAndReturn() {
-            renderFullScorecardForCart();
-        }
 
         // Compact summary for Previous / Next holes
         function renderCompactHoleSummary(holeNum, label) {
@@ -1591,67 +1607,77 @@ function closeHoleScoringAndReturn() {
 
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
-                    html += `<div class="team-card" style="border-left-color: ${group.color};">
-                        <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
-                            <h3 style="color: ${group.color}; margin: 0; font-size: 1.5em; text-transform: uppercase;">Team ${group.id}</h3>
-                            <span style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Capt: ${group.captain.split(' ')[0]}</span>
-                        </div>`;
-
-                    group.players.forEach(player => {
-                        let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
-                        let isGhostStyle = player.isGhost ? `background: var(--bg-dark) !important; pointer-events: none; color: var(--text-muted) !important; border-color: var(--bg-dark) !important;` : ``;
-                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field";
-                        let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
-                        let disabledState = hasReadonlyLock ? "disabled" : "";
-
-                        html += `<div class="player-row">
-                            <span class="player-name">${player.name}${netDot}</span>
-                            <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
-                        </div>`;
-                    });
+                    html += `<div class="team-card"><div class="team-label" style="color: ${group.color};">Team ${group.id} · Capt ${group.captain.split(' ')[0]}</div>`;
+                    group.players.forEach(player => { html += renderScoreRow(group, player, hole, par, ''); });
                     html += `</div>`;
                 });
             } else {
                 let cart = roundData.carts.find(c => c.id == currentTeamFilter);
                 if (cart) {
-                    let cartCaptain = "Player";
-                    if (cart.players && cart.players.length > 0) {
-                        let pObj = cart.players[0];
-                        let gObj = roundData.groups.find(g => g.id === pObj.g);
-                        if (gObj) {
-                            let plObj = gObj.players.find(p => p.id === pObj.p);
-                            if (plObj) cartCaptain = plObj.name.split(' ')[0];
-                        }
-                    }
-
-                    html += `<div class="team-card" style="border-left-color: var(--accent-gold);">
-                        <div class="team-header" style="display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 5px;">
-                            <h3 style="color: var(--accent-gold); margin: 0; font-size: 1.5em; text-transform: uppercase;">Cart ${cart.id}</h3>
-                            <span style="color: var(--text-muted); font-size: 13px; font-weight: bold; text-transform: uppercase;">Driver: ${cartCaptain}</span>
-                        </div>`;
-
-                    cart.players.forEach((cp, idx) => {
+                    html += `<div class="team-card">`;
+                    cart.players.forEach(cp => {
                         let group = roundData.groups.find(g => g.id === cp.g);
                         let player = group.players.find(p => p.id === cp.p);
-                        let currentScore = (scoresDb[group.id] && scoresDb[group.id][player.id]) ? (scoresDb[group.id][player.id][hole] || '') : '';
-                        let isGhostStyle = player.isGhost ? `background: var(--bg-dark) !important; pointer-events: none; color: var(--text-muted) !important; border-color: var(--bg-dark) !important;` : ``;
-                        let inputClass = player.isGhost ? "score-box ghost-input" : "score-box score-input-field";
-                        let netDot = (!player.isGhost && player.strokeHoles && player.strokeHoles.includes(hole)) ? " " + "🔴".repeat(player.strokeHoles.filter(h => h === hole).length) : "";
-                        let teamTag = roundData.isScrambled ? `<span style="font-size:10px; color:${group.color};"> [T${group.id}]</span>` : '';
-                        let disabledState = hasReadonlyLock ? "disabled" : "";
-
-                        html += `<div class="player-row">
-                            <span class="player-name">${player.name}${teamTag}${netDot}</span>
-                            <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
-                            <input type="tel" inputmode="numeric" class="${inputClass}" style="${isGhostStyle}" data-roster-pos="${idx}" ${player.isGhost?'readonly':''} ${disabledState} id="score-input-${group.id}-${player.id}" value="${currentScore}" onfocus="this.setSelectionRange(this.value.length, this.value.length)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
-                        </div>`;
+                        let teamTag = roundData.isScrambled ? `<span class="team-tag" style="color:${group.color};">T${group.id}</span>` : '';
+                        html += renderScoreRow(group, player, hole, par, teamTag);
                     });
                     html += `</div>`;
                 }
             }
             html += `</div>`;
+            html += renderScoreKeypad();
             return html;
+        }
+
+        // One player's row: name, par text and a score circle that the keypad fills in
+        function renderScoreRow(group, player, hole, par, tagHTML) {
+            let currentScore = scoresDb[group.id]?.[player.id]?.[hole] || '';
+            let strokes = (!player.isGhost && player.strokeHoles) ? player.strokeHoles.filter(h => h === hole).length : 0;
+            let dots = '<span class="stroke-dot" title="Gets a stroke"></span>'.repeat(strokes);
+            let circleClass = player.isGhost ? 'score-circle ghost-input' : 'score-circle score-input-field';
+            if (currentScore && currentScore < par) circleClass += ' under';
+            let inputId = `score-input-${group.id}-${player.id}`;
+            return `<label class="score-row${player.isGhost ? ' ghost' : ''}" for="${inputId}">
+                <span class="player-name">${player.name}${tagHTML}${dots}</span>
+                <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
+                <input type="tel" readonly inputmode="none" class="${circleClass}" id="${inputId}" value="${currentScore}" ${hasReadonlyLock ? 'disabled' : ''} onfocus="setActiveScoreInput(this)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
+            </label>`;
+        }
+
+        function renderScoreKeypad() {
+            let keys = '';
+            for (let n = 1; n <= 9; n++) keys += `<button type="button" onclick="pressScoreKey('${n}')">${n}</button>`;
+            return `<div class="score-keypad">${keys}
+                <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>
+                <button type="button" class="key-wide" onclick="viewDashboard()">Standings</button>
+            </div>`;
+        }
+
+        let activeScoreInputId = null;
+
+        function setActiveScoreInput(el) {
+            if (!el || el.classList.contains('ghost-input')) return;
+            activeScoreInputId = el.id;
+            document.querySelectorAll('.score-row.active').forEach(r => r.classList.remove('active'));
+            el.closest('.score-row')?.classList.add('active');
+        }
+
+        function activateFirstOpenScore() {
+            let inputs = Array.from(document.querySelectorAll('.score-input-field'));
+            setActiveScoreInput(inputs.find(i => !i.value) || inputs[0]);
+        }
+
+        // The keypad writes into the selected circle and runs the same handler typing used to
+        function pressScoreKey(key) {
+            let el = document.getElementById(activeScoreInputId);
+            if (!el || el.disabled) return;
+            el.value = key;
+            el.dispatchEvent(new Event('input'));
+        }
+
+        function paintScoreCircle(el, val, par) {
+            let n = parseInt(val);
+            el.classList.toggle('under', n > 0 && n < par);
         }
 
         function updateUIWithoutLosingFocus() {
@@ -1664,6 +1690,7 @@ function closeHoleScoringAndReturn() {
                         if (inputEl && document.activeElement !== inputEl) {
                             let cloudVal = (scoresDb[g.id] && scoresDb[g.id][p.id]) ? (scoresDb[g.id][p.id][hole] || '') : '';
                             inputEl.value = cloudVal; 
+                            paintScoreCircle(inputEl, cloudVal, par);
                             let ind = document.getElementById(`par-ind-${g.id}-${p.id}`);
                             if(ind) { ind.innerText = getParText(cloudVal, par); ind.style.color = getParColor(cloudVal, par); }
                         }
@@ -1785,6 +1812,7 @@ function closeHoleScoringAndReturn() {
             
             let ind = document.getElementById(`par-ind-${groupId}-${playerId}`); 
             if(ind) { ind.innerText = getParText(val, par); ind.style.color = getParColor(val, par); }
+            paintScoreCircle(el, val, par);
             
             let changedPlayers = [[groupId, playerId]];
             roundData.groups.forEach(ghostGroup => {
@@ -1797,7 +1825,7 @@ function closeHoleScoringAndReturn() {
                         else { delete scoresDb[ghostGroup.id][ghostPlayer.id][hole]; }
                         
                         let ghostInput = document.getElementById(`score-input-${ghostGroup.id}-${ghostPlayer.id}`);
-                        if (ghostInput) ghostInput.value = (isNaN(parsedVal) || parsedVal <= 0) ? '' : parsedVal;
+                        if (ghostInput) { ghostInput.value = (isNaN(parsedVal) || parsedVal <= 0) ? '' : parsedVal; paintScoreCircle(ghostInput, val, par); }
                         
                         let ghostInd = document.getElementById(`par-ind-${ghostGroup.id}-${ghostPlayer.id}`);
                         if (ghostInd) { ghostInd.innerText = getParText(val, par); ghostInd.style.color = getParColor(val, par); }
@@ -1812,8 +1840,8 @@ function closeHoleScoringAndReturn() {
                 let idx = inputs.indexOf(el);
                 
                 if(idx > -1 && idx < inputs.length - 1) { 
-                    inputs[idx + 1].focus(); 
-                    inputs[idx + 1].select(); 
+                    setActiveScoreInput(inputs[idx + 1]);
+                    inputs[idx + 1].closest('.score-row').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
                 } else if (idx === inputs.length - 1) {
                     let seq = getHoleSequence();
                     if (hole === seq[seq.length - 1]) {
@@ -1858,6 +1886,9 @@ function closeHoleScoringAndReturn() {
                     } else { 
                         // --- FIX IS HERE ---
                         el.blur(); // Instantly removes focus so keyboard can't double-tap
+                        // Nobody is selected while waiting to move on, so an extra keypad tap can't overwrite the last score
+                        activeScoreInputId = null;
+                        document.querySelectorAll('.score-row.active').forEach(r => r.classList.remove('active'));
                         
                         // Show "hole complete" message for cart views
                         if (lockedTeamId !== null || currentTeamFilter !== "ALL") {
@@ -1866,13 +1897,6 @@ function closeHoleScoringAndReturn() {
                         
                         setTimeout(() => { 
                             changeHole(1); 
-                            setTimeout(() => { 
-                                let nInp = Array.from(document.querySelectorAll('.score-input-field')); 
-                                if (nInp.length > 0 && !nInp[0].readOnly) { 
-                                    nInp[0].focus(); 
-                                    // Do not auto-select text
-                                } 
-                            }, 50); 
                         }, 2200); // 2200ms delay (set by user)
                     }
                 }
