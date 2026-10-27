@@ -9,7 +9,8 @@
     <style>
         :root { --bg-dark: #153243; --bg-card: #284b63; --text-main: #f4f1de; --text-muted: #b4c5e4; --accent-gold: #f4a261; --bg-table: #1e3b4d; --border-color: #3c6e71; }
         body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
-        .app-logo { display: block; width: 120px; height: auto; margin: -10px auto -20px auto; position: relative; z-index: 500; }
+        .app-logo { display: block; width: 84px; height: auto; margin: -6px auto -10px auto; position: relative; z-index: 500; }
+        body:has(#step-3.active) .app-logo { display: none; } /* scoring needs the room */
         
         @keyframes rotate-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
         .skin-container { position: relative; display: inline-flex; align-items: center; justify-content: center; z-index: 20; }
@@ -110,6 +111,20 @@
         .score-keypad button { height: 50px; border: none; border-radius: 14px; background: rgba(255,255,255,0.08); color: var(--text-main); font-size: 24px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
         .score-keypad button:active { background: rgba(255,255,255,0.18); }
         .score-keypad .key-clear { background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 15px; font-weight: 600; }
+
+        /* Cart hole header: coloured band with the hole, plus a strip of hole numbers to jump between */
+        .cart-band { background: var(--bg-card); border-radius: 16px; padding: 14px 18px 16px; }
+        .cart-band-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-main); }
+        #band-sync { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; }
+        .cart-band-main { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; }
+        .cart-band-hole { font-size: 44px; font-weight: 900; line-height: 0.95; color: var(--text-main); }
+        .cart-band-par { font-size: 20px; font-weight: 700; color: var(--accent-gold); }
+        .hole-strip { display: flex; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+        .hole-strip::-webkit-scrollbar { display: none; }
+        .strip-hole { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; margin: 0; padding: 0; cursor: pointer; }
+        .strip-hole.done { background: rgba(255,255,255,0.14); border-color: transparent; color: var(--text-main); }
+        .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--bg-dark); }
+        #step-3.cart-hole-view #sync-status { display: none; } /* shown inside the band instead */
 
         /* Round tools (share links, edit setup, finalize) belong to the ADMIN tab only, not the cart tabs */
         #step-3:not(.admin-view) #admin-share-btn-container { display: none; }
@@ -368,6 +383,7 @@
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
         <div class="sticky-top">
             <div id="pill-nav-container" class="pill-nav"></div>
+            <div id="cart-hole-header" style="display: none;"></div>
             <div class="hole-nav" style="margin-top: 5px;">
                 <button type="button" class="hole-nav-btn" onclick="changeHole(-1)" aria-label="Previous hole"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg></button>
                 <div class="hole-nav-center">
@@ -1548,6 +1564,7 @@ function renderScoreEntry() {
         return;
     }
     holeNav.style.display = '';
+    hideCartHoleHeader();
 
     let hole = roundData.currentHole;
     let par = roundData.course.pars[hole-1];
@@ -1580,6 +1597,7 @@ function setHoleHeader(hole, par) {
     if (holeNav) holeNav.style.display = 'none';
     cartHoleOpen = false;
     document.getElementById('step-3').classList.remove('admin-view');
+    hideCartHoleHeader();
 
     let seq = getHoleSequence();
     let html = `
@@ -1652,8 +1670,9 @@ function openHoleForScoring(holeNum) {
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
     cartHoleOpen = true;
-    document.querySelector('.hole-nav').style.display = '';
+    document.querySelector('.hole-nav').style.display = 'none';
     setHoleHeader(holeNum, par);
+    renderCartHoleHeader(holeNum, par);
 
     let html = `<button type="button" class="back-link" onclick="closeHoleScoringAndReturn()">‹ All holes</button>`;
     html += renderFullHoleDetail(holeNum);
@@ -1661,6 +1680,37 @@ function openHoleForScoring(holeNum) {
     document.getElementById('entry-container').innerHTML = html;
     activateFirstOpenScore();
 }
+// Hole strip: finished holes filled in, current hole highlighted; tap any to jump there
+function renderCartHoleHeader(hole, par) {
+    let header = document.getElementById('cart-hole-header');
+    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
+    let realPlayers = (cart ? cart.players : []).filter(cp => {
+        let p = roundData.groups.find(g => g.id === cp.g)?.players.find(x => x.id === cp.p);
+        return p && !p.isGhost;
+    });
+    let strip = getHoleSequence().map(h => {
+        let done = realPlayers.length > 0 && realPlayers.every(cp => scoresDb[cp.g]?.[cp.p]?.[h]);
+        let cls = h === hole ? ' current' : (done ? ' done' : '');
+        return `<button type="button" class="strip-hole${cls}" onclick="openHoleForScoring(${h})" aria-label="Hole ${h}"${h === hole ? ' aria-current="true"' : ''}>${h}</button>`;
+    }).join('');
+    header.innerHTML = `<div class="cart-band">
+            <div class="cart-band-top"><span>Cart ${currentTeamFilter}</span><span id="band-sync"></span></div>
+            <div class="cart-band-main"><span class="cart-band-hole">Hole ${hole}</span><span class="cart-band-par">Par ${par}</span></div>
+        </div>
+        <div class="hole-strip">${strip}</div>`;
+    header.style.display = '';
+    document.getElementById('step-3').classList.add('cart-hole-view');
+    updateSyncStatus();
+    let current = header.querySelector('.strip-hole.current');
+    let stripEl = header.querySelector('.hole-strip');
+    if (current) stripEl.scrollLeft = current.offsetLeft - (stripEl.clientWidth - current.offsetWidth) / 2;
+}
+
+function hideCartHoleHeader() {
+    document.getElementById('cart-hole-header').style.display = 'none';
+    document.getElementById('step-3').classList.remove('cart-hole-view');
+}
+
 function closeHoleScoringAndReturn() {
     renderFullScorecardForCart();
 }
@@ -1838,10 +1888,11 @@ function closeHoleScoringAndReturn() {
             if (!status || !banner) return;
             let noSignal = !navigator.onLine || (pendingCloudWrites > 0 && Date.now() - pendingSince >= SLOW_SYNC_MS);
             banner.style.display = noSignal ? 'block' : 'none';
-            if (lastWriteFailed) { status.innerText = "⚠ Not saved - check connection"; status.style.color = "#ff6b6b"; }
-            else if (noSignal) { status.innerText = "📴 Waiting for signal..."; status.style.color = "#ff6b6b"; }
-            else if (pendingCloudWrites > 0) { status.innerText = "↻ Saving..."; status.style.color = "var(--accent-gold)"; }
-            else { status.innerText = "● Synced"; status.style.color = "#7ced7e"; }
+            let [text, color] = lastWriteFailed ? ["⚠ Not saved - check connection", "#ff6b6b"]
+                : noSignal ? ["📴 Waiting for signal...", "#ff6b6b"]
+                : pendingCloudWrites > 0 ? ["↻ Saving...", "var(--accent-gold)"]
+                : ["● Synced", "#7ced7e"];
+            [status, document.getElementById('band-sync')].forEach(el => { if (el) { el.innerText = text; el.style.color = color; } });
         }
         window.addEventListener('online', updateSyncStatus);
         window.addEventListener('offline', updateSyncStatus);
