@@ -351,6 +351,8 @@
             <label class="list-row" for="app-theme-selector">Color theme
                 <select id="app-theme-selector" onchange="changeTheme()">
                     <option value="coastal" selected>Coastal Links</option>
+                    <option value="augusta">Augusta</option>
+                    <option value="slate">Slate</option>
                     <option value="clubhouse">Clubhouse</option>
                 </select>
             </label>
@@ -540,6 +542,16 @@
                 'bg-table': '#1e3b4d', 'border-color': '#3c6e71', 'on-accent': '#153243',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
                 'good': '#7ced7e', 'bad': '#ff6b6b', 'band-bg': '#284b63', 'band-text': '#f4f1de', 'band-accent': '#f4a261' } },
+            augusta: { mode: 'dark', name: 'Augusta', vars: {
+                'bg-dark': '#0f2a1d', 'bg-card': '#1a3d2b', 'text-main': '#f3efe0', 'text-muted': '#b3c2b0', 'accent-gold': '#d4af37',
+                'bg-table': '#14321f', 'border-color': '#2f5a41', 'on-accent': '#0f2a1d',
+                'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
+                'good': '#9be38f', 'bad': '#ff8a7a', 'band-bg': '#1a3d2b', 'band-text': '#f3efe0', 'band-accent': '#d4af37' } },
+            slate: { mode: 'dark', name: 'Slate', vars: {
+                'bg-dark': '#1e2124', 'bg-card': '#2c3034', 'text-main': '#ecebe6', 'text-muted': '#a9adb3', 'accent-gold': '#c9a96e',
+                'bg-table': '#24282b', 'border-color': '#3f454b', 'on-accent': '#1e2124',
+                'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
+                'good': '#8fd48f', 'bad': '#ff7b72', 'band-bg': '#2c3034', 'band-text': '#ecebe6', 'band-accent': '#c9a96e' } },
             clubhouse: { mode: 'light', name: 'Clubhouse', vars: {
                 'bg-dark': '#f7f6f1', 'bg-card': '#ffffff', 'text-main': '#1d2a22', 'text-muted': '#5b6660', 'accent-gold': '#1f4d33',
                 'bg-table': '#ffffff', 'border-color': '#d6d2c6', 'on-accent': '#ffffff',
