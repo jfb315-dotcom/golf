@@ -2736,6 +2736,99 @@ function closeHoleScoringAndReturn() {
             return calculatePayouts(rData, sDb).players;
         }
 
+        // ==========================================
+        // OUR MATCH: 2-on-2 side game, kept separate from the tournament money. Money is from Side A's view.
+        //  - Nassau (gross): low ball, stroke play, Front / Back / Overall; each side may press each bet once,
+        //    whenever it is behind in that bet or in a press on it. A press covers the holes after it's made.
+        //  - First ball, then second ball (net): low balls decide the hole, second balls only if low balls tie.
+        //    A new bet starts automatically whenever the newest bet goes 1 down. Front amount, back doubles.
+        //  - Birdies (gross): each birdie is worth that nine's ball amount; an eagle counts as two.
+        // ==========================================
+        const MATCH_BETS = ['front', 'back', 'overall'];
+
+        function calculateOurMatch(rData, sDb, presses) {
+            let om = rData.ourMatch;
+            if (!om || !om.sides || om.sides.length !== 2) return null;
+            presses = presses || {};
+            let lookup = cp => rData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p);
+            let sides = om.sides.map(side => side.map(cp => ({ g: cp.g, p: cp.p, player: lookup(cp) })));
+            if (sides.some(side => side.some(x => !x.player))) return null;
+            let sideName = side => side.map(x => x.player.name.split(' ')[0]).join(' & ');
+            let names = [sideName(sides[0]), sideName(sides[1])];
+
+            let order = [...getHoleSequenceFor(rData)].sort((a, b) => a - b);
+            let par = h => rData.course.pars[h - 1];
+            let gross = (x, h) => sDb[x.g]?.[x.p]?.[h];
+            let complete = h => sides.every(side => side.every(x => gross(x, h)));
+            // Holes count only once all four have scored, and only in order (a gap stops the count)
+            let doneUpTo = holes => { let out = []; for (let h of holes) { if (!complete(h)) break; out.push(h); } return out; };
+
+            let lowGross = (si, h) => Math.min(...sides[si].map(x => gross(x, h)));
+            let nets = (si, h) => sides[si].map(x => getPlayerNetScore(rData, x.player, h, gross(x, h))).sort((a, b) => a - b);
+
+            // ---- Nassau ----
+            let segHoles = {
+                front: order.filter(h => h <= 9),
+                back: order.filter(h => h >= 10),
+            };
+            segHoles.overall = segHoles.front.length && segHoles.back.length ? order : [];
+            let nassau = {};
+            MATCH_BETS.forEach(key => {
+                let holes = segHoles[key];
+                if (holes.length === 0) return;
+                let done = doneUpTo(holes);
+                let finished = done.length === holes.length;
+                let strokes = from => done.filter(h => from == null || h > from).reduce((a, h) => a + lowGross(0, h) - lowGross(1, h), 0); // + = A has more strokes (A behind)
+                let bets = [{ label: 'Main', diff: strokes(null), from: null }];
+                ['A', 'B'].forEach(side => {
+                    let after = presses[key]?.[side];
+                    if (after != null) bets.push({ label: `${side === 'A' ? names[0] : names[1]} press (from ${holes[holes.indexOf(after) + 1] ?? after + 1})`, diff: strokes(after), from: after, by: side });
+                });
+                let behind = side => bets.some(b => side === 'A' ? b.diff > 0 : b.diff < 0);
+                let canPress = {};
+                ['A', 'B'].forEach(side => {
+                    canPress[side] = presses[key]?.[side] == null && !finished && done.length > 0 && behind(side);
+                });
+                let money = finished ? bets.reduce((a, b) => a + (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0), 0) : 0;
+                nassau[key] = { holes, done, finished, bets, canPress, lastDone: done[done.length - 1] ?? null, money };
+            });
+
+            // ---- First ball / second ball and birdies, per nine ----
+            let nines = ['front', 'back'].filter(k => segHoles[k].length).map(key => {
+                let holes = segHoles[key];
+                let amount = key === 'back' ? om.ballBet * 2 : om.ballBet;
+                let done = doneUpTo(holes);
+                let finished = done.length === holes.length;
+                let bets = [0];
+                let rows = [];
+                let birdies = [0, 0];
+                done.forEach((h, i) => {
+                    let a = nets(0, h), b = nets(1, h);
+                    let result = a[0] !== b[0] ? (a[0] < b[0] ? 1 : -1) : (a[1] !== b[1] ? (a[1] < b[1] ? 1 : -1) : 0); // + = A wins the hole
+                    bets = bets.map(m => m + result);
+                    let isLast = i === holes.length - 1;
+                    if (!isLast && bets[bets.length - 1] !== 0) bets.push(0); // automatic press
+                    let units = sides.map(side => side.reduce((u, x) => u + Math.max(0, par(h) - gross(x, h)), 0));
+                    birdies[0] += units[0]; birdies[1] += units[1];
+                    rows.push({ hole: h, result, bets: [...bets], lowNets: [a[0], b[0]], units });
+                });
+                let ballMoney = bets.reduce((a, m) => a + Math.sign(m) * amount, 0);
+                let birdieMoney = (birdies[0] - birdies[1]) * amount;
+                return { key, holes, amount, done, finished, rows, bets, birdies, ballMoney, birdieMoney };
+            });
+
+            let totalMoney = nines.reduce((a, n) => a + n.ballMoney + n.birdieMoney, 0) + MATCH_BETS.reduce((a, k) => a + (nassau[k]?.money || 0), 0);
+            let finished = nines.every(n => n.finished) && MATCH_BETS.every(k => !nassau[k] || nassau[k].finished);
+            return { sides, names, nassau, nines, totalMoney, finished };
+        }
+
+        // Holes played in this round, for any round data (getHoleSequence reads the live round)
+        function getHoleSequenceFor(rData) {
+            let front = [1,2,3,4,5,6,7,8,9], back = [10,11,12,13,14,15,16,17,18];
+            if (rData.playMode === '9') return rData.startType === 'back' ? back : front;
+            return rData.startType === 'back' ? [...back, ...front] : [...front, ...back];
+        }
+
         // Fewest payments that settle everyone up: biggest loser pays biggest winner, repeat.
         // Amounts are rounded to whole dollars (cash), keeping the dollar totals balanced.
         function calculateSettlements(nets) {
