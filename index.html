@@ -3,11 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#153243">
     <title>Tournament Scorer</title>
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
     <style>
-        :root { --bg-dark: #153243; --bg-card: #284b63; --text-main: #f4f1de; --text-muted: #b4c5e4; --accent-gold: #f4a261; --bg-table: #1e3b4d; --border-color: #3c6e71; }
+        :root { --bg-dark: #153243; --bg-card: #284b63; --text-main: #f4f1de; --text-muted: #b4c5e4; --accent-gold: #f4a261; --bg-table: #1e3b4d; --border-color: #3c6e71; --on-accent: #153243;
+                --fill-soft: rgba(255,255,255,0.04); --fill: rgba(255,255,255,0.08); --fill-strong: rgba(255,255,255,0.16); --line: rgba(255,255,255,0.10);
+                --good: #7ced7e; --bad: #ff6b6b; --band-bg: #284b63; --band-text: #f4f1de; --band-accent: #f4a261; }
         body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
         .app-logo { display: block; width: 84px; height: auto; margin: -6px auto -10px auto; position: relative; z-index: 500; }
         body:has(#step-3.active) .app-logo { display: none; } /* scoring needs the room */
@@ -20,13 +23,13 @@
         .joke-toast { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) scale(0); opacity: 0; padding: 25px 20px; border-radius: 12px; font-weight: 900; font-size: 22px; text-align: center; width: 85%; max-width: 400px; transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); z-index: 999999; pointer-events: none; line-height: 1.4; box-sizing: border-box; }
         .joke-toast.show { transform: translate(-50%, -50%) scale(1); opacity: 1; } 
         .toast-bad { background: #132116; border: 3px solid #ff5e00; color: #ff5e00; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(255, 94, 0, 0.5); }
-        .toast-birdie { background: #132116; border: 3px solid #39ff14; color: #39ff14; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(57, 255, 20, 0.5); }
+        .toast-birdie { background: #132116; border: 3px solid var(--good); color: var(--good); box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(57, 255, 20, 0.5); }
         .toast-eagle { background: #132116; border: 3px solid #ffd700; color: #ffd700; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 20px rgba(255, 215, 0, 0.5); }
         .toast-ace { background: #000; border: 4px solid #fff; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 30px #00ffff; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 30px #00ffff; animation: flash-ace 0.5s infinite; }
         @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
         
         .hole-detail { position: relative; }
-        .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid #ff6b6b; border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
+        .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid var(--bad); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
         .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; line-height: 1; font-weight: 900; color: var(--accent-gold); opacity: 0.07; z-index: 0; pointer-events: none; user-select: none; }
         
         .card { background-color: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); max-width: 800px; margin: 0 auto 20px; transition: background-color 0.3s; position: relative; z-index: 10; }
@@ -39,19 +42,19 @@
         button { font-family: 'Segoe UI', Tahoma, sans-serif; }
         /* iOS gives date/time fields a native minimum width that overflows the card */
         input[type="date"], input[type="time"] { -webkit-appearance: none; appearance: none; display: block; min-width: 0; max-width: 100%; min-height: 46px; }
-        .btn-primary { background-color: var(--accent-gold); color: #000; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 15px; position: relative; z-index: 20;}
+        .btn-primary { background-color: var(--accent-gold); color: var(--on-accent); width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 15px; position: relative; z-index: 20;}
         .btn-secondary { background-color: transparent; color: var(--text-muted); width: 100%; padding: 15px; border: 1px solid var(--border-color); border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; position: relative; z-index: 20;}
-        .btn-success { background-color: #3ea84e; color: white; width: 100%; padding: 18px; border: none; border-radius: 6px; font-size: 18px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 20px; box-shadow: 0 4px 10px rgba(62, 168, 78, 0.4); position: relative; z-index: 20;}
+        .btn-success { display: flex; align-items: center; justify-content: space-between; width: 100%; height: 56px; padding: 0 18px; border: none; border-radius: 16px; background: var(--fill-strong); color: var(--text-main); font-size: 17px; font-weight: 700; cursor: pointer; margin-top: 16px; position: relative; z-index: 20; }
         .btn-danger { background-color: #c94b4b; color: white; width: 100%; padding: 15px; border: none; border-radius: 4px; font-size: 16px; font-weight: bold; text-transform: uppercase; cursor: pointer; margin-top: 10px; position: relative; z-index: 20;}
         
         .format-container { display: flex; flex-direction: column; }
-        .format-row { display: flex; justify-content: space-between; align-items: center; min-height: 60px; padding: 0 4px; border-bottom: 1px solid rgba(255,255,255,0.10); }
+        .format-row { display: flex; justify-content: space-between; align-items: center; min-height: 60px; padding: 0 4px; border-bottom: 1px solid var(--line); }
         .format-row:last-child { border-bottom: none; }
         .format-label { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 600; color: var(--text-main); text-transform: none; margin: 0; }
         .birdie-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); font-weight: normal; text-transform: none; margin: 0; }
         .format-container input { width: 24px; height: 24px; accent-color: var(--accent-gold); margin: 0;}
-        .format-container input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: rgba(255,255,255,0.18); position: relative; cursor: pointer; transition: background 0.2s; }
-        .format-container input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: var(--text-main); transition: transform 0.2s; }
+        .format-container input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: var(--fill-strong); position: relative; cursor: pointer; transition: background 0.2s; }
+        .format-container input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
         .format-container input.switch:checked { background: var(--accent-gold); }
         .format-container input.switch:checked::after { transform: translateX(18px); }
         
@@ -60,7 +63,7 @@
         .sticky-top { position: sticky; top: 0; background: var(--bg-dark); z-index: 100; padding: 10px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 15px; }
 .pill-nav { 
             display: flex !important; 
-            background: rgba(0, 0, 0, 0.3) !important; 
+            background: var(--fill) !important; 
             padding: 4px !important; 
             border-radius: 12px !important; 
             border: 1px solid var(--border-color) !important;
@@ -82,8 +85,8 @@
         }
         .pill.active { 
             background: var(--accent-gold) !important; 
-            color: #000 !important; 
-            box-shadow: 0 2px 6px rgba(0,0,0,0.4) !important; 
+            color: var(--on-accent) !important; 
+            box-shadow: 0 2px 6px rgba(0,0,0,0.25) !important; 
         }
         
         .hole-nav { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
@@ -101,30 +104,74 @@
         .score-row .player-name { font-size: 18px; font-weight: 600; }
         .score-row.active .player-name { font-weight: 800; }
         .score-row .par-indicator { width: auto; font-size: 14px; text-transform: none; }
-        .score-row input.score-circle { width: 38px; height: 38px; border-radius: 50%; border: none; margin: 0; padding: 0; background: rgba(255,255,255,0.08); color: var(--text-main); font-size: 21px; font-weight: 800; text-align: center; flex-shrink: 0; caret-color: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; }
+        .score-row input.score-circle { width: 38px; height: 38px; border-radius: 50%; border: none; margin: 0; padding: 0; background: var(--fill); color: var(--text-main); font-size: 21px; font-weight: 800; text-align: center; flex-shrink: 0; caret-color: transparent; cursor: pointer; -webkit-appearance: none; appearance: none; }
         .score-row input.score-circle:focus { outline: none; }
-        .score-row input.score-circle.under { box-shadow: inset 0 0 0 2px #7ced7e; }
+        .score-row input.score-circle.under { box-shadow: inset 0 0 0 2px var(--good); }
         .score-row.active input.score-circle { box-shadow: inset 0 0 0 2px var(--accent-gold); color: var(--accent-gold); }
-        .stroke-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: #ff6b6b; margin-left: 6px; vertical-align: middle; }
+        .stroke-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-left: 6px; vertical-align: middle; }
         .team-tag { font-size: 12px; font-weight: bold; margin-left: 6px; }
         .score-keypad { position: sticky; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--bg-dark); }
-        .score-keypad button { height: 50px; border: none; border-radius: 14px; background: rgba(255,255,255,0.08); color: var(--text-main); font-size: 24px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
-        .score-keypad button:active { background: rgba(255,255,255,0.18); }
-        .score-keypad .key-clear { background: rgba(255,255,255,0.04); color: var(--text-muted); font-size: 15px; font-weight: 600; }
+        .score-keypad button { height: 50px; border: none; border-radius: 14px; background: var(--fill); color: var(--text-main); font-size: 24px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
+        .score-keypad button:active { background: var(--fill-strong); }
+        .score-keypad .key-clear { grid-column: span 2; background: var(--fill-soft); color: var(--text-muted); font-size: 16px; font-weight: 700; }
 
         /* Cart hole header: coloured band with the hole, plus a strip of hole numbers to jump between */
-        .cart-band { background: var(--bg-card); border-radius: 16px; padding: 14px 18px 16px; }
-        .cart-band-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; letter-spacing: 0.14em; text-transform: uppercase; color: var(--text-main); }
+        .cart-band { background: var(--band-bg); border-radius: 16px; padding: 14px 18px 16px; }
+        .cart-band-top { display: flex; justify-content: space-between; align-items: center; font-size: 12px; font-weight: bold; letter-spacing: 0.14em; text-transform: uppercase; color: var(--band-text); }
         #band-sync { font-size: 12px; font-weight: 600; letter-spacing: 0.02em; text-transform: none; }
         .cart-band-main { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 6px; }
-        .cart-band-hole { font-size: 44px; font-weight: 900; line-height: 0.95; color: var(--text-main); }
-        .cart-band-par { font-size: 20px; font-weight: 700; color: var(--accent-gold); }
+        .cart-band-hole { font-size: 44px; font-weight: 900; line-height: 0.95; color: var(--band-text); }
+        .cart-band-par { font-size: 20px; font-weight: 700; color: var(--band-accent); }
         .hole-strip { display: flex; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .hole-strip::-webkit-scrollbar { display: none; }
         .strip-hole { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; margin: 0; padding: 0; cursor: pointer; }
-        .strip-hole.done { background: rgba(255,255,255,0.14); border-color: transparent; color: var(--text-main); }
-        .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--bg-dark); }
+        .strip-hole.done { background: var(--fill-strong); border-color: transparent; color: var(--text-main); }
+        .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
         #step-3.cart-hole-view #sync-status { display: none; } /* shown inside the band instead */
+
+        /* Cart hole list */
+        .hole-list-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; margin: 0; padding: 0 12px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--text-main); text-align: left; cursor: pointer; }
+        .hole-list-row.current { background: color-mix(in srgb, var(--accent-gold) 16%, transparent); border-radius: 12px; border-bottom-color: transparent; }
+        .hole-list-num { width: 36px; height: 36px; flex-shrink: 0; border-radius: 18px; display: flex; align-items: center; justify-content: center; border: 1px solid var(--border-color); font-size: 15px; font-weight: 800; color: var(--text-muted); }
+        .hole-list-row.scored .hole-list-num { background: var(--fill-strong); border-color: transparent; color: var(--text-main); }
+        .hole-list-row.current .hole-list-num { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
+        .hole-list-par { width: 48px; flex-shrink: 0; font-size: 14px; color: var(--text-muted); }
+        .hole-list-scores { flex-grow: 1; display: flex; justify-content: flex-end; gap: 6px; }
+        .hole-list-score { width: 28px; text-align: center; font-size: 17px; font-weight: 800; }
+
+        /* Standings */
+        .screen.clean.dash { max-width: 1000px; }
+        .dash-section { margin-top: 28px; }
+        .dash-section-title { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 0 4px 6px; }
+        .dash-section-title.team-head { display: flex; justify-content: space-between; }
+        .dash-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; padding: 0 4px; border-bottom: 1px solid var(--line); font-size: 15px; }
+        .dash-row.stacked { display: block; padding: 10px 4px; }
+        .dash-row-line { display: flex; justify-content: space-between; gap: 12px; }
+        .dash-row-line span { color: var(--text-muted); }
+        .dash-missing { color: var(--bad); font-size: 13px; margin-top: 4px; }
+        .dash-note { margin-top: 24px; padding: 12px 14px; border-radius: 12px; background: var(--fill); color: var(--text-main); font-size: 14px; font-weight: 600; }
+        .dash-footnote { margin: 8px 4px 0; font-size: 12px; color: var(--text-muted); }
+        .dash-details { margin-top: 28px; border-top: 1px solid var(--line); }
+        .dash-details summary { display: flex; justify-content: space-between; align-items: center; min-height: 52px; padding: 0 4px; font-size: 17px; font-weight: 600; cursor: pointer; list-style: none; }
+        .dash-details summary::-webkit-details-marker { display: none; }
+        .dash-details summary::after { content: "›"; margin-left: 10px; color: var(--text-muted); font-size: 22px; transition: transform 0.2s; }
+        .dash-details[open] summary::after { transform: rotate(90deg); }
+        .dash-details summary b { margin-left: auto; }
+        .dash-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; max-width: 420px; margin: 32px auto 0; }
+        .danger-link { color: var(--bad); width: 100%; text-align: center; }
+        .floating-btn { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 16px; z-index: 9999; height: 52px; padding: 0 22px; border: none; border-radius: 26px; background: var(--accent-gold); color: var(--on-accent); font-size: 16px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,0.3); cursor: pointer; }
+        .table-wrapper { border-radius: 12px; }
+        .name-col { text-align: left !important; white-space: nowrap; position: sticky; left: 0; z-index: 2; background: var(--bg-dark); padding-left: 4px !important; }
+        .board-table { min-width: 0; }
+        .board-table th.group-head { color: var(--text-main); font-size: 13px; border-bottom: none; }
+        .board-table th.sub-head { font-size: 11px; font-weight: 600; }
+        .board-table td { font-size: 16px; font-weight: 700; padding: 12px 6px; }
+        .board-table td.name-col { font-size: 15px; }
+        .board-table .seg-start { border-left: 1px solid var(--line); }
+        .board-table td.overall { font-weight: 900; }
+        .score-table td.name-col { font-weight: 600; }
+        .team-divider td { height: 10px; padding: 0; border: none; }
+        .stroke-dot.small { width: 6px; height: 6px; margin-left: 2px; vertical-align: top; }
 
         /* Round tools (share links, edit setup, finalize) belong to the ADMIN tab only, not the cart tabs */
         #step-3:not(.admin-view) #admin-share-btn-container { display: none; }
@@ -135,43 +182,46 @@
         .clean-sub { margin: 4px 0 0; font-size: 15px; color: var(--text-muted); }
         .field-label { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 24px 4px 8px; }
         .clean-grid-2 { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
-        .clean select, .clean input[type="number"], .clean input[type="text"] { background: rgba(255,255,255,0.07); border: none; border-radius: 14px; margin-bottom: 0; color: var(--text-main); }
+        .clean select, .clean input[type="number"], .clean input[type="text"] { background: var(--fill); border: none; border-radius: 14px; margin-bottom: 0; color: var(--text-main); }
         .select-wrap select { height: 56px; padding: 0 44px 0 16px; font-size: 18px; font-weight: 600; -webkit-appearance: none; appearance: none; background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' viewBox='0 0 24 24' fill='none' stroke='%23b4c5e4' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E"); background-repeat: no-repeat; background-position: right 16px center; }
         .text-link { background: none; border: none; padding: 10px 4px; margin: 0; color: var(--accent-gold); font-size: 15px; font-weight: 600; cursor: pointer; display: inline-block; }
-        .stepper { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 6px; border-radius: 14px; background: rgba(255,255,255,0.07); }
-        .stepper button { width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 22px; background: rgba(255,255,255,0.08); color: var(--text-main); font-size: 22px; font-weight: bold; cursor: pointer; margin: 0; padding: 0; }
+        .stepper { display: flex; align-items: center; justify-content: space-between; height: 56px; padding: 0 6px; border-radius: 14px; background: var(--fill); }
+        .stepper button { width: 44px; height: 44px; flex-shrink: 0; border: none; border-radius: 22px; background: var(--fill); color: var(--text-main); font-size: 22px; font-weight: bold; cursor: pointer; margin: 0; padding: 0; }
         .clean .stepper input[type="number"] { width: 100%; min-width: 0; background: transparent; padding: 0; text-align: center; font-size: 26px; font-weight: 800; -moz-appearance: textfield; }
         .stepper input::-webkit-inner-spin-button, .money-field input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
-        .segmented { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 4px; padding: 4px; border-radius: 14px; background: rgba(255,255,255,0.07); }
+        .segmented { display: grid; grid-auto-columns: minmax(0, 1fr); grid-auto-flow: column; gap: 4px; padding: 4px; border-radius: 14px; background: var(--fill); }
         .segmented button { height: 44px; border: none; border-radius: 10px; background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 600; margin: 0; padding: 0 6px; cursor: pointer; }
-        .segmented button[aria-pressed="true"] { background: var(--accent-gold); color: var(--bg-dark); font-weight: 700; }
+        .segmented button[aria-pressed="true"] { background: var(--accent-gold); color: var(--on-accent); font-weight: 700; }
         .segmented-source { display: none !important; }
-        .money-field { display: flex; align-items: center; height: 56px; padding: 0 16px; border-radius: 14px; background: rgba(255,255,255,0.07); font-size: 24px; font-weight: 800; }
+        .money-field { display: flex; align-items: center; height: 56px; padding: 0 16px; border-radius: 14px; background: var(--fill); font-size: 24px; font-weight: 800; }
         .money-field span { color: var(--text-muted); margin-right: 4px; }
         .clean .money-field input[type="number"] { background: transparent; padding: 0; height: 100%; font-size: 24px; font-weight: 800; border-radius: 0; -moz-appearance: textfield; }
         .list-rows { margin-top: 24px; }
-        .list-row { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; margin: 0; padding: 0 4px; background: none; border: none; border-bottom: 1px solid rgba(255,255,255,0.10); color: var(--text-main); font-size: 17px; font-weight: 500; text-transform: none; text-align: left; cursor: pointer; }
+        .list-row { display: flex; align-items: center; justify-content: space-between; width: 100%; min-height: 52px; margin: 0; padding: 0 4px; background: none; border: none; border-bottom: 1px solid var(--line); color: var(--text-main); font-size: 17px; font-weight: 500; text-transform: none; text-align: left; cursor: pointer; }
         .list-row:last-child { border-bottom: none; }
         .list-row svg { color: var(--text-muted); }
+        .list-row.danger-row { color: var(--bad); }
         .clean .list-row select { width: auto; background: none; padding: 0; height: auto; color: var(--text-muted); font-size: 15px; text-align: right; }
-        .bottom-bar { position: sticky; bottom: 0; z-index: 30; display: flex; align-items: center; gap: 14px; margin: 28px -19px 0; padding: 14px 19px calc(14px + env(safe-area-inset-bottom)); background: var(--bg-dark); border-top: 1px solid rgba(255,255,255,0.10); }
+        .bottom-bar { position: sticky; bottom: 0; z-index: 30; display: flex; align-items: center; gap: 14px; margin: 28px -19px 0; padding: 14px 19px calc(14px + env(safe-area-inset-bottom)); background: var(--bg-dark); border-top: 1px solid var(--line); }
         .buyin { display: flex; flex-direction: column; flex-shrink: 0; }
         .buyin-label { font-size: 12px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); }
         .live-buyin-val { font-size: 30px; font-weight: 800; line-height: 1; color: var(--text-main); }
-        .bar-primary { flex-grow: 1; height: 56px; border: none; border-radius: 28px; background: var(--accent-gold); color: var(--bg-dark); font-size: 17px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; margin: 0; }
-        .icon-btn { width: 56px; height: 56px; flex-shrink: 0; border: none; border-radius: 28px; background: rgba(255,255,255,0.08); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0; padding: 0; }
+        .bar-primary { flex-grow: 1; height: 56px; border: none; border-radius: 28px; background: var(--accent-gold); color: var(--on-accent); font-size: 17px; font-weight: 700; letter-spacing: 0.03em; cursor: pointer; margin: 0; }
+        .icon-btn { width: 56px; height: 56px; flex-shrink: 0; border: none; border-radius: 28px; background: var(--fill); color: var(--text-main); display: flex; align-items: center; justify-content: center; cursor: pointer; margin: 0; padding: 0; }
         .top-row { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
-        .clean input.date-chip { width: auto; height: 40px; min-height: 0; padding: 0 14px; margin: 0; border: none; border-radius: 20px; background: rgba(255,255,255,0.07); color: var(--text-main); font-size: 15px; font-weight: 600; }
+        .clean input.date-chip { width: auto; height: 40px; min-height: 0; padding: 0 14px; margin: 0; border: none; border-radius: 20px; background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 600; }
         .roster-team { margin-top: 24px; }
         .roster-team-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 6px; }
         .roster-team-name { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; }
-        .tee-chip { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin: 0; padding: 0 4px 0 12px; border-radius: 16px; background: rgba(255,255,255,0.07); color: var(--text-muted); font-size: 14px; font-weight: 600; text-transform: none; }
+        .tee-chip { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin: 0; padding: 0 4px 0 12px; border-radius: 16px; background: var(--fill); color: var(--text-muted); font-size: 14px; font-weight: 600; text-transform: none; }
         .clean .tee-chip input[type="time"] { width: auto; min-height: 0; height: 32px; padding: 0 8px 0 0; margin: 0; border: none; background: none; color: var(--text-main); font-size: 14px; font-weight: 600; }
-        .roster-player-block { display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 0 4px; border-bottom: 1px solid rgba(255,255,255,0.10); }
+        .roster-player-block { display: flex; gap: 12px; align-items: center; min-height: 56px; padding: 0 4px; border-bottom: 1px solid var(--line); }
         .roster-player-block:last-child { border-bottom: none; }
         .clean input:focus, .clean select:focus { outline: none; box-shadow: inset 0 0 0 2px var(--accent-gold); }
         .clean input.roster-name-input:focus { box-shadow: inset 0 -2px 0 var(--accent-gold); }
         .roster-name-input::-webkit-calendar-picker-indicator { display: none !important; }
+        .select-wrap.slot { flex-grow: 1; min-width: 0; }
+        .clean .select-wrap.slot select { height: 44px; font-size: 16px; padding-left: 14px; }
         .roster-num { width: 22px; flex-shrink: 0; font-size: 18px; font-weight: 800; color: var(--text-muted); }
         .clean input.roster-name-input { flex-grow: 1; min-width: 0; height: 44px; padding: 0; background: none; border-radius: 0; font-size: 18px; font-weight: 600; }
         .clean input.roster-stroke-input { width: 88px; flex-shrink: 0; height: 36px; padding: 0 8px; border-radius: 18px; font-size: 14px; font-weight: 600; text-align: center; }
@@ -187,39 +237,30 @@
 
         
         .table-wrapper { overflow-x: auto; margin-top: 0; margin-bottom: 0px; position: relative; z-index: 10; }
-        table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; background: var(--bg-table); }
-        th, td { border: 1px solid var(--border-color); padding: 8px; }
-        th { background-color: var(--bg-dark); color: var(--accent-gold); }
-        .par-row { 
-            background-color: #1a2c3a; 
-            font-weight: normal; 
-            color: #8fa3b8; 
-            font-style: italic; 
-            font-size: 13px; 
-        }
-        .out-in-col { background-color: var(--bg-dark); font-weight: bold; }
-        .under-par { color: #7ced7e; } .over-par { color: #ff6b6b; } .even-par { color: var(--text-main); }
-        .team-math-row { background-color: var(--bg-dark); font-weight: bold; font-size: 15px; }
+        table { border-collapse: collapse; width: 100%; min-width: 800px; text-align: center; font-size: 14px; background: transparent; }
+        th, td { border: none; border-bottom: 1px solid var(--line); padding: 8px 6px; }
+        th { background: transparent; color: var(--text-muted); font-size: 12px; font-weight: 700; }
+        .par-row { color: var(--text-muted); font-size: 13px; }
+        .out-in-col { background: var(--fill); font-weight: bold; }
+        .under-par { color: var(--good); } .over-par { color: var(--bad); } .even-par { color: var(--text-main); }
+        .team-math-row { font-weight: bold; font-size: 15px; }
         
-        .b-top-1 { border-top: 3px solid #ff6b6b !important; } .b-bot-1 { border-bottom: 3px solid #ff6b6b !important; } .b-left-1 { border-left: 3px solid #ff6b6b !important; } .b-right-1 { border-right: 3px solid #ff6b6b !important; }
-        .b-top-2 { border-top: 3px solid #7ced7e !important; } .b-bot-2 { border-bottom: 3px solid #7ced7e !important; } .b-left-2 { border-left: 3px solid #7ced7e !important; } .b-right-2 { border-right: 3px solid #7ced7e !important; }
+        .b-top-1 { border-top: 3px solid var(--bad) !important; } .b-bot-1 { border-bottom: 3px solid var(--bad) !important; } .b-left-1 { border-left: 3px solid var(--bad) !important; } .b-right-1 { border-right: 3px solid var(--bad) !important; }
+        .b-top-2 { border-top: 3px solid var(--good) !important; } .b-bot-2 { border-bottom: 3px solid var(--good) !important; } .b-left-2 { border-left: 3px solid var(--good) !important; } .b-right-2 { border-right: 3px solid var(--good) !important; }
         
-        @keyframes pulse-winner { 0% { box-shadow: inset 0 0 0 2px var(--team-color), inset 0 0 40px var(--team-color); text-shadow: 1px 1px 2px #000; } 50% { box-shadow: inset 0 0 0 1px var(--team-color), inset 0 0 10px transparent; text-shadow: none; } 100% { box-shadow: inset 0 0 0 2px var(--team-color), inset 0 0 40px var(--team-color); text-shadow: 1px 1px 2px #000; } }
-        .winner-pulse { animation: pulse-winner 3s ease-in-out infinite; color: #fff !important; font-weight: 900 !important; font-size: 1.15em; }
-        @keyframes pulse-tie { 0% { box-shadow: inset 0 0 0 2px #ff3333, inset 0 0 40px rgba(255,51,51,0.7); text-shadow: 1px 1px 2px #000; color: #fff; } 50% { box-shadow: inset 0 0 0 1px #ff3333, inset 0 0 10px rgba(255,51,51,0.2); text-shadow: none; color: #ff3333; } 100% { box-shadow: inset 0 0 0 2px #ff3333, inset 0 0 40px rgba(255,51,51,0.7); text-shadow: 1px 1px 2px #000; color: #fff; } }
-        .tie-pulse { animation: pulse-tie 3s ease-in-out infinite; font-weight: 900 !important; font-size: 1.15em; }
-        
+        .winner-pulse { background: color-mix(in srgb, var(--team-color, var(--accent-gold)) 28%, transparent) !important; color: var(--text-main) !important; font-weight: 900 !important; border-radius: 8px; }
+        .tie-pulse { font-weight: 900 !important; outline: 2px dashed var(--text-muted); outline-offset: -4px; border-radius: 8px; }
         .par-setup-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
         .par-setup-item { display: flex; align-items: center; justify-content: space-between; background: var(--bg-table); padding: 8px; border-radius: 4px; border: 1px solid var(--border-color);}
         .par-setup-item label { margin: 0; font-size: 12px; }
         .par-setup-item input { width: 50px !important; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
         
-        .payout-card { background: var(--bg-table); border-radius: 8px; border-left: 5px solid #3ea84e; padding: 15px; margin-bottom: 15px;}
-        .payout-header { font-size: 1.2em; font-weight: bold; color: #7ced7e; margin-bottom: 10px; border-bottom: 1px solid var(--border-color); padding-bottom: 5px;}
-        .payout-row { display: flex; justify-content: space-between; font-size: 14px; margin-bottom: 5px; }
+        .payout-header { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 28px 4px 4px; }
+        .payout-sub { font-size: 13px; color: var(--text-muted); margin: 12px 4px 0; }
+        .payout-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; padding: 0 4px; border-bottom: 1px solid var(--line); font-size: 16px; }
+        .payout-row.muted { color: var(--text-muted); font-size: 14px; }
         .payout-winner { color: var(--text-main); font-weight: bold; }
-        .payout-amount { color: var(--accent-gold); font-weight: bold; }
-        
+        .payout-amount { color: var(--text-main); font-weight: 800; white-space: nowrap; }
         .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
         .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
         .archive-info { flex: 1; }
@@ -310,13 +351,7 @@
             <label class="list-row" for="app-theme-selector">Color theme
                 <select id="app-theme-selector" onchange="changeTheme()">
                     <option value="coastal" selected>Coastal Links</option>
-                    <option value="classic">The Classic</option>
-                    <option value="midnight">Midnight Run</option>
-                    <option value="volcano">The Volcano</option>
-                    <option value="miamivice">Miami Vice</option>
-                    <option value="tiger">Tiger Sunday</option>
-                    <option value="desert">Desert Sunset</option>
-                    <option value="arctic">Arctic Ice</option>
+                    <option value="clubhouse">Clubhouse</option>
                 </select>
             </label>
         </div>
@@ -363,21 +398,26 @@
         </div>
     </div>
 
-    <div id="step-2-half" class="screen card">
-        <h2>Set Physical Pairings</h2>
-        <p style="font-size: 13px; color: var(--text-muted);">Assign players to physical carts so scorekeepers have the right names on their screens. Scores will invisibly route back to their money teams.</p>
-        
-        <label>How many physical Cart Groups?</label>
-        <select id="cart-group-count" onchange="renderPairingDropdowns()">
-            <option value="1">1 Group</option><option value="2" selected>2 Groups</option><option value="3">3 Groups</option><option value="4">4 Groups</option><option value="5">5 Groups</option><option value="6">6 Groups</option><option value="7">7 Groups</option><option value="8">8 Groups</option>
-        </select>
-        
-        <div id="pairings-container" style="margin-top:20px;"></div>
-        
-        <hr style="border-color: var(--border-color); margin: 25px 0;">
-        <button class="btn-secondary" onclick="switchScreen('step-2-half', 'step-2')">← Back to Draft</button>
-        <button class="btn-secondary" onclick="shareRoundInfo()" style="border-color: var(--text-main); color: var(--text-main);">📱 Text Round Info to Group</button>
-        <button class="btn-primary" onclick="startRoundScrambled()">Start Round & Sync</button>
+    <div id="step-2-half" class="screen clean">
+        <div class="top-row">
+            <button type="button" class="text-link back-link-top" onclick="switchScreen('step-2-half', 'step-2')">‹ Rosters</button>
+        </div>
+        <h2 class="clean-title">Cart pairings</h2>
+        <p class="clean-sub">Who rides together. Scores still count for each player's drafted team.</p>
+
+        <div class="field-label">Carts</div>
+        <div class="stepper" style="max-width: 220px;">
+            <button type="button" aria-label="Fewer carts" onclick="stepNumber('cart-group-count', -1)">−</button>
+            <input type="number" id="cart-group-count" min="1" max="8" value="2" inputmode="numeric" aria-label="Number of carts" onchange="renderPairingDropdowns()" onfocus="this.select()">
+            <button type="button" aria-label="More carts" onclick="stepNumber('cart-group-count', 1)">+</button>
+        </div>
+
+        <div id="pairings-container"></div>
+
+        <div class="bottom-bar">
+            <button type="button" class="icon-btn" onclick="shareRoundInfo()" aria-label="Text round info to the group"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
+            <button type="button" class="bar-primary" onclick="startRoundScrambled()">Start round</button>
+        </div>
     </div>
 
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
@@ -392,7 +432,7 @@
                 </div>
                 <button type="button" class="hole-nav-btn" onclick="changeHole(1)" aria-label="Next hole"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             </div>
-            <div id="sync-status" style="text-align: center; font-size: 10px; color: #7ced7e; margin-top: 4px;">● Synced</div>
+            <div id="sync-status" style="text-align: center; font-size: 10px; color: var(--good); margin-top: 4px;">● Synced</div>
             <div id="offline-banner" class="offline-banner" style="display:none;">📴 No signal. Scores are saved on this phone and will sync when signal returns. No need to re-enter them.</div>
         </div>
         
@@ -403,32 +443,32 @@
 
         <div id="entry-container" style="position: relative; z-index: 10;"></div>
         
-        <button class="btn-success" onclick="viewDashboard()">🏆 View Standings & Scorecards</button>
+        <button type="button" class="btn-success" onclick="viewDashboard()">View standings &amp; scorecards <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
         
-        <div id="admin-share-btn-container">
-            <button class="btn-secondary" onclick="openShareMenu()" style="border-color: var(--text-main); color: var(--text-main); margin-top: 15px;">📱 Text Live Links to Carts</button>
-            <button class="btn-secondary" onclick="shareSpectatorLink()" style="border-color: #00f5ff; color: #00f5ff; margin-top: 10px;">👀 Share Spectator Leaderboard</button>
-            <button class="btn-secondary" onclick="editMidRound()" style="border-color: var(--accent-gold); color: var(--accent-gold); margin-top: 10px;">⚙️ Edit Setup / Rosters</button>
-            <button class="btn-secondary" onclick="validateAndFinalize()" style="border-color: #ff6b6b; color: #ff6b6b; margin-top: 10px;">🛑 Finalize / Archive Round</button>
+        <div id="admin-share-btn-container" class="list-rows">
+            <button type="button" class="list-row" onclick="openShareMenu()">Text live links to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" onclick="shareSpectatorLink()">Share spectator leaderboard <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" onclick="editMidRound()">Edit setup / rosters <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row danger-row" onclick="validateAndFinalize()">Finalize / archive round <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
         </div>
     </div>
 
-<div id="step-dashboard" class="screen" style="max-width: 1000px; margin: 0 auto;">
-        
-        <button id="floating-scoring-btn" onclick="switchScreen('step-dashboard', 'step-3')" style="position: fixed; bottom: 30px; right: 20px; z-index: 9999; background: var(--accent-gold); color: #000; border: none; border-radius: 30px; padding: 12px 20px; font-weight: bold; font-size: 16px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); cursor: pointer; display: none;">✏️ Back to Scoring</button>
+<div id="step-dashboard" class="screen clean dash">
+        <button type="button" id="floating-scoring-btn" class="floating-btn" onclick="switchScreen('step-dashboard', 'step-3')" style="display: none;">‹ Scoring</button>
 
-        <h2 style="text-align: center; color: white; margin-bottom: 20px;" id="dashboard-title">Tournament Dashboard</h2>
+        <div class="top-row">
+            <button type="button" class="text-link" onclick="switchScreen('step-dashboard', 'step-3')">‹ Scoring</button>
+        </div>
+        <div class="clean-eyebrow">Live</div>
+        <h2 class="clean-title" id="dashboard-title">Standings</h2>
         <div id="dashboard-cart-progress"></div>
-        <div id="dashboard-financial-summary"></div>
         <div id="dashboard-scorecards"></div>
-        <div id="dashboard-payouts" class="card" style="max-width:100%; border-color: #3ea84e;"></div>
-        <div style="margin-top: 40px; display: flex; flex-direction: column; gap: 10px; max-width: 400px; margin-left: auto; margin-right: auto;">
-            <button class="btn-secondary" onclick="switchScreen('step-dashboard', 'step-3')">← Back to Scoring</button>
-            <button class="btn-primary" onclick="openResultsShareModal()" style="background-color: var(--accent-gold); color: #000; margin-top: 0;">📤 Share Final Results</button>
-            
+        <div id="dashboard-payouts"></div>
+        <div id="dashboard-financial-summary"></div>
+        <div class="dash-actions">
+            <button type="button" class="bar-primary" onclick="openResultsShareModal()">Share results</button>
             <div id="admin-finalize-container">
-                <hr style="border-color: var(--border-color); width: 100%; margin: 20px 0;">
-                <button class="btn-primary" onclick="validateAndFinalize()" style="background-color: #8c2d2d; color: white; margin-top: 0;">🛑 Finalize & Archive Round</button>
+                <button type="button" class="text-link danger-link" onclick="validateAndFinalize()">Finalize &amp; archive round</button>
             </div>
         </div>
     </div>
@@ -447,10 +487,11 @@
         <button class="btn-secondary" onclick="switchScreen('step-8', 'step-1')" style="margin-top: 20px;">← Back to Setup</button>
     </div>
     
-    <div id="step-9" class="screen" style="max-width: 1000px; margin: 0 auto;">
-        <h2 style="text-align: center; color: white; margin-bottom: 25px;">Archived Round Results</h2>
+    <div id="step-9" class="screen clean dash">
+        <div class="clean-eyebrow">Archived round</div>
+        <h2 class="clean-title">Results</h2>
         <div id="archived-card-container"></div>
-        <div id="archived-payout-summary-container" class="card" style="max-width:100%; border-color: #3ea84e;"></div>
+        <div id="archived-payout-summary-container"></div>
         <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 20px auto; display: block;">← Back to Archives</button>
     </div>
 
@@ -461,8 +502,8 @@
 
     <div id="share-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 id="share-modal-title" style="margin-top: 0; color: #fff; text-align: center;">Share Info</h2>
-            <textarea id="share-text-content" style="width: 100%; height: 250px; background: var(--bg-dark); color: #7ced7e; border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 15px;" readonly></textarea>
+            <h2 id="share-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Share Info</h2>
+            <textarea id="share-text-content" style="width: 100%; height: 250px; background: var(--bg-dark); color: var(--good); border: 1px solid var(--border-color); border-radius: 4px; padding: 15px; font-family: monospace; font-size: 14px; white-space: pre-wrap; user-select: all; resize: none; margin-bottom: 15px;" readonly></textarea>
             <button class="btn-primary" onclick="copyAndCloseShare()" style="background-color: #3ea84e; color: white; margin-top: 5px;">📱 Open Share Menu</button>
             <button class="btn-secondary" onclick="closeShareModal()">Cancel</button>
         </div>
@@ -471,7 +512,7 @@
     <div id="complete-modal" class="modal-overlay">
         <div class="modal-content" style="text-align: center; max-width: 400px;">
             <h1 style="color: var(--accent-gold); font-size: 2.5em; margin: 10px 0;">⛳</h1>
-            <h2 style="margin-top: 0; color: #fff;">Round Complete!</h2>
+            <h2 style="margin-top: 0; color: var(--text-main);">Round Complete!</h2>
             <p style="color: var(--text-muted);">All scores have been entered for this round.</p>
             <button class="btn-success" onclick="closeCompleteModalAndView()">Review Final Scorecards</button>
         </div>
@@ -479,7 +520,7 @@
 
     <div id="blind-draw-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top: 0; color: #fff; text-align: center;">🔀 Assign Blind Draw</h2>
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">🔀 Assign Blind Draw</h2>
             <p style="color: var(--text-muted); font-size: 14px; text-align: center;">Mirror a player's score to act as a ghost 4th man.</p>
             <label>1. Team Receiving the Blind Draw:</label><select id="bd-target-team"></select>
             <label>2. Player to Mirror (Source):</label><select id="bd-source-player"></select>
@@ -492,16 +533,26 @@
         // ==========================================
         // THEMES & POPUPS
         // ==========================================
+        // Each theme sets every colour variable; "mode" picks light/dark-specific team colours
         const appThemes = {
-            classic: { dark: '#1a2c1f', card: '#253d2a', text: '#f5eedc', mute: '#c9c3ac', gold: '#d4b872', table: '#1e3323', border: '#36543b' },
-            midnight: { dark: '#0b132b', card: '#112240', text: '#e0e1dd', mute: '#8d99ae', gold: '#00f5d4', table: '#1c2541', border: '#3a506b' },
-            volcano: { dark: '#0f0f0f', card: '#1a1a1a', text: '#f3f3f3', mute: '#888888', gold: '#ff4500', table: '#121212', border: '#333333' },
-            miamivice: { dark: '#120422', card: '#24083d', text: '#f8f9fa', mute: '#9b7ebb', gold: '#00f5ff', table: '#1c0631', border: '#ff00a0' },
-            tiger: { dark: '#0a0a0a', card: '#141414', text: '#ffffff', mute: '#8c8c8c', gold: '#cc0000', table: '#1a1a1a', border: '#4d0000' },
-            coastal: { dark: '#153243', card: '#284b63', text: '#f4f1de', mute: '#b4c5e4', gold: '#f4a261', table: '#1e3b4d', border: '#3c6e71' },
-            desert: { dark: '#2b1a10', card: '#402a1b', text: '#ffe6a7', mute: '#b8926a', gold: '#ff7b00', table: '#332014', border: '#664229' },
-            arctic: { dark: '#0d1b2a', card: '#1b263b', text: '#e0e1dd', mute: '#778da9', gold: '#ffffff', table: '#142134', border: '#415a77' }
+            coastal: { mode: 'dark', name: 'Coastal Links', vars: {
+                'bg-dark': '#153243', 'bg-card': '#284b63', 'text-main': '#f4f1de', 'text-muted': '#b4c5e4', 'accent-gold': '#f4a261',
+                'bg-table': '#1e3b4d', 'border-color': '#3c6e71', 'on-accent': '#153243',
+                'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
+                'good': '#7ced7e', 'bad': '#ff6b6b', 'band-bg': '#284b63', 'band-text': '#f4f1de', 'band-accent': '#f4a261' } },
+            clubhouse: { mode: 'light', name: 'Clubhouse', vars: {
+                'bg-dark': '#f7f6f1', 'bg-card': '#ffffff', 'text-main': '#1d2a22', 'text-muted': '#5b6660', 'accent-gold': '#1f4d33',
+                'bg-table': '#ffffff', 'border-color': '#d6d2c6', 'on-accent': '#ffffff',
+                'fill-soft': 'rgba(29,42,34,0.03)', 'fill': 'rgba(29,42,34,0.06)', 'fill-strong': 'rgba(29,42,34,0.12)', 'line': 'rgba(29,42,34,0.10)',
+                'good': '#1f7a3a', 'bad': '#c0392b', 'band-bg': '#1f4d33', 'band-text': '#ffffff', 'band-accent': '#e9d8a6' } }
         };
+
+        // The bright team colours vanish on a white background, so the light theme uses darker ones
+        const lightTeamColors = ['#0b7285', '#2b8a3e', '#c2255c', '#5c940d', '#d9480f', '#7048e8'];
+        function teamColor(g) {
+            if (document.documentElement.dataset.theme !== 'light') return g.color;
+            return lightTeamColors[(g.id - 1) % lightTeamColors.length];
+        }
 
         const popups = {
             ace: ["ACE!!! DRINKS ARE ON HIM! 🍻🥃"],
@@ -512,15 +563,12 @@
 
         function changeTheme(themeKey = null) {
             let key = themeKey || document.getElementById('app-theme-selector').value; 
-            let t = appThemes[key] || appThemes['coastal'];
+            if (!appThemes[key]) key = 'coastal'; // older saved themes were retired
+            let t = appThemes[key];
             if(t) {
-                document.documentElement.style.setProperty('--bg-dark', t.dark); 
-                document.documentElement.style.setProperty('--bg-card', t.card);
-                document.documentElement.style.setProperty('--text-main', t.text); 
-                document.documentElement.style.setProperty('--text-muted', t.mute);
-                document.documentElement.style.setProperty('--accent-gold', t.gold); 
-                document.documentElement.style.setProperty('--bg-table', t.table);
-                document.documentElement.style.setProperty('--border-color', t.border); 
+                Object.entries(t.vars).forEach(([name, value]) => document.documentElement.style.setProperty(`--${name}`, value));
+                document.documentElement.dataset.theme = t.mode;
+                document.querySelector('meta[name="theme-color"]')?.setAttribute('content', t.vars['bg-dark']);
                 localStorage.setItem('savedTheme', key); 
                 let sel = document.getElementById('app-theme-selector');
                 if(sel) sel.value = key;
@@ -578,7 +626,7 @@ const courseDatabase = {
     "ballyhack": { name: "Ballyhack Golf Club (Roanoke, VA)", pars: [4, 5, 3, 4, 4, 4, 3, 4, 5, 5, 4, 4, 3, 4, 5, 4, 3, 4] },
     "virginian": { name: "The Virginian Golf Club (Bristol, VA)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 4, 3, 5, 3, 4, 4, 5] }
 };
-const curatedColors = ['#00f3ff', '#39ff14', '#ff007f', '#ccff00', '#ff5e00', '#bf00ff'];
+const curatedColors = ['#00f3ff', 'var(--good)', '#ff007f', '#ccff00', '#ff5e00', '#bf00ff'];
 
 let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, currentHoles: { admin: 1 }, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
 let scoresDb = {}; 
@@ -617,6 +665,7 @@ function stepNumber(id, delta) {
     let el = document.getElementById(id);
     let n = (parseInt(el.value) || 0) + delta;
     el.value = Math.min(parseInt(el.max) || n, Math.max(parseInt(el.min) || 0, n));
+    el.dispatchEvent(new Event('change'));
 }
 
 function toggle9HoleOptions() { 
@@ -919,11 +968,11 @@ function toggle9HoleOptions() {
             
             let html = '';
             for (let g = 1; g <= gCount; g++) {
-                let teamColor = curatedColors[(g - 1) % curatedColors.length];
+                let rosterColor = teamColor({ id: g, color: curatedColors[(g - 1) % curatedColors.length] });
                 let savedTime = tempRosterCache[`g${g}-time`] || "08:00";
                 html += `<div class="roster-team">
                     <div class="roster-team-head">
-                        <span class="roster-team-name" style="color:${teamColor};">Team ${g}</span>
+                        <span class="roster-team-name" style="color:${rosterColor};">Team ${g}</span>
                         <label id="g${g}-time-wrap" class="tee-chip">Tee <input type="time" id="g${g}-time" value="${savedTime}" aria-label="Team ${g} tee time"></label>
                     </div>`;
                 
@@ -1060,7 +1109,7 @@ function processStep2() {
                 for(let p=1; p<=pCount; p++) {
                     let name = tempRosterCache[`g${g}-p${p}-name`];
                     if(name && name.trim() !== "") {
-                        availablePlayers.push({ val: `${g}-${p}`, label: `${name.split(' ')[0]} - GRP ${g}` });
+                        availablePlayers.push({ val: `${g}-${p}`, label: `${name.split(' ')[0]} · Team ${g}` });
                     }
                 }
             }
@@ -1068,15 +1117,17 @@ function processStep2() {
             let html = '';
             for(let c=1; c<=cartCount; c++) {
                 let savedTime = tempRosterCache[`cart${c}-time`] || tempRosterCache[`g${c}-time`] || '08:00';
-                html += `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:15px; border:1px solid var(--border-color);">
-                <h3 style="margin:0 0 10px 0; color:var(--accent-gold);">Cart Group ${c}</h3>
-                <label>Tee Time</label><input type="time" id="cart${c}-time" value="${savedTime}" onchange="savePairingsCache()">`;
+                html += `<div class="roster-team">
+                    <div class="roster-team-head">
+                        <span class="roster-team-name" style="color: var(--accent-gold);">Cart ${c}</span>
+                        <label class="tee-chip">Tee <input type="time" id="cart${c}-time" value="${savedTime}" aria-label="Cart ${c} tee time" onchange="savePairingsCache()"></label>
+                    </div>`;
                 
                 for(let p=1; p<=4; p++) {
                     let savedVal = tempRosterCache[`cart${c}-p${p}`] || "";
-                    html += `<select id="cart${c}-p${p}" onchange="savePairingsCache(); updateDropdownOptions();" style="margin-bottom:8px;"><option value="">--- Empty Slot ---</option>`;
+                    html += `<div class="roster-player-block"><span class="roster-num">${p}</span><div class="select-wrap slot"><select id="cart${c}-p${p}" aria-label="Cart ${c} seat ${p}" onchange="savePairingsCache(); updateDropdownOptions();"><option value="">Empty seat</option>`;
                     availablePlayers.forEach(ap => { html += `<option value="${ap.val}" ${savedVal === ap.val ? 'selected' : ''}>${ap.label}</option>`; });
-                    html += `</select>`;
+                    html += `</select></div></div>`;
                 }
                 html += `</div>`;
             }
@@ -1535,7 +1586,7 @@ function setTeamFilter(filterValue) {
         }
 
         function getParText(score, par) { if(!score) return ""; let d = score - par; if(d===0) return "Par"; if(d===-1) return "Birdie"; if(d===-2) return "Eagle"; if(d<=-3) return "Albatross"; if(d===1) return "Bogey"; if(d===2) return "Dbl Bogey"; return `+${d}`; }
-        function getParColor(score, par) { if(!score) return ""; let d = score - par; if(d<0) return "#39ff14"; if(d>0) return "#ff6b6b"; return "#f5eedc"; }
+        function getParColor(score, par) { if(!score) return ""; let d = score - par; if(d<0) return "var(--good)"; if(d>0) return "var(--bad)"; return "var(--text-main)"; }
 
         function getThreeHoles() {
             let seq = getHoleSequence();
@@ -1600,19 +1651,14 @@ function setHoleHeader(hole, par) {
     hideCartHoleHeader();
 
     let seq = getHoleSequence();
-    let html = `
-        <div style="margin-bottom: 12px;">
-            <h3 style="margin:0 0 8px 0; color: var(--accent-gold);">Cart ${cart.id} — Full Scorecard</h3>
-            <div style="font-size:13px; color:#aaa;">Tap any hole to enter or edit scores</div>
-        </div>
-    `;
-
-    html += `<div class="scorecard-list" id="cart-scorecard-list">`;
+    let html = `<div class="clean-eyebrow">Cart ${cart.id}</div>
+        <h2 class="clean-title" style="margin-bottom: 4px;">Scorecard</h2>
+        <p class="clean-sub" style="margin-bottom: 12px;">Tap a hole to enter or fix scores</p>
+        <div class="scorecard-list" id="cart-scorecard-list">`;
 
     seq.forEach(holeNum => {
         let par = roundData.course.pars[holeNum - 1];
         let holeScores = [];
-        let isCurrent = holeNum === roundData.currentHole;
         let hasScores = false;
 
         cart.players.forEach(cp => {
@@ -1621,38 +1667,16 @@ function setHoleHeader(hole, par) {
             if (player) {
                 let score = scoresDb[group.id]?.[player.id]?.[holeNum] || '';
                 if (score) hasScores = true;
-                let display = score ? score : '—';
-                holeScores.push(`${player.name.split(' ')[0]}: <b>${display}</b>`);
+                holeScores.push(`<span class="hole-list-score" style="color:${getParColor(score, par) || 'var(--text-muted)'};">${score || '–'}</span>`);
             }
         });
 
-        let scoresHTML = holeScores.join(' &nbsp;&nbsp; ') || '<span style="color:#666;">No scores yet</span>';
-
-        let rowStyle = 'cursor: pointer; border: 1px solid #334455; border-radius: 10px; padding: 14px 16px; margin-bottom: 10px; transition: all 0.2s;';
-        let accentColor = '#f4a261';
-        if (hasScores) {
-            rowStyle += ' background: #1a3c2e; border-left: 6px solid #39ff14;';
-            accentColor = '#39ff14';
-        } else if (isCurrent) {
-            rowStyle += ' background: #3a2a1f; border-left: 6px solid #f4a261; box-shadow: 0 0 0 2px rgba(244, 162, 97, 0.3);';
-            accentColor = '#f4a261';
-        } else {
-            rowStyle += ' background: #1e2a38;';
-        }
-
-        html += `
-            <div class="scorecard-hole-row" onclick="openHoleForScoring(${holeNum})" style="${rowStyle}">
-                <div style="display:flex; justify-content:space-between; align-items:center;">
-                    <div>
-                        <span style="font-size:19px; font-weight:900; color:${accentColor};">Hole ${holeNum}</span>
-                        <span style="font-size:13px; color:#888; margin-left:10px;">Par ${par}</span>
-                    </div>
-                    <div style="font-size:14px; color:#ddd; text-align:right; line-height:1.3;">
-                        ${scoresHTML}
-                    </div>
-                </div>
-            </div>
-        `;
+        let state = holeNum === roundData.currentHole ? ' current' : (hasScores ? ' scored' : '');
+        html += `<button type="button" class="hole-list-row${state}" onclick="openHoleForScoring(${holeNum})">
+                <span class="hole-list-num">${holeNum}</span>
+                <span class="hole-list-par">Par ${par}</span>
+                <span class="hole-list-scores">${holeScores.join('')}</span>
+            </button>`;
     });
 
     html += `</div>`;
@@ -1660,7 +1684,7 @@ function setHoleHeader(hole, par) {
 
     // Auto-scroll to current hole
     setTimeout(() => {
-        const currentRow = document.querySelector('#cart-scorecard-list > div[style*="border-left: 6px solid #f4a261"]');
+        const currentRow = document.querySelector('#cart-scorecard-list .hole-list-row.current');
         if (currentRow) currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 100);
 }
@@ -1715,41 +1739,6 @@ function closeHoleScoringAndReturn() {
     renderFullScorecardForCart();
 }
 
-        // Compact summary for Previous / Next holes
-        function renderCompactHoleSummary(holeNum, label) {
-            let html = `<div class="team-card" style="border-left-color: #666; opacity: 0.85; margin-bottom: 15px;">
-                <div class="team-header" style="display:flex; justify-content:space-between; align-items:center; padding-bottom:8px;">
-                    <span style="color:#aaa; font-size:14px; font-weight:bold;">${label} Hole ${holeNum}</span>
-                </div>`;
-
-            // Show Team net summaries for this hole
-            roundData.groups.forEach(group => {
-                let summary = '';
-                roundData.formats.forEach(f => {
-                    let basePar = roundData.course.pars[holeNum-1];
-                    let hs = [];
-                    group.players.forEach(p => {
-                        let score = scoresDb[group.id]?.[p.id]?.[holeNum];
-                        if (score) hs.push(getPlayerNetScore(roundData, p, holeNum, score));
-                    });
-                    if (hs.length >= f) {
-                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b);
-                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0);
-                        if (roundData.birdieRules && roundData.birdieRules[f]) {
-                            nets.slice(f).forEach(n => { if(n < 0) net += n; });
-                        }
-                        summary += `<span style="margin-right:12px; color:#ccc;">${f}-Ball: <b style="color:#fff;">${formatNetToPar(net)}</b></span>`;
-                    }
-                });
-                if (summary) {
-                    html += `<div style="font-size:13px; margin-bottom:6px; color:#ddd;">Team ${group.id}: ${summary}</div>`;
-                }
-            });
-
-            html += `</div>`;
-            return html;
-        }
-
         // Full detailed scoring for the Current hole (original behavior)
         function renderFullHoleDetail(hole) {
             let par = roundData.course.pars[hole-1];
@@ -1757,7 +1746,7 @@ function closeHoleScoringAndReturn() {
 
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
-                    html += `<div class="team-card"><div class="team-label" style="color: ${group.color};">Team ${group.id} · Capt ${group.captain.split(' ')[0]}</div>`;
+                    html += `<div class="team-card"><div class="team-label" style="color: ${teamColor(group)};">Team ${group.id} · Capt ${group.captain.split(' ')[0]}</div>`;
                     group.players.forEach(player => { html += renderScoreRow(group, player, hole, par, ''); });
                     html += `</div>`;
                 });
@@ -1768,7 +1757,7 @@ function closeHoleScoringAndReturn() {
                     cart.players.forEach(cp => {
                         let group = roundData.groups.find(g => g.id === cp.g);
                         let player = group.players.find(p => p.id === cp.p);
-                        let teamTag = roundData.isScrambled ? `<span class="team-tag" style="color:${group.color};">T${group.id}</span>` : '';
+                        let teamTag = roundData.isScrambled ? `<span class="team-tag" style="color:${teamColor(group)};">T${group.id}</span>` : '';
                         html += renderScoreRow(group, player, hole, par, teamTag);
                     });
                     html += `</div>`;
@@ -1796,7 +1785,8 @@ function closeHoleScoringAndReturn() {
 
         function renderScoreKeypad() {
             let keys = '';
-            for (let n = 1; n <= 9; n++) keys += `<button type="button" onclick="pressScoreKey('${n}')">${n}</button>`;
+            // Scores top out at 8 (double par on a par 4), so the keypad stops there
+            for (let n = 1; n <= 8; n++) keys += `<button type="button" onclick="pressScoreKey('${n}')">${n}</button>`;
             return `<div class="score-keypad">${keys}
                 <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>
             </div>`;
@@ -1888,11 +1878,14 @@ function closeHoleScoringAndReturn() {
             if (!status || !banner) return;
             let noSignal = !navigator.onLine || (pendingCloudWrites > 0 && Date.now() - pendingSince >= SLOW_SYNC_MS);
             banner.style.display = noSignal ? 'block' : 'none';
-            let [text, color] = lastWriteFailed ? ["⚠ Not saved - check connection", "#ff6b6b"]
-                : noSignal ? ["📴 Waiting for signal...", "#ff6b6b"]
+            let [text, color] = lastWriteFailed ? ["⚠ Not saved - check connection", "var(--bad)"]
+                : noSignal ? ["📴 Waiting for signal...", "var(--bad)"]
                 : pendingCloudWrites > 0 ? ["↻ Saving...", "var(--accent-gold)"]
-                : ["● Synced", "#7ced7e"];
-            [status, document.getElementById('band-sync')].forEach(el => { if (el) { el.innerText = text; el.style.color = color; } });
+                : ["● Synced", "var(--good)"];
+            if (status) { status.innerText = text; status.style.color = color; }
+            // On the cart band, "Synced" uses the band's own text colour; only problems turn red
+            let band = document.getElementById('band-sync');
+            if (band) { band.innerText = text; band.style.color = (color === "var(--bad)") ? color : 'var(--band-text)'; }
         }
         window.addEventListener('online', updateSyncStatus);
         window.addEventListener('offline', updateSyncStatus);
@@ -2087,11 +2080,7 @@ function closeHoleScoringAndReturn() {
             }
             // ------------------------------------------------------------
 
-            if (urlParams.get('spectator') === 'true') {
-                document.getElementById('dashboard-title').innerText = "Live Spectator Leaderboard";
-            } else {
-                document.getElementById('dashboard-title').innerText = (lockedTeamId === null) ? "Live Tournament Dashboard" : "Live Scorecard";
-            }
+            document.getElementById('dashboard-title').innerText = (urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings";
             
             let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
             let orderedSegments = getOrderedSegments(roundData); 
@@ -2100,37 +2089,30 @@ function closeHoleScoringAndReturn() {
             let totalTeamPot = totalPlayers * roundData.betAmount * totalBets; 
             let skinsPot = totalPlayers * roundData.skinsAmount;
             
-            let rulesHTML = ''; 
-            roundData.formats.forEach(f => { 
-                let rS = (roundData.birdieRules && roundData.birdieRules[f]) ? `<span style="color:#39ff14; font-weight:bold;">ON</span>` : `<span style="color:#ff6b6b; font-weight:bold;">OFF</span>`; 
-                rulesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${f}-Ball All Birdies Count:</span> <span>${rS}</span></div>`; 
+            let rulesHTML = '';
+            roundData.formats.forEach(f => {
+                let on = roundData.birdieRules && roundData.birdieRules[f];
+                rulesHTML += `<div class="dash-row"><span>${f}-Ball: all birdies count</span><b style="color:${on ? 'var(--good)' : 'var(--text-muted)'};">${on ? 'On' : 'Off'}</b></div>`;
             });
-            
-            let strokesHTML = ''; 
-            roundData.groups.forEach(g => { 
-                g.players.forEach(p => { 
-                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) { 
-                        strokesHTML += `<div style="display:flex; justify-content:space-between; font-size:13px; margin-top:3px; padding-left:10px; color:var(--text-muted);"><span>• ${p.name.split(' ')[0]}:</span> <span>Hole(s) ${p.strokeHoles.join(', ')}</span></div>`; 
-                    } 
-                }); 
+            roundData.groups.forEach(g => {
+                g.players.forEach(p => {
+                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) {
+                        rulesHTML += `<div class="dash-row"><span>${p.name.split(' ')[0]} gets strokes</span><span>Hole ${p.strokeHoles.join(', ')}</span></div>`;
+                    }
+                });
             });
-            
-            if (strokesHTML !== '') { 
-                rulesHTML += `<div style="font-size: 13px; font-weight: bold; color: var(--text-main); margin-top: 10px; border-top: 1px solid var(--border-color); padding-top: 5px;">🎯 Handicap Strokes:</div>` + strokesHTML; 
-                rulesHTML += `<div style="font-size:11px; color:#ff6b6b; margin-top:8px; font-style:italic; line-height:1.3; background:var(--bg-table); padding:8px; border-radius:4px; border:1px solid var(--border-color);">🔴 = Net Score applied on this hole.<br>* Scorecard displays Gross/Net.<br>* Net scores do NOT count towards the Gross Skins pot.</div>`; 
-            }
 
-            let finHTML = `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:20px; border-left:5px solid #3ea84e;">
-                <h3 style="margin-top:0; margin-bottom:10px; color:#7ced7e;">💰 Live Purse</h3>
-                <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Team Purse:</span> <b>$${totalTeamPot}</b></div>
-                <div style="display:flex; justify-content:space-between; font-size:14px; margin-bottom:5px;"><span>Total Skins Pot:</span> <b>$${skinsPot}</b></div>
-                <hr style="border-color:var(--border-color); margin:10px 0;">
-                <div style="display:flex; justify-content:space-between; font-size:14px; font-weight:bold; color:var(--text-main); margin-bottom:5px;"><span>Total Buy-in Per Player:</span> <span style="color:var(--accent-gold); font-size:16px;">$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</span></div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px;"><span>Individual Bet (Per Segment):</span> <span>$${roundData.betAmount}</span></div>
-                <div style="display:flex; justify-content:space-between; font-size:13px; color:var(--text-muted); padding-left:5px; margin-bottom:10px;"><span>Skins Buy-in:</span> <span>$${roundData.skinsAmount}</span></div>
-                <div style="font-size: 13px; font-weight: bold; color: var(--text-main); border-top: 1px solid var(--border-color); padding-top: 5px; margin-top: 5px;">📋 Tournament Rules:</div>${rulesHTML}
-            </div>`;
-            
+            let finHTML = `<details class="dash-details">
+                <summary><span>Purse &amp; rules</span><b>$${totalTeamPot + skinsPot}</b></summary>
+                <div class="dash-row"><span>Team bets pot</span><b>$${totalTeamPot}</b></div>
+                <div class="dash-row"><span>Skins pot</span><b>$${skinsPot}</b></div>
+                <div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
+                <div class="dash-row"><span>Per bet</span><span>$${roundData.betAmount}</span></div>
+                <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>
+                ${rulesHTML}
+                <p class="dash-footnote">Red dot = player gets a stroke there; scorecards show gross/net. Skins are gross only.</p>
+            </details>`;
+
             // Cart progress is an admin tool; carts and spectators don't need it
             let showProgress = urlParams.get('spectator') !== 'true' && lockedTeamId === null;
             document.getElementById('dashboard-cart-progress').innerHTML = showProgress ? generateCartProgressHTML(roundData, scoresDb) : '';
@@ -2143,8 +2125,7 @@ function closeHoleScoringAndReturn() {
         // Per cart: how far they've scored ("Thru") and any earlier holes still missing a score
         function generateCartProgressHTML(rData, sDb) {
             let seq = getHoleSequence();
-            let html = `<div style="background:var(--bg-table); padding:15px; border-radius:6px; margin-bottom:20px; border-left:5px solid var(--accent-gold);">
-                <h3 style="margin-top:0; margin-bottom:10px; color:var(--accent-gold);">📋 Cart Progress</h3>`;
+            let html = `<section class="dash-section"><div class="dash-section-title">Cart progress</div>`;
 
             rData.carts.forEach(cart => {
                 let players = cart.players.map(cp => {
@@ -2167,12 +2148,12 @@ function closeHoleScoringAndReturn() {
 
                 let driver = players[0].p.name.split(' ')[0];
                 let thruText = thruIdx === seq.length - 1 ? 'Finished' : (thruIdx >= 0 ? `Thru ${seq[thruIdx]}` : 'Not started');
-                html += `<div style="padding:8px 0; border-top:1px solid var(--border-color); font-size:14px;">
-                    <div style="display:flex; justify-content:space-between;"><b>Cart ${cart.id} (${driver})</b><span style="color:var(--text-muted);">${thruText}</span></div>
-                    ${missing.length > 0 ? `<div style="color:#ff6b6b; font-size:13px; margin-top:4px;">⚠️ Missing: ${missing.join(', ')}</div>` : ''}
+                html += `<div class="dash-row stacked">
+                    <div class="dash-row-line"><b>Cart ${cart.id} · ${driver}</b><span>${thruText}</span></div>
+                    ${missing.length > 0 ? `<div class="dash-missing">Missing: ${missing.join(', ')}</div>` : ''}
                 </div>`;
             });
-            return html + `</div>`;
+            return html + `</section>`;
         }
 
         function getBorders(isActive, segId, type, h, seg, isLastRow) { 
@@ -2209,7 +2190,6 @@ function closeHoleScoringAndReturn() {
       function generateScorecardHTML(rData, sDb) {
             let fullHTML = ''; 
             let summaryHTML = ''; // This will hold our new top-level Leaderboard
-            let isBackStart18 = (rData.playMode === '18' && rData.startType === 'back'); 
             let orderedSegments = getOrderedSegments(rData);
             
             let formatWinners = {}; 
@@ -2257,31 +2237,27 @@ function closeHoleScoringAndReturn() {
             });
 
             // ======= 1. BUILD THE NEW SUMMARY LEADERBOARD =======
-            summaryHTML += `<div style="background: var(--bg-table); border-radius: 8px; border-top: 5px solid var(--accent-gold); box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
-                <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                    <h3 style="color: var(--accent-gold); margin: 0; font-size: 1.6em; text-transform: uppercase; font-weight: bold;">🏆 Leaderboard Summary</h3>
-                </div>
+            summaryHTML += `<section class="dash-section"><div class="dash-section-title">Leaderboard</div>
                 <div class="table-wrapper">
-                    <table style="width: 100%; text-align: center; border-collapse: collapse;">
+                    <table class="board-table">
                         <thead>
                             <tr>
-                                <th rowspan="2" style="text-align:left; background:var(--bg-dark); color:var(--accent-gold); border-color:var(--border-color);">Team</th>`;
+                                <th rowspan="2" class="name-col">Team</th>`;
 
             // Draw Top Headers (e.g., "1-Ball Match", "2-Ball Match")
             rData.formats.forEach(f => {
                 let cols = orderedSegments.length + (orderedSegments.length > 1 ? 1 : 0);
-                summaryHTML += `<th colspan="${cols}" style="background:var(--bg-dark); color:var(--text-main); border-color:var(--border-color); border-left: 2px solid var(--border-color);">${f}-Ball Match</th>`;
+                summaryHTML += `<th colspan="${cols}" class="group-head seg-start">${f}-Ball</th>`;
             });
             summaryHTML += `</tr><tr>`;
 
             // Draw Sub-Headers (e.g., "First 4", "Last 5", "OVERALL")
             rData.formats.forEach(f => {
                 orderedSegments.forEach((seg, idx) => {
-                    let borderStyle = (idx === 0) ? "border-left: 2px solid var(--border-color);" : "";
-                    summaryHTML += `<th style="background:var(--bg-card); color:var(--text-muted); border-color:var(--border-color); font-size:12px; ${borderStyle}">${seg.label}</th>`;
+                    summaryHTML += `<th class="sub-head${idx === 0 ? ' seg-start' : ''}">${seg.label.replace(/\s*\(.*\)/, '')}</th>`;
                 });
                 if (orderedSegments.length > 1) {
-                    summaryHTML += `<th style="background:var(--bg-card); color:var(--accent-gold); border-color:var(--border-color); font-size:12px;">OVERALL</th>`;
+                    summaryHTML += `<th class="sub-head">Total</th>`;
                 }
             });
             summaryHTML += `</tr></thead><tbody>`;
@@ -2289,13 +2265,12 @@ function closeHoleScoringAndReturn() {
             // Draw the scores for each team with the Pulsing animations
             rData.groups.forEach(g => {
                 summaryHTML += `<tr>
-                    <td style="text-align:left; font-weight:bold; color:${g.color}; white-space:nowrap; border-color:var(--border-color);">T${g.id} (${g.captain.split(' ')[0]})</td>`;
+                    <td class="name-col" style="color:${teamColor(g)};">T${g.id} · ${g.captain.split(' ')[0]}</td>`;
 
                 rData.formats.forEach(f => {
                     orderedSegments.forEach((seg, idx) => {
                         let scoreObj = teamScores[g.id][f][seg.type];
                         let cellContent = "-"; let pulseClass = "";
-                        let borderStyle = (idx === 0) ? "border-left: 2px solid var(--border-color);" : "";
 
                         if (scoreObj.played > 0) {
                             cellContent = formatNetToPar(scoreObj.net);
@@ -2303,7 +2278,7 @@ function closeHoleScoringAndReturn() {
                                 pulseClass = (formatWinners[f][seg.type].count > 1) ? "tie-pulse" : "winner-pulse";
                             }
                         }
-                        summaryHTML += `<td class="${scoreObj.played > 0 ? formatNetToParCSS(scoreObj.net) : ''} ${pulseClass}" style="border-color:var(--border-color); ${borderStyle} ${pulseClass ? '--team-color:'+g.color+';' : ''}">${cellContent}</td>`;
+                        summaryHTML += `<td class="${scoreObj.played > 0 ? formatNetToParCSS(scoreObj.net) : ''} ${pulseClass}${idx === 0 ? ' seg-start' : ''}" style="${pulseClass ? '--team-color:'+teamColor(g)+';' : ''}">${cellContent}</td>`;
                     });
 
                     if (orderedSegments.length > 1) {
@@ -2315,12 +2290,12 @@ function closeHoleScoringAndReturn() {
                                 pulseClass = (formatWinners[f].overall.count > 1) ? "tie-pulse" : "winner-pulse";
                             }
                         }
-                        summaryHTML += `<td class="${scoreObj.played > 0 ? formatNetToParCSS(scoreObj.net) : ''} ${pulseClass}" style="border-color:var(--border-color); background:rgba(0,0,0,0.2); font-weight:bold; ${pulseClass ? '--team-color:'+g.color+';' : ''}">${cellContent}</td>`;
+                        summaryHTML += `<td class="overall ${scoreObj.played > 0 ? formatNetToParCSS(scoreObj.net) : ''} ${pulseClass}" style="${pulseClass ? '--team-color:'+teamColor(g)+';' : ''}">${cellContent}</td>`;
                     }
                 });
                 summaryHTML += `</tr>`;
             });
-            summaryHTML += `</tbody></table></div></div>`;
+            summaryHTML += `</tbody></table></div><p class="dash-footnote">Highlighted = winning that bet. Dashed = tied.</p></section>`;
 
             // ======= 2. BUILD THE INDIVIDUAL SCORECARDS =======
             let skinsWon = {};
@@ -2340,34 +2315,28 @@ function closeHoleScoringAndReturn() {
             const isNineHoleNassau = rData.playMode === '9' && rData.nineHoleType === 'nassau';
 
             if (isBackStart) {
-                const bannerText = isNineHoleNassau 
-                    ? '🔄 STARTED ON BACK NINE — First 4 (10-13) → Last 5 (14-18)'
-                    : '🔄 STARTED ON BACK NINE — Hole 10 → 18 then 1 → 9';
-
-                fullHTML += `<div style="background: rgba(255, 107, 107, 0.12); border: 2px solid #ff6b6b; color: #ff6b6b; padding: 12px 15px; border-radius: 8px; text-align: center; font-size: 14px; font-weight: bold; margin-bottom: 20px;">
-                    ${bannerText}
-                </div>`;
+                const bannerText = isNineHoleNassau
+                    ? 'Started on the back nine · First 4 (10–13), then Last 5 (14–18)'
+                    : 'Started on the back nine · 10 → 18, then 1 → 9';
+                fullHTML += `<div class="dash-note">${bannerText}</div>`;
             } else if (isNineHoleNassau) {
-                fullHTML += `<div style="background: rgba(212, 184, 114, 0.1); border: 1px solid var(--accent-gold); color: var(--accent-gold); padding: 10px; border-radius: 6px; text-align: center; font-size: 13px; font-weight: bold; margin-bottom: 15px;">🏆 NASSAU 4/5 SPLIT MATCH ACTIVE</div>`;
+                fullHTML += `<div class="dash-note">4/5 Nassau split: First 4, Last 5 and Overall</div>`;
             }
 
             rData.groups.forEach(g => {
-                fullHTML += `<div style="background: var(--bg-table); border-radius: 8px; border-top: 5px solid ${g.color}; box-shadow: 0 4px 10px rgba(0,0,0,0.5); margin-bottom: 30px; padding: 15px; overflow: hidden; max-width: 100%;">
-                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid var(--border-color); padding-bottom: 10px;">
-                        <h3 style="color: ${g.color}; margin: 0; font-size: 1.6em; text-transform: uppercase; font-weight: bold;">Team ${g.id}</h3>
-                        ${isBackStart18 ? `<div style="color: #ff6b6b; font-weight: bold; font-size: 1.2em; text-align: center; flex: 1;">STARTED ON BACK NINE</div>` : ''}
-                        <div style="color: var(--text-muted); font-size: 14px; font-weight: bold; text-transform: uppercase;">Capt: ${g.captain.split(' ')[0]}</div>
-                    </div><div class="table-wrapper"><table style="width: 100%; text-align: center; border-collapse: collapse;"><thead><tr>`;
+                fullHTML += `<section class="dash-section">
+                    <div class="dash-section-title team-head"><span style="color: ${teamColor(g)};">Team ${g.id}</span><span>Capt ${g.captain.split(' ')[0]}</span></div>
+                    <div class="table-wrapper"><table class="score-table"><thead><tr>`;
                 
-                let headerRow = `<th style="text-align:left; background:var(--bg-dark); color:${g.color}; border-color:var(--border-color);">Hole</th>`;
+                let headerRow = `<th class="name-col">Hole</th>`;
                 orderedSegments.forEach(seg => {
                     for(let i=seg.s; i<=seg.e; i++) { headerRow += `<th class="${getBorders(true, seg.id, 'header_hole', i, seg, false)}" style="border-color:var(--border-color);">${i}</th>`; }
                     headerRow += `<th class="out-in-col ${getBorders(true, seg.id, 'header_tot', 0, seg, false)}" style="border-color:var(--border-color);">${seg.label}</th>`;
                 });
-                if (orderedSegments.length > 1) { headerRow += `<th class="out-in-col" style="background:var(--bg-dark); color:${g.color}; border-color:var(--border-color);">TOT</th>`; }
+                if (orderedSegments.length > 1) { headerRow += `<th class="out-in-col">Tot</th>`; }
                 fullHTML += headerRow + `</tr></thead><tbody>`;
                 
-                let parRow = `<tr class="par-row"><td style="text-align:left; color:var(--text-muted); border-color:var(--border-color);">PAR</td>`;
+                let parRow = `<tr class="par-row"><td class="name-col">Par</td>`;
                 let totalPar = 0;
                 orderedSegments.forEach(seg => {
                     let segPar = 0;
@@ -2378,7 +2347,7 @@ function closeHoleScoringAndReturn() {
                 fullHTML += parRow + `</tr>`;
 
                 g.players.forEach(p => {
-                    let playerRow = `<tr><td style="text-align:left; white-space:nowrap; font-size: 14px; border-color: var(--border-color);"><b>${p.name.split(' ')[0]}</b></td>`;
+                    let playerRow = `<tr><td class="name-col"><b>${p.name.split(' ')[0]}</b></td>`;
                     let totalScore = 0; let playedAll = true;
 
                     orderedSegments.forEach(seg => {
@@ -2392,7 +2361,7 @@ function closeHoleScoringAndReturn() {
                                 let dots = ""; let displayScore = score;
                                 if (!p.isGhost && p.strokeHoles && p.strokeHoles.includes(h)) { 
                                     let count = p.strokeHoles.filter(x => x === h).length; 
-                                    dots = `<span style="font-size: 9px; margin-left: 2px; vertical-align: top;">${'🔴'.repeat(count)}</span>`; 
+                                    dots = '<span class="stroke-dot small"></span>'.repeat(count);
                                     displayScore = `${score}/${net}`; 
                                 }
                                 let cellContent = `${displayScore}${dots}`;
@@ -2414,10 +2383,10 @@ function closeHoleScoringAndReturn() {
                 });
 
                 let totalCols = orderedSegments.reduce((acc, seg) => acc + (seg.e - seg.s + 2), 0) + (orderedSegments.length > 1 ? 1 : 0) + 1;
-                fullHTML += `<tr><td colspan="${totalCols}" style="padding:0; border:none; height:4px; background:var(--border-color);"></td></tr>`;
+                fullHTML += `<tr class="team-divider"><td colspan="${totalCols}"></td></tr>`;
 
                 rData.formats.forEach(f => {
-                    let teamRow = `<tr class="team-math-row"><td style="text-align:left; border-color: var(--border-color); color:${g.color};">Team ${f}-Ball</td>`;
+                    let teamRow = `<tr class="team-math-row"><td class="name-col" style="color:${teamColor(g)};">${f}-Ball</td>`;
                     let totalNet = 0; let totalPlayed = 0; let isLastRow = (rData.formats.indexOf(f) === rData.formats.length - 1);
 
                     // Running total WITHIN each segment (resets for each bet: First 4, Last 5, Front 9, Back 9, etc.)
@@ -2455,7 +2424,7 @@ function closeHoleScoringAndReturn() {
                         let isTie = isWinner && formatWinners[f][seg.type].count > 1;
                         let winPulse = ""; let inlineStyle = `border-color:var(--border-color);`;
                         if (isTie) { winPulse = "tie-pulse"; } 
-                        else if (isWinner) { winPulse = "winner-pulse"; inlineStyle += ` --team-color:${g.color};`; }
+                        else if (isWinner) { winPulse = "winner-pulse"; inlineStyle += ` --team-color:${teamColor(g)};`; }
                         teamRow += `<td class="out-in-col ${formatNetToParCSS(segNet)} ${getBorders(true, seg.id, 'team_tot', 0, seg, isLastRow)} ${winPulse}" style="${inlineStyle}">${formatNetToPar(segNet)}</td>`;
                     });
 
@@ -2464,18 +2433,17 @@ function closeHoleScoringAndReturn() {
                         let isTieOverall = isWinOverall && formatWinners[f].overall.count > 1;
                         let winPulseOver = ""; let inlineStyle = `border-color:var(--border-color);`;
                         if (isTieOverall) { winPulseOver = "tie-pulse"; } 
-                        else if (isWinOverall) { winPulseOver = "winner-pulse"; inlineStyle += ` --team-color:${g.color};`; }
+                        else if (isWinOverall) { winPulseOver = "winner-pulse"; inlineStyle += ` --team-color:${teamColor(g)};`; }
                         teamRow += `<td class="out-in-col ${formatNetToParCSS(totalNet)} ${winPulseOver}" style="${inlineStyle}">${formatNetToPar(totalNet)}</td>`;
                     }
                     fullHTML += teamRow + `</tr>`;
                 });
-                fullHTML += `</tbody></table></div></div>`;
+                fullHTML += `</tbody></table></div></section>`;
             });
             
             // === SEGMENTS WON BOX (exact style requested) ===
             if (orderedSegments.length > 1) {
-                let segmentsHTML = `<div style="background: var(--bg-card); border: 1px solid var(--accent-gold); border-radius: 8px; padding: 12px 15px; margin: 20px 0 10px; font-size: 14px;">`;
-                segmentsHTML += `<div style="font-weight: bold; color: var(--accent-gold); margin-bottom: 8px;">🏆 Segments Won</div>`;
+                let segmentsHTML = `<section class="dash-section"><div class="dash-section-title">Bets won</div>`;
                 
                 rData.groups.forEach(g => {
                     // Simple calculation: count wins (1 per segment win, 0.5 for ties)
@@ -2499,12 +2467,9 @@ function closeHoleScoringAndReturn() {
                     });
                     
                     const displayName = g.captain ? g.captain.split(' ')[0] : `Team ${g.id}`;
-                    segmentsHTML += `<div style="display:flex; justify-content:space-between; margin-bottom:4px;">`;
-                    segmentsHTML += `<span style="color:${g.color}; font-weight:bold;">Team ${g.id} (${displayName})</span>`;
-                    segmentsHTML += `<span style="color:var(--text-main); font-weight:bold;">${wins}</span>`;
-                    segmentsHTML += `</div>`;
+                    segmentsHTML += `<div class="dash-row"><b style="color:${teamColor(g)};">Team ${g.id} · ${displayName}</b><b>${wins}</b></div>`;
                 });
-                segmentsHTML += `</div>`;
+                segmentsHTML += `</section>`;
                 
                 summaryHTML += segmentsHTML;
             }
@@ -2516,7 +2481,7 @@ function closeHoleScoringAndReturn() {
         // Each real player's buy-in, winnings (skins + share of team bets) and net, all in cents
         function calculatePlayerNets(rData, sDb) {
             let realPlayers = [];
-            rData.groups.forEach(g => g.players.forEach(p => { if (!p.isGhost) realPlayers.push({ key: `${g.id}-${p.id}`, gid: g.id, name: p.name, color: g.color }); }));
+            rData.groups.forEach(g => g.players.forEach(p => { if (!p.isGhost) realPlayers.push({ key: `${g.id}-${p.id}`, gid: g.id, name: p.name, color: teamColor(g) }); }));
             let totalPlayers = realPlayers.length;
             let orderedSegments = getOrderedSegments(rData);
             let totalBets = rData.formats.length * (orderedSegments.length > 1 ? 3 : 1);
@@ -2533,7 +2498,7 @@ function closeHoleScoringAndReturn() {
             }
             // No skins won means the skins pot goes back to everyone, so it's left out of buy-ins
             let skinsBuyIn = totalSkins > 0 ? rData.skinsAmount : 0;
-            let perSkinCents = totalSkins > 0 ? Math.round(totalPlayers * rData.skinsAmount * 100 / totalSkins) : 0;
+            let perSkinCents = totalSkins > 0 ? totalPlayers * rData.skinsAmount * 100 / totalSkins : 0;
 
             // Team bets: each format/segment (plus overall) pot goes to the lowest team net, split on ties
             let teamWinCents = {};
@@ -2568,17 +2533,25 @@ function closeHoleScoringAndReturn() {
             });
 
             let buyInCents = (rData.betAmount * totalBets + skinsBuyIn) * 100;
-            return realPlayers.map(rp => {
+            let nets = realPlayers.map(rp => {
                 let teammates = realPlayers.filter(x => x.gid === rp.gid).length;
-                let wonCents = Math.round((skinsByPlayer[rp.key] || 0) * perSkinCents + teamWinCents[rp.gid] / teammates);
-                return { ...rp, buyInCents, wonCents, netCents: wonCents - buyInCents };
+                let exactWon = (skinsByPlayer[rp.key] || 0) * perSkinCents + teamWinCents[rp.gid] / teammates;
+                return { ...rp, buyInCents, exactWon, wonCents: Math.round(exactWon) };
             });
+            // Rounding each share to the cent can leave the total a cent or two off; give the difference to the biggest winner
+            let drift = Math.round(nets.reduce((a, n) => a + n.exactWon, 0)) - nets.reduce((a, n) => a + n.wonCents, 0);
+            if (drift !== 0 && nets.length > 0) nets.reduce((top, n) => n.wonCents > top.wonCents ? n : top).wonCents += drift;
+            return nets.map(({ exactWon, ...n }) => ({ ...n, netCents: n.wonCents - n.buyInCents }));
         }
 
-        // Fewest payments that settle everyone up: biggest loser pays biggest winner, repeat
+        // Fewest payments that settle everyone up: biggest loser pays biggest winner, repeat.
+        // Amounts are rounded to whole dollars (cash), keeping the dollar totals balanced.
         function calculateSettlements(nets) {
-            let owed = nets.filter(n => n.netCents > 0).map(n => ({ name: n.name, c: n.netCents })).sort((a, b) => b.c - a.c);
-            let owing = nets.filter(n => n.netCents < 0).map(n => ({ name: n.name, c: -n.netCents })).sort((a, b) => b.c - a.c);
+            let dollars = nets.map(n => ({ name: n.name, c: Math.round(n.netCents / 100) * 100, exact: n.netCents }));
+            let drift = Math.round(nets.reduce((a, n) => a + n.netCents, 0) / 100) * 100 - dollars.reduce((a, d) => a + d.c, 0);
+            if (drift !== 0 && dollars.length > 0) dollars.reduce((big, d) => Math.abs(d.exact) > Math.abs(big.exact) ? d : big).c += drift;
+            let owed = dollars.filter(n => n.c > 0).map(n => ({ name: n.name, c: n.c })).sort((a, b) => b.c - a.c);
+            let owing = dollars.filter(n => n.c < 0).map(n => ({ name: n.name, c: -n.c })).sort((a, b) => b.c - a.c);
             let payments = [];
             let i = 0, j = 0;
             while (i < owing.length && j < owed.length) {
@@ -2596,16 +2569,16 @@ function closeHoleScoringAndReturn() {
         function generateSettleUpHTML(rData, sDb) {
             let nets = calculatePlayerNets(rData, sDb).sort((a, b) => b.netCents - a.netCents);
             if (nets.length === 0) return '';
-            let html = `<div class="payout-header" style="margin-top:25px;">🤝 Settle Up</div>`;
-            html += `<div class="payout-row" style="color:var(--text-muted); font-size:12px;">Each player's winnings minus their buy-in</div>`;
+            let html = `<div class="payout-header">Settle up</div>`;
+            html += `<div class="payout-sub">Each player's winnings minus their buy-in</div>`;
             nets.forEach(n => {
-                let color = n.netCents > 0 ? '#39ff14' : (n.netCents < 0 ? '#ff6b6b' : 'var(--text-muted)');
+                let color = n.netCents > 0 ? 'var(--good)' : (n.netCents < 0 ? 'var(--bad)' : 'var(--text-muted)');
                 let sign = n.netCents > 0 ? '+' : (n.netCents < 0 ? '−' : '');
                 html += `<div class="payout-row"><span class="payout-winner" style="color:${n.color}">${n.name.split(' ')[0]}</span><span class="payout-amount" style="color:${color}">${sign}${formatCents(n.netCents)}</span></div>`;
             });
             let payments = calculateSettlements(nets);
             if (payments.length > 0) {
-                html += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:12px;">Who pays who</div>`;
+                html += `<div class="payout-sub">Who pays who (rounded to whole dollars)</div>`;
                 payments.forEach(pm => {
                     html += `<div class="payout-row"><span>${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}</span><span class="payout-amount">${formatCents(pm.cents)}</span></div>`;
                 });
@@ -2617,13 +2590,13 @@ function closeHoleScoringAndReturn() {
             let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0); 
             if(totalPlayers === 0) return "<p>No data.</p>";
 
-            let skinsHTML = `<div class="payout-header">🔥 Gross Skins Payout</div>`; 
+            let skinsHTML = `<div class="payout-header">Skins</div>`; 
             let skinsPot = totalPlayers * rData.skinsAmount; 
             let playerSkins = {}; let totalSkinsWon = 0;
 
             for(let h=1; h<=18; h++) {
                 let par = rData.course.pars[h-1]; let hs = [];
-                rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) { hs.push({id: p.id, gid: g.id, n: p.name, c: g.color, s: s}); } }); });
+                rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) { hs.push({id: p.id, gid: g.id, n: p.name, c: teamColor(g), s: s}); } }); });
                 if(hs.length > 0) {
                     let min = Math.min(...hs.map(x=>x.s));
                     if(min < par) { 
@@ -2639,21 +2612,21 @@ function closeHoleScoringAndReturn() {
 
             if(totalSkinsWon > 0 && skinsPot > 0) {
                 let perSkin = skinsPot / totalSkinsWon; 
-                skinsHTML += `<div class="payout-row" style="color:var(--text-muted); margin-bottom:15px;">Total Pot: $${skinsPot} | Value Per Skin: $${perSkin.toFixed(2)}</div>`;
+                skinsHTML += `<div class="payout-sub">Pot $${skinsPot} · $${perSkin.toFixed(2)} per skin</div>`;
                 Object.values(playerSkins).forEach(ps => { 
                     let totalWon = ps.holes.length * perSkin; 
                     skinsHTML += `<div class="payout-row"><span class="payout-winner" style="color:${ps.color}">${ps.name.split(' ')[0]} (Holes: ${ps.holes.join(', ')})</span><span class="payout-amount">$${totalWon.toFixed(2)}</span></div>`; 
                 });
             } else { skinsHTML += `<div class="payout-row">No gross skins won / No skins pot.</div>`; }
 
-            let teamHTML = `<div class="payout-header" style="margin-top:25px;">💰 Team Bet Payouts</div>`;
+            let teamHTML = `<div class="payout-header">Team bets</div>`;
             let orderedSegments = getOrderedSegments(rData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1; 
             let totalBets = rData.formats.length * betsPerFormat;
             let potPerBet = totalPlayers * rData.betAmount; let teamPayouts = {};
             
             if(potPerBet > 0) {
-                rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: g.color, n: g.captain.split(' ')[0], count: g.players.filter(p => !p.isGhost).length }; });
+                rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: teamColor(g), n: g.captain.split(' ')[0], count: g.players.filter(p => !p.isGhost).length }; });
                 rData.formats.forEach(f => {
                     orderedSegments.forEach(seg => {
                         let segData = [];
@@ -2676,7 +2649,7 @@ function closeHoleScoringAndReturn() {
                             let minNet = Math.min(...segData.map(d => d.net)); 
                             let winners = segData.filter(d => d.net === minNet); 
                             let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: ${seg.label} ($${potPerBet} Pot)</div>`;
+                            teamHTML += `<div class="payout-sub">${f}-Ball · ${seg.label} · $${potPerBet} pot</div>`;
                             winners.forEach(w => { 
                                 teamPayouts[w.id].total += split; 
                                 teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} (Capt: ${teamPayouts[w.id].n}) [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
@@ -2709,7 +2682,7 @@ function closeHoleScoringAndReturn() {
                             let minNet = Math.min(...totData.map(d => d.net)); 
                             let winners = totData.filter(d => d.net === minNet); 
                             let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-row" style="color:var(--text-muted); font-size:12px; margin-top:10px;">${f}-Ball: Overall Match ($${potPerBet} Pot)</div>`;
+                            teamHTML += `<div class="payout-sub">${f}-Ball · Overall · $${potPerBet} pot</div>`;
                             winners.forEach(w => { 
                                 teamPayouts[w.id].total += split; 
                                 teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} (Capt: ${teamPayouts[w.id].n}) [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
@@ -2718,18 +2691,18 @@ function closeHoleScoringAndReturn() {
                     }
                 });
 
-                teamHTML += `<div class="payout-header" style="margin-top:20px; font-size:1em;">Final Team Totals (Split Per Player)</div>`;
+                teamHTML += `<div class="payout-sub">Team totals</div>`;
                 Object.keys(teamPayouts).forEach(tid => {
                     let tp = teamPayouts[tid];
                     if(tp.total > 0) {
                         let perPlayer = tp.total / tp.count;
-                        teamHTML += `<div class="payout-row" style="margin-top:10px;"><span class="payout-winner" style="color:${tp.c}; font-size:16px;">Team ${tid} (Capt: ${tp.n}) Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
-                        teamHTML += `<div class="payout-row" style="color:var(--text-muted); padding-left:10px;"><span>Payout per teammate:</span><span>$${perPlayer.toFixed(2)}</span></div>`;
+                        teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${tp.c};">Team ${tid} (Capt: ${tp.n}) Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
+                        teamHTML += `<div class="payout-row muted"><span>Each teammate</span><span>$${perPlayer.toFixed(2)}</span></div>`;
                     }
                 });
             } else { teamHTML += `<div class="payout-row">No Team Bets configured.</div>`; }
 
-            return skinsHTML + teamHTML + generateSettleUpHTML(rData, sDb);
+            return generateSettleUpHTML(rData, sDb) + skinsHTML + teamHTML;
         }
 
         // ==========================================
@@ -2868,7 +2841,7 @@ function closeHoleScoringAndReturn() {
                 nets.forEach(n => { st += `  ${n.name.split(' ')[0]}: ${n.netCents > 0 ? '+' : (n.netCents < 0 ? '-' : '')}${formatCents(n.netCents)}\n`; });
                 let payments = calculateSettlements(nets);
                 if (payments.length > 0) {
-                    st += `\n💸 WHO PAYS WHO:\n`;
+                    st += `\n💸 WHO PAYS WHO (whole dollars):\n`;
                     payments.forEach(pm => { st += `  ${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}: ${formatCents(pm.cents)}\n`; });
                 }
             }
