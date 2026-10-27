@@ -29,6 +29,8 @@
         @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
         
         .hole-detail { position: relative; }
+        .safari-banner { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; padding: 12px 14px; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 14px; line-height: 1.35; position: relative; z-index: 600; }
+        .safari-banner button { flex-shrink: 0; width: 32px; height: 32px; border: none; border-radius: 16px; background: rgba(0,0,0,0.15); color: inherit; font-size: 14px; cursor: pointer; }
         .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid var(--bad); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
         .hole-watermark { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); font-size: 300px; line-height: 1; font-weight: 900; color: var(--accent-gold); opacity: 0.07; z-index: 0; pointer-events: none; user-select: none; }
         
@@ -291,7 +293,11 @@
 </head>
 <body>
 
-    <img src="logo.png" class="app-logo" alt="JB Fishing and Golf">
+    <div id="open-in-safari" class="safari-banner" style="display: none;">
+        <span>For the best experience, open this in Safari: tap <b>⋯</b> or the share icon, then <b>Open in Safari</b>.</span>
+        <button type="button" aria-label="Dismiss" onclick="dismissSafariBanner()">✕</button>
+    </div>
+    <img src="logo.png" class="app-logo" alt="JB Golf">
 
     <div id="step-1" class="screen clean active">
         <div class="clean-eyebrow">New round</div>
@@ -759,6 +765,7 @@ function toggle9HoleOptions() {
             calculateLiveBuyIn();
             refreshSegments();
             loadSavedPlayers();
+            showSafariBannerIfNeeded();
 
             const urlParams = new URLSearchParams(window.location.search); 
             const teamParam = urlParams.get('cart');
@@ -1418,7 +1425,7 @@ function processStep2() {
                         if(cNames.length > 0) st += `Cart ${c} · ${formatFriendlyTime(tempRosterCache[`cart${c}-time`] || '08:00')}: ${cNames.join(', ')}\n`;
                     }
                 }
-                st += `\nTip: open your link in Safari, tap Share, then Add to Home Screen for the full-screen app.`;
+                st += `\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
 
                 document.getElementById('share-modal-title').innerText = "Share Pre-Round Info";
                 document.getElementById('share-text-content').value = st;
@@ -1432,11 +1439,31 @@ function processStep2() {
         function shareSpectatorLink() {
             const baseUrl = window.location.href.split('?')[0]; 
             const spectatorLink = `${baseUrl}?spectator=true`;
-            let st = `JB Golf · Live leaderboard\n${spectatorLink}`;
+            let st = `JB Golf · Live leaderboard\n${spectatorLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
             
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
             document.getElementById('share-text-content').value = st;
             document.getElementById('share-modal').classList.add('active');
+        }
+
+        // Links opened from Facebook, Messenger, Gmail etc. load in that app's own browser, which can't
+        // save to the home screen or keep the app signed in to its data as reliably, so ask them to switch to Safari.
+        function isInAppBrowser() {
+            let ua = navigator.userAgent || '';
+            let isIOS = /iPhone|iPad|iPod/.test(ua) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            if (/FBAN|FBAV|Instagram|Messenger|Line\/|GSA\/|Snapchat|LinkedInApp|Twitter|GroupMe|; wv\)/i.test(ua)) return true;
+            return isIOS && !/Safari\//.test(ua);
+        }
+
+        function showSafariBannerIfNeeded() {
+            let dismissed = false;
+            try { dismissed = sessionStorage.getItem('safariBannerDismissed') === '1'; } catch (e) {}
+            if (!dismissed && !window.navigator.standalone && isInAppBrowser()) document.getElementById('open-in-safari').style.display = 'flex';
+        }
+
+        function dismissSafariBanner() {
+            document.getElementById('open-in-safari').style.display = 'none';
+            try { sessionStorage.setItem('safariBannerDismissed', '1'); } catch (e) {}
         }
 
         // "2026-10-26" -> "Mon, Oct 26". Parsed as a local date so US time zones don't show the day before.
@@ -2742,7 +2769,7 @@ function closeHoleScoringAndReturn() {
                 
                 const baseUrl = window.location.href.split('?')[0]; 
                 const magicLink = `${baseUrl}?cart=${c.id}`;
-                const message = encodeURIComponent(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${magicLink}\n\nTip: open your link in Safari, tap Share, then Add to Home Screen for the full-screen app.`);
+                const message = encodeURIComponent(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 const smsLink = isIOS ? `sms:&body=${message}` : `sms:?body=${message}`;
                 html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="window.location.href='${smsLink}'">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
