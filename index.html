@@ -37,6 +37,9 @@
         .pin-dots.shake { animation: pin-shake 0.3s; }
         @keyframes pin-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
         .pin-error { min-height: 20px; margin: 10px 0 6px; font-size: 14px; color: var(--bad); }
+        .pin-faceid-offer p { margin: 4px 0 14px; font-size: 16px; color: var(--text-main); }
+        .pin-faceid-offer .bar-primary { width: 100%; }
+        .pin-faceid-offer .text-link, .pin-faceid { display: block; width: 100%; text-align: center; margin: 4px 0 8px; }
         .pin-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
         .pin-pad button { height: 58px; border: none; border-radius: 16px; background: var(--fill); color: var(--text-main); font-size: 26px; font-weight: 700; cursor: pointer; margin: 0; }
         .pin-pad button:active { background: var(--fill-strong); }
@@ -539,6 +542,12 @@
             <h2 id="pin-title" class="pin-title">Admin PIN</h2>
             <div id="pin-dots" class="pin-dots" aria-live="polite"><span></span><span></span><span></span><span></span></div>
             <div id="pin-error" class="pin-error"></div>
+            <div id="pin-faceid-offer" class="pin-faceid-offer" style="display: none;">
+                <p>Use Face ID next time instead of the PIN?</p>
+                <button type="button" class="bar-primary" onclick="acceptFaceIdOffer()">Turn on Face ID</button>
+                <button type="button" class="text-link" onclick="declineFaceIdOffer()">Not now</button>
+            </div>
+            <button type="button" id="pin-faceid" class="text-link pin-faceid" style="display: none;" onclick="tryFaceId()">Use Face ID</button>
             <div class="pin-pad">
                 <button type="button" onclick="pressPinKey('1')">1</button><button type="button" onclick="pressPinKey('2')">2</button><button type="button" onclick="pressPinKey('3')">3</button>
                 <button type="button" onclick="pressPinKey('4')">4</button><button type="button" onclick="pressPinKey('5')">5</button><button type="button" onclick="pressPinKey('6')">6</button>
@@ -2823,9 +2832,67 @@ function closeHoleScoringAndReturn() {
             pinEntry = '';
             document.getElementById('pin-title').innerText = title;
             document.getElementById('pin-error').innerText = '';
+            document.getElementById('pin-faceid-offer').style.display = 'none';
+            document.querySelector('.pin-pad').style.display = '';
+            document.getElementById('pin-faceid').style.display = savedFaceId() ? '' : 'none';
             renderPinDots();
             document.getElementById('pin-modal').classList.add('active');
-            return new Promise(resolve => { pinResolve = resolve; });
+            let promise = new Promise(resolve => { pinResolve = resolve; });
+            // Must start inside the tap that opened the pad, or Safari won't show Face ID
+            if (savedFaceId()) tryFaceId();
+            return promise;
+        }
+
+        // Face ID / Touch ID via a passkey kept on this phone. It only stands in for typing the PIN;
+        // if it fails or is cancelled the PIN pad is still there.
+        const FACE_ID_KEY = 'adminFaceIdCredential';
+        const FACE_ID_DECLINED_KEY = 'adminFaceIdDeclined';
+        let faceIdSupported = false;
+        try {
+            if (window.PublicKeyCredential && PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable) {
+                PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable().then(v => { faceIdSupported = v; }).catch(() => {});
+            }
+        } catch (e) {}
+
+        function savedFaceId() { try { return localStorage.getItem(FACE_ID_KEY); } catch (e) { return null; } }
+        function toBase64(buf) { return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+        function fromBase64(str) { return Uint8Array.from(atob(str), c => c.charCodeAt(0)); }
+
+        async function tryFaceId() {
+            let id = savedFaceId();
+            if (!id || !window.PublicKeyCredential) return;
+            try {
+                await navigator.credentials.get({ publicKey: {
+                    challenge: crypto.getRandomValues(new Uint8Array(32)),
+                    allowCredentials: [{ type: 'public-key', id: fromBase64(id) }],
+                    userVerification: 'required', timeout: 60000 } });
+                closePinPad(true);
+            } catch (e) { /* cancelled or not recognised: fall back to the PIN pad */ }
+        }
+
+        async function acceptFaceIdOffer() {
+            try {
+                let cred = await navigator.credentials.create({ publicKey: {
+                    challenge: crypto.getRandomValues(new Uint8Array(32)),
+                    rp: { name: 'JB Golf' },
+                    user: { id: crypto.getRandomValues(new Uint8Array(16)), name: 'JB Golf admin', displayName: 'JB Golf admin' },
+                    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+                    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'discouraged' },
+                    timeout: 60000 } });
+                localStorage.setItem(FACE_ID_KEY, toBase64(cred.rawId));
+            } catch (e) { /* not set up; the PIN keeps working */ }
+            closePinPad(true);
+        }
+
+        function declineFaceIdOffer() {
+            try { localStorage.setItem(FACE_ID_DECLINED_KEY, '1'); } catch (e) {}
+            closePinPad(true);
+        }
+
+        function shouldOfferFaceId() {
+            let declined = false;
+            try { declined = localStorage.getItem(FACE_ID_DECLINED_KEY) === '1'; } catch (e) {}
+            return faceIdSupported && !savedFaceId() && !declined;
         }
 
         function renderPinDots() {
@@ -2838,7 +2905,15 @@ function closeHoleScoringAndReturn() {
             document.getElementById('pin-error').innerText = '';
             renderPinDots();
             if (pinEntry.length < ADMIN_PIN.length) return;
-            if (pinEntry === ADMIN_PIN) { closePinPad(true); return; }
+            if (pinEntry === ADMIN_PIN) {
+                if (shouldOfferFaceId()) {
+                    document.querySelector('.pin-pad').style.display = 'none';
+                    document.getElementById('pin-faceid-offer').style.display = '';
+                    return;
+                }
+                closePinPad(true);
+                return;
+            }
             let dots = document.getElementById('pin-dots');
             dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake');
             document.getElementById('pin-error').innerText = 'Wrong PIN, try again';
