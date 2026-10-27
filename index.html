@@ -323,7 +323,7 @@
 
     <div id="step-1" class="screen clean active">
         <div class="clean-eyebrow">New round</div>
-        <div class="edit-round-banner"><span>Editing the live round. Changes save when you tap Start round.</span><button type="button" onclick="cancelMidRoundEdit()">‹ Back to round</button></div>
+        <div class="edit-round-banner"><span>Editing the live round. Tap <b>Save &amp; return to round</b> to keep changes.</span><button type="button" onclick="cancelMidRoundEdit()">Cancel edit</button></div>
         <h2 class="clean-title">Tournament setup</h2>
 
         <div class="field-label">Course</div>
@@ -421,7 +421,7 @@
             <button type="button" class="text-link back-link-top" onclick="backToStep1()">‹ Setup</button>
             <input type="date" id="round-date" class="date-chip" aria-label="Round date">
         </div>
-        <div class="edit-round-banner"><span>Editing the live round. Changes save when you tap Start round.</span><button type="button" onclick="cancelMidRoundEdit()">‹ Back to round</button></div>
+        <div class="edit-round-banner"><span>Editing the live round. Tap <b>Save &amp; return to round</b> to keep changes.</span><button type="button" onclick="cancelMidRoundEdit()">Cancel edit</button></div>
         <h2 class="clean-title">Draft rosters</h2>
         <p class="clean-sub">Captain goes first. Strokes are hole numbers.</p>
 
@@ -447,7 +447,7 @@
         <div class="top-row">
             <button type="button" class="text-link back-link-top" onclick="switchScreen('step-2-half', 'step-2')">‹ Rosters</button>
         </div>
-        <div class="edit-round-banner"><span>Editing the live round. Changes save when you tap Start round.</span><button type="button" onclick="cancelMidRoundEdit()">‹ Back to round</button></div>
+        <div class="edit-round-banner"><span>Editing the live round. Tap <b>Save &amp; return to round</b> to keep changes.</span><button type="button" onclick="cancelMidRoundEdit()">Cancel edit</button></div>
         <h2 class="clean-title">Cart pairings</h2>
         <p class="clean-sub">Who rides together. Scores still count for each player's drafted team.</p>
 
@@ -462,7 +462,7 @@
 
         <div class="bottom-bar">
             <button type="button" class="icon-btn" onclick="shareRoundInfo()" aria-label="Text round info to the group"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
-            <button type="button" class="bar-primary" onclick="startRoundScrambled()">Start round</button>
+            <button type="button" class="bar-primary" id="btn-pairings-start" onclick="startRoundScrambled()">Start round</button>
         </div>
     </div>
 
@@ -1074,7 +1074,7 @@ function toggle9HoleOptions() {
             document.getElementById('is-scrambled').addEventListener('change', (e) => { 
                 saveRosterCache(); 
                 let isScram = e.target.value === 'yes'; 
-                document.getElementById('btn-step2-next').innerText = isScram ? "Next: Set carts" : "Start round";
+                document.getElementById('btn-step2-next').innerText = isScram ? "Next: Set carts" : startRoundLabel();
                 document.getElementById('btn-step2-text').style.display = isScram ? 'none' : '';
                 for(let g=1; g<=gCount; g++) document.getElementById(`g${g}-time-wrap`).style.display = isScram ? 'none' : '';
             });
@@ -1353,7 +1353,7 @@ function processStep2() {
             let cleanScoresDb = JSON.parse(JSON.stringify(scoresDb));
             
             sessionStorage.removeItem('isEditingMidRound');
-            document.body.classList.remove('editing-round');
+            setEditingRound(false);
             
             let save = isEditingMidRound
                 ? activeTournamentRef.update({ roundData: cleanRoundData })
@@ -1373,7 +1373,7 @@ function processStep2() {
         
         function editMidRound() {
             sessionStorage.setItem('isEditingMidRound', 'true');
-            document.body.classList.add('editing-round');
+            setEditingRound(true);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
             
@@ -1385,11 +1385,22 @@ function processStep2() {
             window.scrollTo(0,0);
         }
 
+        // While editing a live round the start buttons save instead of starting a new round
+        function startRoundLabel() {
+            return document.body.classList.contains('editing-round') ? 'Save & return to round' : 'Start round';
+        }
+        function setEditingRound(on) {
+            document.body.classList.toggle('editing-round', on);
+            document.getElementById('btn-pairings-start').innerText = startRoundLabel();
+            let next = document.getElementById('btn-step2-next');
+            if (next.innerText !== 'Next: Set carts') next.innerText = startRoundLabel();
+        }
+
         // Leave Edit Setup without saving: put back the live round and return to scoring
         let lastCloudRound = null;
         function cancelMidRoundEdit() {
             sessionStorage.removeItem('isEditingMidRound');
-            document.body.classList.remove('editing-round');
+            setEditingRound(false);
             if (lastCloudRound) {
                 let hole = roundData.currentHole;
                 roundData = JSON.parse(JSON.stringify(lastCloudRound));
@@ -3063,6 +3074,11 @@ function closeHoleScoringAndReturn() {
             } catch (error) { 
                 alert("⚠️ This round is from an older version of the app and is missing data for the new layout."); 
             }
+        }
+
+        // Keep a copy of the app on the phone so it can open with no signal (see sw.js)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline copy not available:', err)); });
         }
     </script>
 </body>
