@@ -174,6 +174,9 @@
         .dash-details summary b { margin-left: auto; }
         .dash-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; max-width: 420px; margin: 32px auto 0; }
         .danger-link { color: var(--bad); width: 100%; text-align: center; }
+        .back-to-scoring { height: 40px; margin: 6px 0; padding: 0 16px; border: none; border-radius: 20px; background: #c62828; color: #ffffff; font-size: 14px; font-weight: 800; letter-spacing: 0.06em; cursor: pointer; animation: back-pulse 2s ease-in-out infinite; }
+        @keyframes back-pulse { 0%, 100% { box-shadow: 0 0 0 0 rgba(198, 40, 40, 0.6); } 50% { box-shadow: 0 0 0 8px transparent; } }
+        @media (prefers-reduced-motion: reduce) { .back-to-scoring { animation: none; } }
         .dash .top-row { position: sticky; top: 0; z-index: 50; background: var(--bg-dark); }
         .table-wrapper { border-radius: 12px; }
         .name-col { text-align: left !important; white-space: nowrap; position: sticky; left: 0; z-index: 2; background: var(--bg-dark); padding-left: 4px !important; }
@@ -491,7 +494,7 @@
 
 <div id="step-dashboard" class="screen clean dash">
         <div class="top-row">
-            <button type="button" class="text-link" onclick="switchScreen('step-dashboard', 'step-3')">‹ Scoring</button>
+            <button type="button" class="back-to-scoring" onclick="switchScreen('step-dashboard', 'step-3')">‹ BACK TO SCORING</button>
         </div>
         <div class="clean-eyebrow">Live</div>
         <h2 class="clean-title" id="dashboard-title">Standings</h2>
