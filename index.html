@@ -29,6 +29,19 @@
         @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
         
         .hole-detail { position: relative; }
+        .modal-content.pin-content { max-width: 340px; text-align: center; border-top: none; border-radius: 20px; padding: 24px 20px; }
+        .pin-title { font-size: 18px; margin: 0 0 18px; color: var(--text-main); }
+        .pin-dots { display: flex; justify-content: center; gap: 16px; }
+        .pin-dots span { width: 16px; height: 16px; border-radius: 50%; border: 2px solid var(--text-muted); transition: background 0.1s; }
+        .pin-dots span.filled { background: var(--accent-gold); border-color: var(--accent-gold); }
+        .pin-dots.shake { animation: pin-shake 0.3s; }
+        @keyframes pin-shake { 0%, 100% { transform: translateX(0); } 25% { transform: translateX(-8px); } 75% { transform: translateX(8px); } }
+        .pin-error { min-height: 20px; margin: 10px 0 6px; font-size: 14px; color: var(--bad); }
+        .pin-pad { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+        .pin-pad button { height: 58px; border: none; border-radius: 16px; background: var(--fill); color: var(--text-main); font-size: 26px; font-weight: 700; cursor: pointer; margin: 0; }
+        .pin-pad button:active { background: var(--fill-strong); }
+        .pin-pad .pin-cancel { font-size: 15px; font-weight: 600; color: var(--text-muted); background: transparent; }
+        .pin-pad .pin-back { background: transparent; font-size: 22px; }
         .safari-banner { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; padding: 12px 14px; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 14px; line-height: 1.35; position: relative; z-index: 600; }
         .safari-banner button { flex-shrink: 0; width: 32px; height: 32px; border: none; border-radius: 16px; background: rgba(0,0,0,0.15); color: inherit; font-size: 14px; cursor: pointer; }
         .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid var(--bad); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
@@ -519,6 +532,20 @@
     <div id="step-dead-link" class="screen card" style="text-align: center; padding: 40px 20px;">
         <h2 id="step-dead-title" style="color: var(--accent-gold); font-size: 2.2em; margin-bottom: 10px;">⏳ Loading...</h2>
         <p id="step-dead-sub" style="color: var(--text-muted); font-size: 0.9em; margin-top: 20px;">Checking tournament status.</p>
+    </div>
+
+    <div id="pin-modal" class="modal-overlay">
+        <div class="modal-content pin-content" role="dialog" aria-modal="true" aria-labelledby="pin-title">
+            <h2 id="pin-title" class="pin-title">Admin PIN</h2>
+            <div id="pin-dots" class="pin-dots" aria-live="polite"><span></span><span></span><span></span><span></span></div>
+            <div id="pin-error" class="pin-error"></div>
+            <div class="pin-pad">
+                <button type="button" onclick="pressPinKey('1')">1</button><button type="button" onclick="pressPinKey('2')">2</button><button type="button" onclick="pressPinKey('3')">3</button>
+                <button type="button" onclick="pressPinKey('4')">4</button><button type="button" onclick="pressPinKey('5')">5</button><button type="button" onclick="pressPinKey('6')">6</button>
+                <button type="button" onclick="pressPinKey('7')">7</button><button type="button" onclick="pressPinKey('8')">8</button><button type="button" onclick="pressPinKey('9')">9</button>
+                <button type="button" class="pin-cancel" onclick="closePinPad(false)">Cancel</button><button type="button" onclick="pressPinKey('0')">0</button><button type="button" class="pin-back" onclick="pressPinKey('back')" aria-label="Delete digit">⌫</button>
+            </div>
+        </div>
     </div>
 
     <div id="share-modal" class="modal-overlay">
@@ -2787,13 +2814,45 @@ function closeHoleScoringAndReturn() {
             switchScreen('step-3', 'step-7');
         }
 
-        function validateAndFinalize() {
-            let pin = prompt("🔒 Enter Admin PIN to Finalize Round:");
-            
-            if (pin !== '1234') { 
-                if (pin !== null) alert("Incorrect PIN. Access Denied."); 
-                return; 
-            }
+        // Admin PIN on an on-screen number pad (the browser's own prompt always shows the full keyboard)
+        const ADMIN_PIN = '1234';
+        let pinEntry = '';
+        let pinResolve = null;
+
+        function askPin(title) {
+            pinEntry = '';
+            document.getElementById('pin-title').innerText = title;
+            document.getElementById('pin-error').innerText = '';
+            renderPinDots();
+            document.getElementById('pin-modal').classList.add('active');
+            return new Promise(resolve => { pinResolve = resolve; });
+        }
+
+        function renderPinDots() {
+            document.querySelectorAll('#pin-dots span').forEach((dot, i) => dot.classList.toggle('filled', i < pinEntry.length));
+        }
+
+        function pressPinKey(key) {
+            if (key === 'back') pinEntry = pinEntry.slice(0, -1);
+            else if (pinEntry.length < ADMIN_PIN.length) pinEntry += key;
+            document.getElementById('pin-error').innerText = '';
+            renderPinDots();
+            if (pinEntry.length < ADMIN_PIN.length) return;
+            if (pinEntry === ADMIN_PIN) { closePinPad(true); return; }
+            let dots = document.getElementById('pin-dots');
+            dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake');
+            document.getElementById('pin-error').innerText = 'Wrong PIN, try again';
+            pinEntry = '';
+            setTimeout(renderPinDots, 300);
+        }
+
+        function closePinPad(ok) {
+            document.getElementById('pin-modal').classList.remove('active');
+            if (pinResolve) { pinResolve(ok); pinResolve = null; }
+        }
+
+        async function validateAndFinalize() {
+            if (!(await askPin('Enter PIN to finalize round'))) return;
 
             let missingScores = false; 
             let seq = getHoleSequence();
@@ -2870,18 +2929,15 @@ function closeHoleScoringAndReturn() {
             switchScreen('step-1', 'step-8');
         }
 
-        function deleteSelectedArchives() {
+        async function deleteSelectedArchives() {
             let checkboxes = document.querySelectorAll('.archive-checkbox:checked'); 
             if(checkboxes.length === 0) { alert("Please select at least one round to delete."); return; }
-            if (prompt("Enter Admin PIN to delete selected rounds:") === "1234") {
-                let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; 
-                let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a,b) => b-a);
-                indices.forEach(idx => archive.splice(idx, 1)); 
-                localStorage.setItem('tournamentArchive', JSON.stringify(archive)); 
-                viewArchiveList();
-            } else { 
-                alert("Incorrect PIN. Deletion aborted."); 
-            }
+            if (!(await askPin('Enter PIN to delete rounds'))) return;
+            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; 
+            let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a,b) => b-a);
+            indices.forEach(idx => archive.splice(idx, 1)); 
+            localStorage.setItem('tournamentArchive', JSON.stringify(archive)); 
+            viewArchiveList();
         }
 
         function showArchivedCard(index) {
