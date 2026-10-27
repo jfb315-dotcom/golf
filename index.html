@@ -329,6 +329,17 @@
         .om-birdie-line { padding: 3px 4px 3px 26px; font-size: 15px; }
         .om-birdie-line b { display: inline-block; min-width: 52px; letter-spacing: 0.04em; }
         .om-birdie-line.muted { color: var(--text-muted); }
+        .om-subtotal { font-weight: 700; }
+        .om-bet-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; gap: 10px; align-items: center; min-height: 36px; padding: 0 4px 0 14px; font-size: 15px; color: var(--text-muted); }
+        .om-bet-row .om-standing { color: var(--text-main); white-space: nowrap; }
+        .om-bet-row b { text-align: right; color: var(--text-main); white-space: nowrap; }
+        .om-grand { font-size: 17px; font-weight: 800; border-bottom: 2px solid var(--line); }
+        .om-sum-head { display: flex; justify-content: space-between; font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; margin-bottom: 4px; }
+        .om-sum-row { display: flex; justify-content: space-between; padding: 6px 0; font-size: 15px; color: var(--text-main); border-bottom: 1px solid var(--line); }
+        .om-sum-row b { font-size: 15px; }
+        .om-sum-row.grand { border-bottom: none; padding-top: 10px; font-size: 18px; font-weight: 800; }
+        .om-sum-row.grand b { font-size: 20px; }
+        .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
         .om-b-win { font-weight: 800; text-decoration: underline; }
         .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
         .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
@@ -3059,7 +3070,7 @@ function closeHoleScoringAndReturn() {
             let pressList = ourMatchPressList(m);
             if (pressList.length) {
                 html += `<div class="payout-sub">Presses</div>`;
-                pressList.forEach(pr => { html += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text}</span><span>from hole ${pr.start}</span></div>`; });
+                pressList.forEach(pr => { html += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text.replace(' pressed the ', ' · ')}</span><span>from ${pr.start}</span></div>`; });
             }
 
             // Nassau
@@ -3070,8 +3081,10 @@ function closeHoleScoringAndReturn() {
                 html += `<div class="om-bet"><div class="payout-row"><b>${labels[key]}</b><span class="payout-note">${n.finished ? 'final' : (n.done.length ? `thru ${n.lastDone}` : 'not started')}</span></div>`;
                 n.bets.forEach(b => {
                     let money = n.finished ? (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0) : null;
-                    html += `<div class="payout-row sub"><span>${b.label === 'Main' ? 'Main bet' : b.label}</span><span>${nassauText(m, b.diff)}${money !== null ? ` · <b class="payout-amount">${formatMatchMoney(money)}</b>` : ''}</span></div>`;
+                    let label = b.label === 'Main' ? 'Main' : `Press from ${n.holes[n.holes.indexOf(b.from) + 1] ?? b.from + 1}`;
+                    html += `<div class="om-bet-row"><span>${label}</span><span class="om-standing">${nassauText(m, b.diff)}</span><b>${money !== null ? formatMatchMoney(money) : ''}</b></div>`;
                 });
+                html += `<div class="payout-row om-subtotal"><span>${labels[key]} Nassau${n.bets.length > 1 ? ` (${n.bets.length} bets)` : ''}</span>${n.finished ? `<b class="payout-amount">${formatMatchMoney(n.money)}</b>` : '<span class="payout-note">in play</span>'}</div>`;
                 if (live) {
                     ['A', 'B'].forEach((side, i) => {
                         if (n.canPress[side]) html += `<button type="button" class="om-press" onclick="pressOurMatch('${key}','${side}')">PRESS ${labels[key].toUpperCase()} · ${m.names[i]}</button>`;
@@ -3079,6 +3092,9 @@ function closeHoleScoringAndReturn() {
                 }
                 html += `</div>`;
             });
+            let nassauTotal = MATCH_BETS.reduce((a, k) => a + (m.nassau[k]?.money || 0), 0);
+            let nassauDone = MATCH_BETS.every(k => !m.nassau[k] || m.nassau[k].finished);
+            html += `<div class="payout-row om-grand"><span>Nassau total${nassauDone ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nassauTotal)}</b></div>`;
 
             // Nassau hole by hole: low gross each side, then every Nassau bet's running score (+ = side 1 up)
             let ninesNassau = ['front', 'back'].filter(k => m.nassau[k]);
@@ -3123,12 +3139,18 @@ function closeHoleScoringAndReturn() {
                 let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
                 html += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
                 html += ourMatchBirdiesHTML(m, nine);
-                let nassauNine = m.nassau[nine.key]?.money || 0;
-                html += `<div class="payout-row"><span>${title} total${nine.finished ? '' : ' so far'}${m.nassau[nine.key]?.finished ? ' with Nassau' : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney + nassauNine)}</b></div>`;
+                html += `<div class="payout-row om-subtotal"><span>${title} 1st/2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
             });
-            if (m.nassau.overall?.finished) html += `<div class="payout-row"><span>Overall Nassau</span><b class="payout-amount">${formatMatchMoney(m.nassau.overall.money)}</b></div>`;
 
-            html += `<div class="om-total"><span>${m.finished ? 'Final' : 'So far'}, per person: ${formatMatchMoney(m.totalMoney)} ${m.names[0]}</span><b>${matchSettleLine(m, m.totalMoney)}</b></div>`;
+            // Money summary: one line per game, then the total and who pays who
+            let ballTotal = m.nines.reduce((a, n) => a + n.ballMoney, 0), birdieTotal = m.nines.reduce((a, n) => a + n.birdieMoney, 0);
+            let sumRow = (label, v, cls = '') => `<div class="om-sum-row ${cls}"><span>${label}</span><b>${formatMatchMoney(v)}</b></div>`;
+            html += `<div class="om-total">
+                <div class="om-sum-head"><span>${m.finished ? 'Final' : 'So far'} · per person</span><span>+ = ${m.names[0]}</span></div>
+                ${sumRow('Nassau', nassauTotal)}${sumRow('1st / 2nd ball', ballTotal)}${sumRow('Team birdies', birdieTotal)}
+                ${sumRow('Total', m.totalMoney, 'grand')}
+                <b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>
+            </div>`;
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; first/second-ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             if (live) html += `<button type="button" class="text-link" onclick="openOurMatchShareModal()">Share Our Match</button>`;
             return html + `</section>`;
