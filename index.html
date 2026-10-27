@@ -269,6 +269,8 @@
         .payout-row.muted { color: var(--text-muted); font-size: 14px; }
         .payout-note { color: var(--text-muted); font-size: 13px; font-weight: normal; margin-left: 4px; }
         .money-table { min-width: 0; }
+        .team-payout { padding: 12px 4px 4px; border-bottom: 1px solid var(--line); }
+        .payout-row.sub { min-height: 36px; padding-left: 14px; border-bottom: none; font-size: 15px; color: var(--text-muted); }
         .money-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
         .money-table td { font-size: 15px; padding: 11px 6px; white-space: nowrap; }
         .money-table td.money-net { font-weight: 800; text-align: right; }
@@ -2629,23 +2631,9 @@ function closeHoleScoringAndReturn() {
                 <div class="payout-row"><span>Team bets <span class="payout-note">${pay.totalBets} bets × ${formatCents(pay.betPotCents)}</span></span><span class="payout-amount">${formatCents(pay.teamPotCents)}</span></div>
                 <div class="payout-row"><span>Skins <span class="payout-note">${pay.skinsRefunded ? 'none won, refunded' : `${pay.skins.length} won × ${formatCents(pay.perSkinCents)}`}</span></span><span class="payout-amount">${formatCents(pay.skinsPotCents)}</span></div>`;
 
-            html += `<div class="payout-header">Players</div>
-                <div class="table-wrapper"><table class="money-table"><thead><tr><th class="name-col">Player</th><th>Paid</th><th>Skins</th><th>Team</th><th>Net</th></tr></thead><tbody>`;
-            [...pay.players].sort((a, b) => b.netCents - a.netCents).forEach(p => {
-                let color = p.netCents > 0 ? 'var(--good)' : (p.netCents < 0 ? 'var(--bad)' : 'var(--text-muted)');
-                html += `<tr><td class="name-col" style="color:${p.color};">${p.name.split(' ')[0]}</td>
-                    <td>${formatCents(p.buyInCents)}</td>
-                    <td>${p.skinsCents ? formatCents(p.skinsCents) : '–'}</td>
-                    <td>${p.teamCents ? formatCents(p.teamCents) : '–'}</td>
-                    <td class="money-net" style="color:${color};">${formatSignedCents(p.netCents)}</td></tr>`;
-            });
-            html += `</tbody></table></div>`;
-            if (pay.skinsRefunded && rData.skinsAmount > 0) html += `<p class="dash-footnote">No skins were won, so nobody pays the skins buy-in.</p>`;
-
-            // How it was won: team bet grid + skins by hole
+            // Team bets: who won each bet, then each team's winnings split among its players
             let segLabels = [...new Set(pay.bets.map(b => b.label))];
-            html += `<details class="dash-details"><summary><span>How it was won</span></summary>
-                <div class="payout-sub">Team bets</div>
+            html += `<div class="payout-header">Team bets · ${formatCents(pay.betPotCents)} each</div>
                 <div class="table-wrapper"><table class="money-table bets-grid"><thead><tr><th class="name-col"></th>${segLabels.map(l => `<th>${l}</th>`).join('')}</tr></thead><tbody>`;
             rData.formats.forEach(f => {
                 html += `<tr><td class="name-col">${f}-Ball</td>`;
@@ -2661,25 +2649,41 @@ function closeHoleScoringAndReturn() {
             html += `</tbody></table></div>`;
             rData.groups.forEach(team => {
                 let won = pay.bets.reduce((a, b) => a + (b.winners.includes(team.id) ? 1 / b.winners.length : 0), 0);
-                let mates = pay.players.filter(p => p.gid === team.id).length;
-                if (won > 0) html += `<div class="dash-row stacked">
+                let members = pay.players.filter(p => p.gid === team.id);
+                html += `<div class="team-payout">
                     <div class="dash-row-line"><b style="color:${teamColor(team)};">Team ${team.id} · ${team.captain.split(' ')[0]}</b><b class="payout-amount">${formatCents(pay.teamWinCents[team.id])}</b></div>
-                    <div class="payout-note" style="margin: 2px 0 0;">Won ${formatBetsWon(won)} of ${pay.totalBets} bets${mates > 1 ? ` · ${formatCents(pay.teamWinCents[team.id] / mates)} each` : ''}</div>
-                </div>`;
+                    <div class="payout-note" style="margin: 2px 0 6px;">Won ${formatBetsWon(won)} of ${pay.totalBets}${won > 0 ? ` × ${formatCents(pay.betPotCents)} = ${formatCents(pay.teamWinCents[team.id])}` : ''}</div>`;
+                if (won > 0) members.forEach(p => { html += `<div class="payout-row sub"><span>${p.name.split(' ')[0]}</span><span>${formatCents(p.teamCents)}</span></div>`; });
+                html += `</div>`;
             });
-            html += `<div class="payout-sub">Skins${pay.skins.length ? ` · ${formatCents(pay.perSkinCents)} each` : ''}</div>`;
-            if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won</span></div>`;
+
+            // Skins by hole
+            html += `<div class="payout-header">Skins · ${formatCents(pay.skinsPotCents)} pot</div>`;
+            if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won${rData.skinsAmount > 0 ? ', so nobody pays the skins buy-in' : ''}</span></div>`;
+            else html += `<div class="payout-sub">${pay.skins.length} won × ${formatCents(pay.perSkinCents)}</div>`;
             pay.skins.forEach(sk => {
                 let who = pay.players.find(p => p.key === sk.key);
-                html += `<div class="payout-row"><span>Hole ${sk.hole} <span class="payout-note">par ${sk.par}</span></span><span><b style="color:${who ? who.color : 'inherit'};">${sk.name.split(' ')[0]}</b> ${sk.gross}</span></div>`;
+                html += `<div class="payout-row"><span>Hole ${sk.hole} <span class="payout-note">par ${sk.par}</span></span><span><b style="color:${who ? who.color : 'inherit'};">${sk.name.split(' ')[0]}</b> ${sk.gross} · ${formatCents(pay.perSkinCents)}</span></div>`;
             });
-            html += `</details>`;
+
+            // Everyone paid in: what to hand each player from the pot
+            let paidOut = [...pay.players].filter(p => p.wonCents > 0).sort((a, b) => b.wonCents - a.wonCents);
+            if (paidOut.length > 0) {
+                html += `<div class="payout-header">Pay out from the pot</div>
+                    <div class="payout-sub">When everyone has paid ${formatCents(pay.players[0].buyInCents)}</div>`;
+                paidOut.forEach(p => {
+                    let parts = [];
+                    if (p.teamCents) parts.push(`team ${formatCents(p.teamCents)}`);
+                    if (p.skinsCents) parts.push(`skins ${formatCents(p.skinsCents)}`);
+                    html += `<div class="payout-row"><span><b style="color:${p.color};">${p.name.split(' ')[0]}</b> <span class="payout-note">${parts.join(' + ')}</span></span><b class="payout-amount">${formatCents(p.wonCents)}</b></div>`;
+                });
+            }
 
             // Last: the shortcut that skips everyone paying in first
             let payments = calculateSettlements(pay.players);
             if (payments.length > 0) {
                 html += `<div class="payout-header">Who pays who</div>
-                    <div class="payout-sub">Quick settle: skips everyone paying their entry and skins first. Whole dollars.</div>`;
+                    <div class="payout-sub">If nobody paid an entry fee: what each player owes the others. Whole dollars.</div>`;
                 payments.forEach(pm => {
                     html += `<div class="payout-row"><span>${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}</span><span class="payout-amount">${formatDollars(pm.cents)}</span></div>`;
                 });
@@ -2699,23 +2703,8 @@ function closeHoleScoringAndReturn() {
 
             let st = `JB Golf · Final Results\n${formatRoundDate(rData.date)} · ${rData.course.name}\n\n`;
             st += `Purse ${formatCents(pay.teamPotCents + pay.skinsPotCents)} · Team bets ${formatCents(pay.teamPotCents)} · Skins ${formatCents(pay.skinsPotCents)}\n`;
-            if (pay.skins.length > 0) {
-                let byPlayer = {};
-                pay.skins.forEach(sk => { (byPlayer[sk.key] = byPlayer[sk.key] || { name: first(sk.name), holes: [] }).holes.push(sk.hole); });
-                st += `Skins (${formatCents(pay.perSkinCents)} each): ${Object.values(byPlayer).map(b => `${b.name} ${b.holes.join(', ')}`).join(' · ')}\n`;
-            } else if (rData.skinsAmount > 0) {
-                st += `Skins: none won, buy-in refunded\n`;
-            }
 
-            st += `\nPlayers (paid ${formatCents(pay.players[0]?.buyInCents || 0)} each)\n`;
-            [...pay.players].sort((a, b) => b.netCents - a.netCents).forEach(p => {
-                let parts = [];
-                if (p.skinsCents) parts.push(`skins ${formatCents(p.skinsCents)}`);
-                if (p.teamCents) parts.push(`team ${formatCents(p.teamCents)}`);
-                st += `${first(p.name)} ${formatSignedCents(p.netCents).replace('−', '-')}${parts.length ? ` (${parts.join(', ')})` : ''}\n`;
-            });
-
-            st += `\nTeam bets\n`;
+            st += `\nTeam bets (${formatCents(pay.betPotCents)} each)\n`;
             rData.formats.forEach(f => {
                 let cells = pay.bets.filter(b => b.format === f).map(b => {
                     if (b.winners.length === 0) return `${b.label} –`;
@@ -2726,12 +2715,32 @@ function closeHoleScoringAndReturn() {
             });
             rData.groups.forEach(team => {
                 let won = pay.bets.reduce((a, b) => a + (b.winners.includes(team.id) ? 1 / b.winners.length : 0), 0);
-                if (won > 0) st += `Team ${team.id} (${first(team.captain)}) won ${formatBetsWon(won)} of ${pay.totalBets}: ${formatCents(pay.teamWinCents[team.id])}\n`;
+                if (won === 0) { st += `Team ${team.id} (${first(team.captain)}): won 0\n`; return; }
+                let members = pay.players.filter(p => p.gid === team.id);
+                st += `Team ${team.id} (${first(team.captain)}): won ${formatBetsWon(won)} × ${formatCents(pay.betPotCents)} = ${formatCents(pay.teamWinCents[team.id])}, ${formatCents(members[0]?.teamCents || 0)} each\n`;
             });
+
+            if (pay.skins.length > 0) {
+                st += `\nSkins (${pay.skins.length} won × ${formatCents(pay.perSkinCents)})\n`;
+                pay.skins.forEach(sk => { st += `Hole ${sk.hole}: ${first(sk.name)} ${sk.gross}\n`; });
+            } else if (rData.skinsAmount > 0) {
+                st += `\nSkins: none won, buy-in refunded\n`;
+            }
+
+            let paidOut = [...pay.players].filter(p => p.wonCents > 0).sort((a, b) => b.wonCents - a.wonCents);
+            if (paidOut.length > 0) {
+                st += `\nPay out from the pot (everyone paid ${formatCents(pay.players[0].buyInCents)})\n`;
+                paidOut.forEach(p => {
+                    let parts = [];
+                    if (p.teamCents) parts.push(`team ${formatCents(p.teamCents)}`);
+                    if (p.skinsCents) parts.push(`skins ${formatCents(p.skinsCents)}`);
+                    st += `${first(p.name)} ${formatCents(p.wonCents)} (${parts.join(' + ')})\n`;
+                });
+            }
 
             let payments = calculateSettlements(pay.players);
             if (payments.length > 0) {
-                st += `\nWho pays who (quick settle, whole dollars)\n`;
+                st += `\nWho pays who (if nobody paid an entry fee)\n`;
                 payments.forEach(pm => { st += `${first(pm.from)} → ${first(pm.to)} ${formatDollars(pm.cents)}\n`; });
             }
 
