@@ -317,6 +317,11 @@
         .om-total { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding: 14px 12px; border-radius: 14px; background: var(--fill-soft); font-size: 14px; color: var(--text-muted); }
         .om-total b { font-size: 18px; color: var(--text-main); }
         .om-press-alert { margin: 6px auto 0; padding: 6px 10px; border-radius: 10px; background: var(--bad); color: #fff; font-size: 13px; font-weight: 700; text-align: center; }
+        .om-press-alert.quiet { background: var(--fill); color: var(--text-main); font-weight: 600; }
+        .om-press-alert.quiet .text-link { color: var(--accent-gold); }
+        .om-pressed-line { font-size: 12px; margin-top: 2px; }
+        .om-press-mark td { font-size: 13px; font-weight: 700; color: var(--bad); border-bottom: 1px solid var(--line); padding: 6px; white-space: normal; }
+        .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
         .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
         .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
         .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
@@ -400,15 +405,16 @@
         <div id="om-options" style="display: none;">
             <div class="clean-grid-2">
                 <div>
-                    <div class="field-label">Nassau per bet</div>
+                    <div class="field-label">Nassau per bet, per person</div>
                     <div class="money-field"><span>$</span><input type="number" id="om-nassau" min="0" value="50" inputmode="numeric" aria-label="Nassau dollars per bet" onfocus="this.select()" onclick="this.select()"></div>
                 </div>
                 <div>
-                    <div class="field-label">1st/2nd ball front</div>
+                    <div class="field-label">1st/2nd ball front, per person</div>
                     <div class="money-field"><span>$</span><input type="number" id="om-ball" min="0" value="25" inputmode="numeric" aria-label="First and second ball dollars per bet on the front nine" onfocus="this.select()" onclick="this.select()"></div>
                 </div>
             </div>
-            <p class="clean-sub" style="margin: 8px 4px 0;">Back nine and birdies on the back are double the front. Pick the two sides on the next screen.</p>
+            <p class="clean-sub" style="margin: 8px 4px 0;">All amounts are per person. Back nine is double. Each team birdie pays that nine's 1st/2nd ball amount (eagle = 2).</p>
+            <div class="format-row"><label class="format-label" for="om-only">Only Our Match <span class="payout-note">no tournament purse</span></label><input type="checkbox" class="switch" id="om-only" aria-label="Only Our Match, no tournament purse" onchange="toggleOurMatchOnly()"></div>
         </div>
 
         <div class="clean-grid-2">
@@ -553,7 +559,7 @@
         <div id="dashboard-our-match"></div>
         <div id="dashboard-financial-summary"></div>
         <div class="dash-actions">
-            <button type="button" class="bar-primary" onclick="openResultsShareModal()">Share results</button>
+            <button type="button" class="bar-primary" onclick="(hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) ? openResultsShareModal() : openOurMatchShareModal()">Share results</button>
             <div id="admin-finalize-container">
                 <button type="button" class="text-link danger-link" onclick="validateAndFinalize()">Finalize &amp; archive round</button>
             </div>
@@ -1190,12 +1196,24 @@ function toggle9HoleOptions() {
         // ===== Our Match setup =====
         const OM_SEATS = ['om-a1', 'om-a2', 'om-b1', 'om-b2'];
 
+        // Our Match only: the tournament bets go to $0, which hides the purse and payouts
+        function toggleOurMatchOnly() {
+            let only = document.getElementById('om-only').checked;
+            ['bet-amount', 'skins-amount'].forEach(id => {
+                let el = document.getElementById(id);
+                if (only) { el.dataset.before = el.value; el.value = 0; }
+                else if (el.value === '0') el.value = el.dataset.before || (id === 'bet-amount' ? 20 : 10);
+            });
+            calculateLiveBuyIn();
+        }
+
         function toggleOurMatchOptions() {
             let on = document.getElementById('om-enabled').checked;
             document.getElementById('om-options').style.display = on ? '' : 'none';
             let sides = document.getElementById('om-sides');
             if (sides) sides.style.display = on ? '' : 'none';
             if (on && sides) renderOurMatchSides();
+            if (!on && document.getElementById('om-only').checked) { document.getElementById('om-only').checked = false; toggleOurMatchOnly(); }
         }
 
         // Side pickers list the real (non-ghost) players typed on the roster; values are "team-slot"
@@ -1578,6 +1596,7 @@ function processStep2() {
             let om = roundData.ourMatch;
             document.getElementById('om-enabled').checked = !!om;
             if (om) { document.getElementById('om-nassau').value = om.nassauBet; document.getElementById('om-ball').value = om.ballBet; }
+            document.getElementById('om-only').checked = !!om && !roundData.betAmount && !roundData.skinsAmount;
             toggleOurMatchOptions();
 
             // Teams and players per team
@@ -2412,9 +2431,9 @@ function closeHoleScoringAndReturn() {
 
             let finHTML = `<details class="dash-details rules-details">
                 <summary><span>Rules</span></summary>
-                <div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
+                ${hasTournamentMoney(roundData) ? `<div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
                 <div class="dash-row"><span>Per bet</span><span>$${roundData.betAmount}</span></div>
-                <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>
+                <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>` : `<div class="dash-row"><span>Tournament purse</span><span>None, Our Match only</span></div>`}
                 ${rulesHTML}
                 <p class="dash-footnote">Red dot = player gets a stroke there; scorecards show gross/net. Skins are gross only.</p>
             </details>`;
@@ -2424,7 +2443,7 @@ function closeHoleScoringAndReturn() {
             document.getElementById('dashboard-cart-progress').innerHTML = showProgress ? generateCartProgressHTML(roundData, scoresDb) : '';
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
             document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb); 
-            document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
+            document.getElementById('dashboard-payouts').innerHTML = hasTournamentMoney(roundData) ? generateFinancialSummaryHTML(roundData, scoresDb) : '';
             document.getElementById('dashboard-our-match').innerHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, true) : '';
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
@@ -2918,7 +2937,7 @@ function closeHoleScoringAndReturn() {
                 let bets = [{ label: 'Main', diff: strokes(null), from: null }];
                 ['A', 'B'].forEach(side => {
                     let after = presses[key]?.[side];
-                    if (after != null) bets.push({ label: `${side === 'A' ? names[0] : names[1]} press (from ${holes[holes.indexOf(after) + 1] ?? after + 1})`, diff: strokes(after), from: after, by: side });
+                    if (after != null) bets.push({ label: `${side === 'A' ? names[0] : names[1]} press · from hole ${holes[holes.indexOf(after) + 1] ?? after + 1}`, diff: strokes(after), from: after, by: side });
                 });
                 let behind = side => bets.some(b => side === 'A' ? b.diff > 0 : b.diff < 0);
                 let canPress = {};
@@ -2977,11 +2996,24 @@ function closeHoleScoringAndReturn() {
         function formatMatchBet(m) { return m > 0 ? `+${m}` : (m < 0 ? `−${-m}` : 'E'); }
         // Dollars from side 1's point of view: "+$75" / "−$50" / "$0"
         function formatMatchMoney(d) { return d === 0 ? '$0' : `${d > 0 ? '+' : '−'}$${Math.abs(d).toLocaleString('en-US')}`; }
+        // Amounts are per person: each loser pays one winner
         function matchSettleLine(m, total) {
             if (total === 0) return 'All square, nobody owes';
-            let [win, lose] = total > 0 ? [m.names[0], m.names[1]] : [m.names[1], m.names[0]];
-            let each = Math.abs(total) / 2;
-            return `${lose} owe ${win} $${Math.abs(total).toLocaleString('en-US')} ($${each.toLocaleString('en-US', { maximumFractionDigits: 2 })} each)`;
+            let [win, lose] = total > 0 ? [m.sides[0], m.sides[1]] : [m.sides[1], m.sides[0]];
+            let first = x => x.player.name.split(' ')[0];
+            let amt = `$${Math.abs(total).toLocaleString('en-US')}`;
+            return `${first(lose[0])} pays ${first(win[0])} ${amt} · ${first(lose[1])} pays ${first(win[1])} ${amt}`;
+        }
+
+        // Every press made, in the order it started
+        function ourMatchPressList(m) {
+            let labels = { front: 'Front 9', back: 'Back 9', overall: 'Overall' };
+            let list = [];
+            MATCH_BETS.forEach(key => (m.nassau[key]?.bets || []).forEach(b => {
+                if (b.by) list.push({ key, by: b.by, after: b.from, start: m.nassau[key].holes[m.nassau[key].holes.indexOf(b.from) + 1] ?? b.from + 1,
+                    text: `${m.names[b.by === 'A' ? 0 : 1]} pressed the ${labels[key]}` });
+            }));
+            return list.sort((a, b) => a.start - b.start);
         }
 
         // Nassau standing in words, + = side 1 behind on strokes
@@ -2999,8 +3031,14 @@ function closeHoleScoringAndReturn() {
                 <div class="dash-section-title team-head"><span>Our Match</span><span>${m.finished ? 'Final' : 'Live'}</span></div>
                 <div class="om-sides"><span class="om-side a">${m.names[0]}</span><span class="om-vs">vs</span><span class="om-side b">${m.names[1]}</span></div>`;
 
+            let pressList = ourMatchPressList(m);
+            if (pressList.length) {
+                html += `<div class="payout-sub">Presses</div>`;
+                pressList.forEach(pr => { html += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text}</span><span>from hole ${pr.start}</span></div>`; });
+            }
+
             // Nassau
-            html += `<div class="payout-sub">Nassau · low ball gross, stroke play · $${om.nassauBet} a bet</div>`;
+            html += `<div class="payout-sub">Nassau · low ball gross, stroke play · $${om.nassauBet} a bet, per person</div>`;
             MATCH_BETS.forEach(key => {
                 let n = m.nassau[key];
                 if (!n) return;
@@ -3020,7 +3058,7 @@ function closeHoleScoringAndReturn() {
             // First ball / second ball and birdies, one chart per nine
             m.nines.forEach(nine => {
                 let title = nine.key === 'back' ? 'Back 9' : 'Front 9';
-                html += `<div class="payout-sub">${title} · first ball / second ball, net · $${nine.amount} a bet · + = ${m.names[0]} up</div>`;
+                html += `<div class="payout-sub">${title} · first ball / second ball, net · $${nine.amount} a bet per person · + = ${m.names[0]} up</div>`;
                 if (nine.rows.length === 0) {
                     html += `<div class="payout-row muted">No holes finished yet</div>`;
                 } else {
@@ -3029,20 +3067,21 @@ function closeHoleScoringAndReturn() {
                         let won = r.result > 0 ? `<span class="om-a">${m.names[0].split(' ')[0]}</span>` : (r.result < 0 ? `<span class="om-b">${m.names[1].split(' ')[0]}</span>` : '–');
                         let bird = [r.units[0] ? `<span class="om-a">${'●'.repeat(r.units[0])}</span>` : '', r.units[1] ? `<span class="om-b">${'●'.repeat(r.units[1])}</span>` : ''].filter(Boolean).join(' ') || '';
                         html += `<tr><td><b>${r.hole}</b></td><td>${r.lowNets[0]} v ${r.lowNets[1]}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
+                        pressList.filter(pr => pr.after === r.hole).forEach(pr => { html += `<tr class="om-press-mark"><td colspan="5">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
                     });
                     html += `</tbody></table>`;
                 }
                 if (nine.rows.length === 0) return;
                 let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
                 html += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
-                html += `<div class="payout-row sub"><span>Birdies ${nine.birdies[0]} – ${nine.birdies[1]} (eagle = 2)</span><b class="payout-amount">${formatMatchMoney(nine.birdieMoney)}</b></div>`;
+                html += `<div class="payout-row sub"><span>Team birdies ${nine.birdies[0]} – ${nine.birdies[1]} (eagle = 2)</span><b class="payout-amount">${formatMatchMoney(nine.birdieMoney)}</b></div>`;
                 let nassauNine = m.nassau[nine.key]?.money || 0;
                 html += `<div class="payout-row"><span>${title} total${nine.finished ? '' : ' so far'}${m.nassau[nine.key]?.finished ? ' with Nassau' : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney + nassauNine)}</b></div>`;
             });
             if (m.nassau.overall?.finished) html += `<div class="payout-row"><span>Overall Nassau</span><b class="payout-amount">${formatMatchMoney(m.nassau.overall.money)}</b></div>`;
 
-            html += `<div class="om-total"><span>${m.finished ? 'Final' : 'So far'}: ${formatMatchMoney(m.totalMoney)} ${m.names[0]}</span><b>${matchSettleLine(m, m.totalMoney)}</b></div>`;
-            html += `<p class="dash-footnote">Nassau is paid when each bet finishes; first/second-ball bets and birdies count as they stand. Birdies are gross.</p>`;
+            html += `<div class="om-total"><span>${m.finished ? 'Final' : 'So far'}, per person: ${formatMatchMoney(m.totalMoney)} ${m.names[0]}</span><b>${matchSettleLine(m, m.totalMoney)}</b></div>`;
+            html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; first/second-ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             if (live) html += `<button type="button" class="text-link" onclick="openOurMatchShareModal()">Share Our Match</button>`;
             return html + `</section>`;
         }
@@ -3054,7 +3093,7 @@ function closeHoleScoringAndReturn() {
             let name = m.names[side === 'A' ? 0 : 1];
             let label = { front: 'front 9', back: 'back 9', overall: 'overall' }[key];
             let next = n.holes[n.holes.indexOf(n.lastDone) + 1];
-            if (!confirm(`${name} press the ${label} ($${roundData.ourMatch.nassauBet}), starting on hole ${next}?\n\nEach side gets one press per bet.`)) return;
+            if (!confirm(`${name} press the ${label} ($${roundData.ourMatch.nassauBet} per person), starting on hole ${next}?\n\nEach side gets one press per bet.`)) return;
             matchPresses = { ...matchPresses, [key]: { ...(matchPresses[key] || {}), [side]: n.lastDone } };
             trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('matchPresses', key, side), n.lastDone));
             viewDashboard();
@@ -3070,8 +3109,12 @@ function closeHoleScoringAndReturn() {
             if (m) MATCH_BETS.forEach(key => ['A', 'B'].forEach((side, i) => {
                 if (m.nassau[key]?.canPress[side]) open.push(`${m.names[i]} (${{ front: 'front', back: 'back', overall: 'overall' }[key]})`);
             }));
-            el.style.display = open.length ? '' : 'none';
-            el.innerHTML = open.length ? `Our Match: press available for ${open.join(', ')} <button type="button" class="text-link" onclick="viewDashboard(); document.getElementById('our-match')?.scrollIntoView({block:'start'});">Open ›</button>` : '';
+            let pressed = m ? ourMatchPressList(m).map(pr => `${pr.text.replace(' pressed the ', ' · ')} from ${pr.start}`) : [];
+            el.style.display = open.length || pressed.length ? '' : 'none';
+            el.classList.toggle('quiet', open.length === 0);
+            let openLink = `<button type="button" class="text-link" onclick="viewDashboard(); document.getElementById('our-match')?.scrollIntoView({block:'start'});">Open ›</button>`;
+            el.innerHTML = (open.length ? `<div>Our Match: press available for ${open.join(', ')} ${openLink}</div>` : '')
+                + (pressed.length ? `<div class="om-pressed-line">Pressed: ${pressed.join(' · ')}${open.length ? '' : ' ' + openLink}</div>` : '');
         }
 
         function openOurMatchShareModal() {
@@ -3080,6 +3123,9 @@ function closeHoleScoringAndReturn() {
             let om = activeViewRoundData.ourMatch;
             let labels = { front: 'Front', back: 'Back', overall: 'Overall' };
             let st = `JB Golf · Our Match\n${formatRoundDate(activeViewRoundData.date)} · ${activeViewRoundData.course.name}\n${m.names[0]} vs ${m.names[1]}\n`;
+            st += `All amounts per person\n`;
+            let pressList = ourMatchPressList(m);
+            if (pressList.length) { st += `\nPresses\n`; pressList.forEach(pr => { st += `${pr.text} from hole ${pr.start}\n`; }); }
             st += `\nNassau ($${om.nassauBet} a bet)\n`;
             MATCH_BETS.forEach(key => {
                 let n = m.nassau[key]; if (!n) return;
@@ -3088,7 +3134,7 @@ function closeHoleScoringAndReturn() {
             m.nines.forEach(nine => {
                 st += `\n${nine.key === 'back' ? 'Back' : 'Front'} 9 ($${nine.amount})\n`;
                 st += `Bets: ${nine.bets.map(formatMatchBet).join(' ')} → ${formatMatchMoney(nine.ballMoney)}\n`;
-                st += `Birdies ${nine.birdies[0]}–${nine.birdies[1]} → ${formatMatchMoney(nine.birdieMoney)}\n`;
+                st += `Team birdies ${nine.birdies[0]}–${nine.birdies[1]} → ${formatMatchMoney(nine.birdieMoney)}\n`;
             });
             st += `\n${m.finished ? 'Final' : 'So far'}: ${matchSettleLine(m, m.totalMoney)}\n`;
             document.getElementById('share-modal-title').innerText = "Share Our Match";
@@ -3129,6 +3175,8 @@ function closeHoleScoringAndReturn() {
         function formatSignedCents(c) { return `${c > 0 ? '+' : (c < 0 ? '−' : '')}${formatCents(c)}`; }
 
         // Payouts in this order: purse, each player's paid / won / net, how it was won, then the quick settle-up
+        function hasTournamentMoney(rData) { return !!(rData.betAmount || rData.skinsAmount); }
+
         function generateFinancialSummaryHTML(rData, sDb) {
             let pay = calculatePayouts(rData, sDb);
             if (pay.players.length === 0) return "<p>No data.</p>";
@@ -3366,6 +3414,7 @@ function closeHoleScoringAndReturn() {
             document.getElementById('players-per-group').value = 4;
             document.getElementById('bet-amount').value = 20;
             document.getElementById('skins-amount').value = 10;
+            document.getElementById('om-only').checked = false;
             document.getElementById('hole-format').value = '18';
             document.getElementById('fmt-1').checked = false;
             document.getElementById('fmt-2').checked = true;
@@ -3382,7 +3431,8 @@ function closeHoleScoringAndReturn() {
                 archivedAt: new Date().getTime() 
             }).catch(err => console.log(err));
 
-            openResultsShareModal();
+            if (hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) openResultsShareModal();
+            else openOurMatchShareModal();
             document.getElementById('share-modal-title').innerText = "Round finalized · Share results";
         }
 
@@ -3440,7 +3490,7 @@ function closeHoleScoringAndReturn() {
             
             try { 
                 document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb); 
-                document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb); 
+                document.getElementById('archived-payout-summary-container').innerHTML = hasTournamentMoney(activeViewRoundData) ? generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb) : ''; 
                 document.getElementById('archived-our-match-container').innerHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, activeViewRoundData.matchPresses || {}, false) : '';
                 switchScreen('step-8', 'step-9'); 
             } catch (error) { 
