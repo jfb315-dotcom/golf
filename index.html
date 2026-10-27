@@ -42,6 +42,10 @@
         .pin-pad button:active { background: var(--fill-strong); }
         .pin-pad .pin-cancel { font-size: 15px; font-weight: 600; color: var(--text-muted); background: transparent; }
         .pin-pad .pin-back { background: transparent; font-size: 22px; }
+        .edit-round-banner { display: none; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 16px; padding: 12px 14px; border-radius: 12px; background: var(--fill-strong); font-size: 14px; color: var(--text-main); }
+        body.editing-round .edit-round-banner { display: flex; }
+        body.editing-round #step-1 .clean-eyebrow { display: none; } /* not a new round */
+        .edit-round-banner button { flex-shrink: 0; height: 40px; padding: 0 14px; border: none; border-radius: 20px; background: #c62828; color: #ffffff; font-size: 14px; font-weight: 800; cursor: pointer; }
         .safari-banner { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; padding: 12px 14px; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 14px; line-height: 1.35; position: relative; z-index: 600; }
         .safari-banner button { flex-shrink: 0; width: 32px; height: 32px; border: none; border-radius: 16px; background: rgba(0,0,0,0.15); color: inherit; font-size: 14px; cursor: pointer; }
         .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid var(--bad); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
@@ -152,7 +156,9 @@
         .hole-list-row.current .hole-list-num { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
         .hole-list-par { width: 48px; flex-shrink: 0; font-size: 14px; color: var(--text-muted); }
         .hole-list-scores { flex-grow: 1; display: flex; justify-content: flex-end; gap: 6px; }
-        .hole-list-score { width: 28px; text-align: center; font-size: 17px; font-weight: 800; }
+        .hole-list-score { width: 40px; text-align: center; font-size: 17px; font-weight: 800; }
+        .hole-list-names { position: sticky; top: var(--list-names-top, 0px); z-index: 20; display: flex; padding: 8px 12px; background: var(--bg-dark); border-bottom: 1px solid var(--line); }
+        .hole-list-names .hole-list-score { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
 
         /* Standings */
         .screen.clean.dash { max-width: 1000px; }
@@ -319,6 +325,7 @@
 
     <div id="step-1" class="screen clean active">
         <div class="clean-eyebrow">New round</div>
+        <div class="edit-round-banner"><span>Editing the live round. Tap <b>Save &amp; return to round</b> to keep changes.</span><button type="button" onclick="cancelMidRoundEdit()">Cancel edit</button></div>
         <h2 class="clean-title">Tournament setup</h2>
 
         <div class="field-label">Course</div>
@@ -416,6 +423,7 @@
             <button type="button" class="text-link back-link-top" onclick="backToStep1()">‹ Setup</button>
             <input type="date" id="round-date" class="date-chip" aria-label="Round date">
         </div>
+        <div class="edit-round-banner"><span>Editing the live round. Tap <b>Save &amp; return to round</b> to keep changes.</span><button type="button" onclick="cancelMidRoundEdit()">Cancel edit</button></div>
         <h2 class="clean-title">Draft rosters</h2>
         <p class="clean-sub">Captain goes first. Strokes are hole numbers.</p>
 
@@ -441,6 +449,7 @@
         <div class="top-row">
             <button type="button" class="text-link back-link-top" onclick="switchScreen('step-2-half', 'step-2')">‹ Rosters</button>
         </div>
+        <div class="edit-round-banner"><span>Editing the live round. Tap <b>Save &amp; return to round</b> to keep changes.</span><button type="button" onclick="cancelMidRoundEdit()">Cancel edit</button></div>
         <h2 class="clean-title">Cart pairings</h2>
         <p class="clean-sub">Who rides together. Scores still count for each player's drafted team.</p>
 
@@ -455,7 +464,7 @@
 
         <div class="bottom-bar">
             <button type="button" class="icon-btn" onclick="shareRoundInfo()" aria-label="Text round info to the group"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
-            <button type="button" class="bar-primary" onclick="startRoundScrambled()">Start round</button>
+            <button type="button" class="bar-primary" id="btn-pairings-start" onclick="startRoundScrambled()">Start round</button>
         </div>
     </div>
 
@@ -873,6 +882,7 @@ function toggle9HoleOptions() {
                             roundData.currentHole = roundData.currentHoles[getViewKey()] || incomingRound.currentHole || roundData.startHole;
                         }
                         hasLoadedRound = true;
+                        lastCloudRound = JSON.parse(JSON.stringify(roundData));
                         loadedRoundId = incomingRound.roundId;
 
                         if(!roundData.groups) roundData.groups = [];
@@ -1010,8 +1020,11 @@ function toggle9HoleOptions() {
         // ==========================================
         // SETUP & SCRAMBLED PAIRINGS ENGINE
         // ==========================================
-        function goToStep2() {
-            roundData.course = allAvailableCourses[document.getElementById('course-selector').value]; 
+        // Course, money and hole settings from the setup form. Applied again when the round starts, because
+        // live updates from the carts replace roundData while the admin is on the roster screen.
+        function applySetupFormToRoundData() {
+            roundData.courseKey = document.getElementById('course-selector').value;
+            roundData.course = allAvailableCourses[roundData.courseKey]; 
             roundData.betAmount = parseInt(document.getElementById('bet-amount').value) || 0; 
             roundData.skinsAmount = parseInt(document.getElementById('skins-amount').value) || 0; 
             roundData.playMode = document.getElementById('hole-format').value; 
@@ -1024,6 +1037,10 @@ function toggle9HoleOptions() {
             } else { 
                 roundData.startHole = 1; roundData.endHole = 18; 
             }
+        }
+
+        function goToStep2() {
+            applySetupFormToRoundData();
 
             const gCount = parseInt(document.getElementById('group-count').value); 
             const pCount = parseInt(document.getElementById('players-per-group').value);
@@ -1059,7 +1076,7 @@ function toggle9HoleOptions() {
             document.getElementById('is-scrambled').addEventListener('change', (e) => { 
                 saveRosterCache(); 
                 let isScram = e.target.value === 'yes'; 
-                document.getElementById('btn-step2-next').innerText = isScram ? "Next: Set carts" : "Start round";
+                document.getElementById('btn-step2-next').innerText = isScram ? "Next: Set carts" : startRoundLabel();
                 document.getElementById('btn-step2-text').style.display = isScram ? 'none' : '';
                 for(let g=1; g<=gCount; g++) document.getElementById(`g${g}-time-wrap`).style.display = isScram ? 'none' : '';
             });
@@ -1251,6 +1268,7 @@ function processStep2() {
                 // Keep existing scores when editing setup mid-round (bet amounts, formats, etc. can change safely)
             }
 
+            applySetupFormToRoundData();
             roundData.date = document.getElementById('round-date').value || new Date().toLocaleDateString(); 
             roundData.isScrambled = isScrambled;
             roundData.formats = []; 
@@ -1326,18 +1344,23 @@ function processStep2() {
             roundData.currentHole = getHoleSequence()[0]; 
             currentTeamFilter = "ALL";
 
-            // Initialize independent hole tracking per cart + admin
-            roundData.currentHoles = { admin: roundData.startHole };
+            // Initialize independent hole tracking per cart + admin (an edit keeps everyone's place)
+            let previousHoles = isEditingMidRound ? (roundData.currentHoles || {}) : {};
+            roundData.currentHoles = { admin: previousHoles.admin || roundData.startHole };
             roundData.carts.forEach(c => {
-                roundData.currentHoles[c.id] = roundData.startHole;
+                roundData.currentHoles[c.id] = previousHoles[c.id] || roundData.startHole;
             });
             
             let cleanRoundData = JSON.parse(JSON.stringify(roundData));
             let cleanScoresDb = JSON.parse(JSON.stringify(scoresDb));
             
             sessionStorage.removeItem('isEditingMidRound');
+            setEditingRound(false);
             
-            activeTournamentRef.set({ roundData: cleanRoundData, scoresDb: cleanScoresDb, isArchived: false, clipboards: clipboards }).then(() => {
+            let save = isEditingMidRound
+                ? activeTournamentRef.update({ roundData: cleanRoundData })
+                : activeTournamentRef.set({ roundData: cleanRoundData, scoresDb: cleanScoresDb, isArchived: false, clipboards: clipboards });
+            save.then(() => {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                 renderPillNav(); 
                 renderScoreEntry(); 
@@ -1352,23 +1375,96 @@ function processStep2() {
         
         function editMidRound() {
             sessionStorage.setItem('isEditingMidRound', 'true');
+            setEditingRound(true);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
             
-            // Restore current format + birdie rules + money values so "All Birdies Count" state is correct
+            // Load the live round into the setup and roster screens, so editing from any phone (or after
+            // the app reloads) starts from what's actually being played
             restoreSetupFormFromRoundData();
+            loadRosterFromRoundData();
             
             window.scrollTo(0,0);
+        }
+
+        // While editing a live round the start buttons save instead of starting a new round
+        function startRoundLabel() {
+            return document.body.classList.contains('editing-round') ? 'Save & return to round' : 'Start round';
+        }
+        function setEditingRound(on) {
+            document.body.classList.toggle('editing-round', on);
+            document.getElementById('btn-pairings-start').innerText = startRoundLabel();
+            let next = document.getElementById('btn-step2-next');
+            if (next.innerText !== 'Next: Set carts') next.innerText = startRoundLabel();
+        }
+
+        // Leave Edit Setup without saving: put back the live round and return to scoring
+        let lastCloudRound = null;
+        function cancelMidRoundEdit() {
+            sessionStorage.removeItem('isEditingMidRound');
+            setEditingRound(false);
+            if (lastCloudRound) {
+                let hole = roundData.currentHole;
+                roundData = JSON.parse(JSON.stringify(lastCloudRound));
+                roundData.currentHole = hole;
+            }
+            loadRosterFromRoundData();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-3').classList.add('active');
+            renderPillNav();
+            renderScoreEntry();
+            window.scrollTo(0, 0);
+        }
+
+        // Rebuild this phone's roster cache from the live round: names, strokes, ghosts, tee times and carts
+        function loadRosterFromRoundData() {
+            if (!roundData || !roundData.groups) return;
+            tempRosterCache = {};
+            roundData.groups.forEach(g => {
+                g.players.forEach((p, i) => {
+                    let key = `g${g.id}-p${i + 1}`;
+                    tempRosterCache[`${key}-name`] = p.name;
+                    tempRosterCache[`${key}-strokes`] = (p.strokeHoles || []).join(', ');
+                    tempRosterCache[`${key}-ghost`] = p.isGhost ? `${p.sourceG}-${p.sourceP}` : '';
+                });
+            });
+            tempRosterCache['isScrambled'] = roundData.isScrambled ? 'yes' : 'no';
+            (roundData.carts || []).forEach(c => {
+                if (roundData.isScrambled) {
+                    tempRosterCache[`cart${c.id}-time`] = c.time || '';
+                    c.players.forEach((cp, i) => { tempRosterCache[`cart${c.id}-p${i + 1}`] = `${cp.g}-${cp.p}`; });
+                } else {
+                    tempRosterCache[`g${c.id}-time`] = c.time || '';
+                }
+            });
+            if (roundData.isScrambled) document.getElementById('cart-group-count').value = roundData.carts.length;
+            if (roundData.date) document.getElementById('round-date').value = roundData.date;
+            try { localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache)); } catch (e) {}
         }
 
         function restoreSetupFormFromRoundData() {
             if (!roundData || !roundData.formats) return;
 
             // Money values
-            const betEl = document.getElementById('bet-amount');
-            const skinsEl = document.getElementById('skins-amount');
-            if (betEl) betEl.value = roundData.betAmount || 20;
-            if (skinsEl) skinsEl.value = roundData.skinsAmount || 10;
+            document.getElementById('bet-amount').value = roundData.betAmount ?? 0;
+            document.getElementById('skins-amount').value = roundData.skinsAmount ?? 0;
+
+            // Teams and players per team
+            document.getElementById('group-count').value = roundData.groups.length;
+            document.getElementById('players-per-group').value = Math.max(1, ...roundData.groups.map(g => g.players.length));
+
+            // Course: by the key saved at start, else by name; a course only the admin's phone knows is added for this round
+            let courseKey = roundData.courseKey && allAvailableCourses[roundData.courseKey] ? roundData.courseKey
+                : Object.keys(allAvailableCourses).find(k => allAvailableCourses[k].name === roundData.course?.name);
+            if (!courseKey && roundData.course) {
+                courseKey = '__live_round';
+                allAvailableCourses[courseKey] = roundData.course;
+                let opt = document.createElement('option');
+                opt.value = courseKey; opt.textContent = roundData.course.name;
+                document.getElementById('course-selector').appendChild(opt);
+            }
+            if (courseKey) document.getElementById('course-selector').value = courseKey;
+            if (roundData.nineHoleType) document.getElementById('nine-hole-type').value = roundData.nineHoleType;
 
             // Hole format & start type (be careful changing these mid-round)
             const holeFmt = document.getElementById('hole-format');
@@ -1608,6 +1704,7 @@ function getViewKey() {
 }
 
 function setTeamFilter(filterValue) {
+    cancelAutoAdvance();
     // Save current hole for the view we're leaving
     if (roundData.currentHoles) {
         const prevKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
@@ -1634,6 +1731,7 @@ function setTeamFilter(filterValue) {
     }
 }
         function changeHole(direction) {
+            cancelAutoAdvance();
             let seq = getHoleSequence(); 
             let idx = seq.indexOf(roundData.currentHole); 
             let nextIdx = idx + direction;
@@ -1708,6 +1806,7 @@ function setHoleHeader(hole, par) {
     document.getElementById('current-par-display-top').innerText = `${who} · Par ${par}`;
 }
       function renderFullScorecardForCart() {
+    cancelAutoAdvance();
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
     if (!cart) {
         document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
@@ -1724,7 +1823,14 @@ function setHoleHeader(hole, par) {
     let seq = getHoleSequence();
     let html = `<div class="clean-eyebrow">Cart ${cart.id}</div>
         <h2 class="clean-title" style="margin-bottom: 4px;">Scorecard</h2>
-        <p class="clean-sub" style="margin-bottom: 12px;">Tap a hole to enter or fix scores</p>
+        <p class="clean-sub" style="margin-bottom: 12px;">Tap a hole to enter or fix scores</p>`;
+
+    // Player names over their score columns, pinned while the holes scroll
+    let names = cart.players.map(cp => {
+        let player = roundData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p);
+        return player ? `<span class="hole-list-score">${player.name.split(' ')[0].slice(0, 4)}</span>` : '';
+    }).join('');
+    html += `<div class="hole-list-names" aria-hidden="true"><span class="hole-list-scores">${names}</span></div>
         <div class="scorecard-list" id="cart-scorecard-list">`;
 
     seq.forEach(holeNum => {
@@ -1752,6 +1858,8 @@ function setHoleHeader(hole, par) {
 
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
+    // Pin the name row just under the app's own pinned header
+    document.documentElement.style.setProperty('--list-names-top', document.querySelector('#step-3 .sticky-top').offsetHeight + 'px');
 
     // Auto-scroll to current hole
     setTimeout(() => {
@@ -1760,8 +1868,12 @@ function setHoleHeader(hole, par) {
     }, 100);
 }
 let cartHoleOpen = false; // a cart is on one hole's score entry rather than its hole list
+// The move to the next hole after the last score; cancelled if the scorer goes somewhere else first
+let autoAdvanceTimer = null;
+function cancelAutoAdvance() { if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; } }
 
 function openHoleForScoring(holeNum) {
+    cancelAutoAdvance();
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
     cartHoleOpen = true;
@@ -2109,7 +2221,8 @@ function closeHoleScoringAndReturn() {
                             showHoleCompleteToast();
                         }
                         
-                        setTimeout(() => { 
+                        autoAdvanceTimer = setTimeout(() => { 
+                            autoAdvanceTimer = null;
                             changeHole(1); 
                         }, 2200); // 2200ms delay (set by user)
                     }
@@ -2972,6 +3085,11 @@ function closeHoleScoringAndReturn() {
             } catch (error) { 
                 alert("⚠️ This round is from an older version of the app and is missing data for the new layout."); 
             }
+        }
+
+        // Keep a copy of the app on the phone so it can open with no signal (see sw.js)
+        if ('serviceWorker' in navigator) {
+            window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').catch(err => console.log('Offline copy not available:', err)); });
         }
     </script>
 </body>
