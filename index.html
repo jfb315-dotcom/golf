@@ -1425,7 +1425,8 @@ function processStep2() {
             if (document.getElementById('om-enabled').checked) {
                 let seat = id => { let slot = tempRosterCache[id]; let [g] = slot.split('-').map(Number); return { g, p: slotToId[slot] }; };
                 roundData.ourMatch = {
-                    sides: [[seat('om-a1'), seat('om-a2')], [seat('om-b1'), seat('om-b2')]],
+                    sideA: [seat('om-a1'), seat('om-a2')], // Firestore can't store a list of lists, so each side is its own list
+                    sideB: [seat('om-b1'), seat('om-b2')],
                     nassauBet: parseInt(document.getElementById('om-nassau').value) || 0,
                     ballBet: parseInt(document.getElementById('om-ball').value) || 0
                 };
@@ -1468,9 +1469,14 @@ function processStep2() {
             sessionStorage.removeItem('isEditingMidRound');
             setEditingRound(false);
             
-            let save = isEditingMidRound
-                ? activeTournamentRef.update({ roundData: cleanRoundData })
-                : activeTournamentRef.set({ roundData: cleanRoundData, scoresDb: cleanScoresDb, isArchived: false, clipboards: clipboards });
+            let save;
+            try {
+                save = isEditingMidRound
+                    ? activeTournamentRef.update({ roundData: cleanRoundData })
+                    : activeTournamentRef.set({ roundData: cleanRoundData, scoresDb: cleanScoresDb, isArchived: false, clipboards: clipboards });
+            } catch (err) {
+                save = Promise.reject(err); // Firestore throws straight away on data it can't store
+            }
             save.then(() => {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                 renderPillNav(); 
@@ -1480,7 +1486,8 @@ function processStep2() {
                 window.scrollTo(0,0);
             }).catch(err => {
                 console.error("Database initialization failed: ", err);
-                alert("Database sync failed. Please check your connection and try again.");
+                if (isEditingMidRound) { sessionStorage.setItem('isEditingMidRound', 'true'); setEditingRound(true); } // still editing, so a retry saves the edit
+                alert("Couldn't save the round. Please check your connection and try again.");
             });
         }
         
@@ -1551,7 +1558,7 @@ function processStep2() {
             if (roundData.isScrambled) document.getElementById('cart-group-count').value = roundData.carts.length;
             OM_SEATS.forEach(id => { delete tempRosterCache[id]; });
             if (roundData.ourMatch) {
-                roundData.ourMatch.sides.flat().forEach((cp, i) => {
+                ourMatchSides(roundData.ourMatch).flat().forEach((cp, i) => {
                     let slot = roundData.groups.find(g => g.id === cp.g).players.findIndex(p => p.id === cp.p) + 1;
                     tempRosterCache[OM_SEATS[i]] = `${cp.g}-${slot}`;
                 });
@@ -2873,12 +2880,14 @@ function closeHoleScoringAndReturn() {
         // ==========================================
         const MATCH_BETS = ['front', 'back', 'overall'];
 
+        function ourMatchSides(om) { return [om.sideA || [], om.sideB || []]; }
+
         function calculateOurMatch(rData, sDb, presses) {
             let om = rData.ourMatch;
-            if (!om || !om.sides || om.sides.length !== 2) return null;
+            if (!om || !om.sideA || !om.sideB) return null;
             presses = presses || {};
             let lookup = cp => rData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p);
-            let sides = om.sides.map(side => side.map(cp => ({ g: cp.g, p: cp.p, player: lookup(cp) })));
+            let sides = ourMatchSides(om).map(side => side.map(cp => ({ g: cp.g, p: cp.p, player: lookup(cp) })));
             if (sides.some(side => side.some(x => !x.player))) return null;
             let sideName = side => side.map(x => x.player.name.split(' ')[0]).join(' & ');
             let names = [sideName(sides[0]), sideName(sides[1])];
@@ -2962,7 +2971,7 @@ function closeHoleScoringAndReturn() {
             if (lockedTeamId === null) return true;
             let cart = rData.carts.find(c => c.id === lockedTeamId);
             let mine = rData.isScrambled && cart ? cart.players : (rData.groups.find(g => g.id === lockedTeamId)?.players.map(p => ({ g: lockedTeamId, p: p.id })) || []);
-            return rData.ourMatch.sides.flat().some(cp => mine.some(m => m.g === cp.g && m.p === cp.p));
+            return ourMatchSides(rData.ourMatch).flat().some(cp => mine.some(m => m.g === cp.g && m.p === cp.p));
         }
 
         function formatMatchBet(m) { return m > 0 ? `+${m}` : (m < 0 ? `−${-m}` : 'E'); }
