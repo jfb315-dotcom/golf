@@ -143,6 +143,7 @@
         .cart-band-par { font-size: 20px; font-weight: 700; color: var(--band-accent); }
         .hole-strip { display: flex; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .hole-strip::-webkit-scrollbar { display: none; }
+        .admin-strip { padding: 8px 2px 4px; }
         .strip-hole { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; margin: 0; padding: 0; cursor: pointer; }
         .strip-hole.done { background: var(--fill-strong); border-color: transparent; color: var(--text-main); }
         .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
@@ -545,6 +546,7 @@
                 </div>
                 <button type="button" class="hole-nav-btn" onclick="changeHole(1)" aria-label="Next hole"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             </div>
+            <div id="admin-hole-strip" class="hole-strip admin-strip" style="display:none;"></div>
             <div id="sync-status" style="text-align: center; font-size: 10px; color: var(--good); margin-top: 4px;">● Synced</div>
             <div id="om-press-alert" class="om-press-alert" style="display:none;"></div>
             <div id="offline-banner" class="offline-banner" style="display:none;">📴 No signal. Scores are saved on this phone and will sync when signal returns. No need to re-enter them.</div>
@@ -1961,6 +1963,7 @@ function renderScoreEntry() {
     }
     holeNav.style.display = '';
     hideCartHoleHeader();
+    renderAdminHoleStrip();
 
     let hole = roundData.currentHole;
     let par = roundData.course.pars[hole-1];
@@ -2089,6 +2092,29 @@ function renderCartHoleHeader(hole, par) {
     if (current) stripEl.scrollLeft = current.offsetLeft - (stripEl.clientWidth - current.offsetWidth) / 2;
 }
 
+// Our Match only: the scrolling hole strip under the hole number, so the admin can see and jump to any hole
+function renderAdminHoleStrip() {
+    let el = document.getElementById('admin-hole-strip');
+    if (!el) return;
+    if (!isOurMatchOnly(roundData) || currentTeamFilter !== "ALL" || lockedTeamId !== null) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    let hole = roundData.currentHole;
+    let seats = ourMatchSides(roundData.ourMatch).flat();
+    el.innerHTML = getHoleSequence().map(h => {
+        let done = seats.every(cp => scoresDb[cp.g]?.[cp.p]?.[h]);
+        let cls = h === hole ? ' current' : (done ? ' done' : '');
+        return `<button type="button" class="strip-hole${cls}" onclick="goToHole(${h})" aria-label="Hole ${h}"${h === hole ? ' aria-current="true"' : ''}>${h}</button>`;
+    }).join('');
+    el.style.display = '';
+    let current = el.querySelector('.strip-hole.current');
+    if (current) el.scrollLeft = current.offsetLeft - (el.clientWidth - current.offsetWidth) / 2;
+}
+
+function goToHole(h) {
+    let seq = getHoleSequence();
+    let step = seq.indexOf(h) - seq.indexOf(roundData.currentHole);
+    if (step) changeHole(step);
+}
+
 function hideCartHoleHeader() {
     document.getElementById('cart-hole-header').style.display = 'none';
     document.getElementById('step-3').classList.remove('cart-hole-view');
@@ -2180,6 +2206,7 @@ function closeHoleScoringAndReturn() {
 
         function updateUIWithoutLosingFocus() {
             try {
+                renderAdminHoleStrip();
                 let hole = roundData.currentHole; 
                 let par = roundData.course.pars[hole-1];
                 roundData.groups.forEach(g => {
@@ -2207,6 +2234,7 @@ function closeHoleScoringAndReturn() {
 
             trackCloudWrite(activeTournamentRef.update(...fieldsAndValues));
             updateOurMatchAlert();
+            renderAdminHoleStrip();
         }
 
         // Firestore keeps writes on the phone until it has signal, so a write still pending after a few seconds means no signal
