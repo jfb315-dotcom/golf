@@ -10,7 +10,7 @@
     <style>
         :root { --bg-dark: #153243; --bg-card: #284b63; --text-main: #f4f1de; --text-muted: #b4c5e4; --accent-gold: #f4a261; --bg-table: #1e3b4d; --border-color: #3c6e71; --on-accent: #153243;
                 --fill-soft: rgba(255,255,255,0.04); --fill: rgba(255,255,255,0.08); --fill-strong: rgba(255,255,255,0.16); --line: rgba(255,255,255,0.10);
-                --good: #7ced7e; --bad: #ff6b6b; --band-bg: #284b63; --band-text: #f4f1de; --band-accent: #f4a261; }
+                --good: #7ced7e; --bad: #ff6b6b; --band-bg: #284b63; --band-text: #f4f1de; --band-accent: #f4a261; --head-bg: #0a1d28; }
         body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
         .app-logo { display: block; width: 84px; height: auto; margin: -6px auto -10px auto; position: relative; z-index: 500; }
         body:has(#step-3.active) .app-logo { display: none; } /* scoring needs the room */
@@ -159,7 +159,7 @@
         .dash-details summary b { margin-left: auto; }
         .dash-actions { display: flex; flex-direction: column; align-items: stretch; gap: 8px; max-width: 420px; margin: 32px auto 0; }
         .danger-link { color: var(--bad); width: 100%; text-align: center; }
-        .floating-btn { position: fixed; bottom: calc(24px + env(safe-area-inset-bottom)); right: 16px; z-index: 9999; height: 52px; padding: 0 22px; border: none; border-radius: 26px; background: var(--accent-gold); color: var(--on-accent); font-size: 16px; font-weight: 700; box-shadow: 0 6px 18px rgba(0,0,0,0.3); cursor: pointer; }
+        .dash .top-row { position: sticky; top: 0; z-index: 50; background: var(--bg-dark); }
         .table-wrapper { border-radius: 12px; }
         .name-col { text-align: left !important; white-space: nowrap; position: sticky; left: 0; z-index: 2; background: var(--bg-dark); padding-left: 4px !important; }
         .board-table { min-width: 0; }
@@ -170,6 +170,12 @@
         .board-table .seg-start { border-left: 1px solid var(--line); }
         .board-table td.overall { font-weight: 900; }
         .score-table td.name-col { font-weight: 600; }
+        .score-table { min-width: 0; width: auto; }
+        .score-table th, .score-table td { width: 44px; min-width: 44px; padding: 9px 2px; }
+        .score-table .out-in-col { width: 60px; min-width: 60px; }
+        .score-table .name-col { width: 92px; min-width: 92px; max-width: 92px; overflow: hidden; text-overflow: ellipsis; }
+        .score-table thead th, .score-table thead th.name-col { background: var(--head-bg); color: var(--text-main); font-size: 14px; font-weight: 800; border-bottom: none; }
+        .score-table .par-row td, .score-table .par-row td.name-col { background: var(--head-bg); color: var(--text-muted); font-size: 14px; font-weight: 700; }
         .team-divider td { height: 10px; padding: 0; border: none; }
         .stroke-dot.small { width: 6px; height: 6px; margin-left: 2px; vertical-align: top; }
 
@@ -259,6 +265,13 @@
         .payout-sub { font-size: 13px; color: var(--text-muted); margin: 12px 4px 0; }
         .payout-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; padding: 0 4px; border-bottom: 1px solid var(--line); font-size: 16px; }
         .payout-row.muted { color: var(--text-muted); font-size: 14px; }
+        .payout-note { color: var(--text-muted); font-size: 13px; font-weight: normal; margin-left: 4px; }
+        .money-table { min-width: 0; }
+        .money-table th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; }
+        .money-table td { font-size: 15px; padding: 11px 6px; white-space: nowrap; }
+        .money-table td.money-net { font-weight: 800; text-align: right; }
+        .money-table th:last-child { text-align: right; }
+        .bets-grid td { font-size: 14px; }
         .payout-winner { color: var(--text-main); font-weight: bold; }
         .payout-amount { color: var(--text-main); font-weight: 800; white-space: nowrap; }
         .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
@@ -456,8 +469,6 @@
     </div>
 
 <div id="step-dashboard" class="screen clean dash">
-        <button type="button" id="floating-scoring-btn" class="floating-btn" onclick="switchScreen('step-dashboard', 'step-3')" style="display: none;">‹ Scoring</button>
-
         <div class="top-row">
             <button type="button" class="text-link" onclick="switchScreen('step-dashboard', 'step-3')">‹ Scoring</button>
         </div>
@@ -541,22 +552,22 @@
                 'bg-dark': '#153243', 'bg-card': '#284b63', 'text-main': '#f4f1de', 'text-muted': '#b4c5e4', 'accent-gold': '#f4a261',
                 'bg-table': '#1e3b4d', 'border-color': '#3c6e71', 'on-accent': '#153243',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
-                'good': '#7ced7e', 'bad': '#ff6b6b', 'band-bg': '#284b63', 'band-text': '#f4f1de', 'band-accent': '#f4a261' } },
+                'good': '#7ced7e', 'bad': '#ff6b6b', 'band-bg': '#284b63', 'band-text': '#f4f1de', 'band-accent': '#f4a261', 'head-bg': '#0a1d28' } },
             augusta: { mode: 'dark', name: 'Augusta', vars: {
                 'bg-dark': '#0f2a1d', 'bg-card': '#1a3d2b', 'text-main': '#f3efe0', 'text-muted': '#b3c2b0', 'accent-gold': '#d4af37',
                 'bg-table': '#14321f', 'border-color': '#2f5a41', 'on-accent': '#0f2a1d',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
-                'good': '#9be38f', 'bad': '#ff8a7a', 'band-bg': '#1a3d2b', 'band-text': '#f3efe0', 'band-accent': '#d4af37' } },
+                'good': '#9be38f', 'bad': '#ff8a7a', 'band-bg': '#1a3d2b', 'band-text': '#f3efe0', 'band-accent': '#d4af37', 'head-bg': '#07170f' } },
             slate: { mode: 'dark', name: 'Slate', vars: {
                 'bg-dark': '#1e2124', 'bg-card': '#2c3034', 'text-main': '#ecebe6', 'text-muted': '#a9adb3', 'accent-gold': '#c9a96e',
                 'bg-table': '#24282b', 'border-color': '#3f454b', 'on-accent': '#1e2124',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
-                'good': '#8fd48f', 'bad': '#ff7b72', 'band-bg': '#2c3034', 'band-text': '#ecebe6', 'band-accent': '#c9a96e' } },
+                'good': '#8fd48f', 'bad': '#ff7b72', 'band-bg': '#2c3034', 'band-text': '#ecebe6', 'band-accent': '#c9a96e', 'head-bg': '#111315' } },
             clubhouse: { mode: 'light', name: 'Clubhouse', vars: {
                 'bg-dark': '#f7f6f1', 'bg-card': '#ffffff', 'text-main': '#1d2a22', 'text-muted': '#5b6660', 'accent-gold': '#1f4d33',
                 'bg-table': '#ffffff', 'border-color': '#d6d2c6', 'on-accent': '#ffffff',
                 'fill-soft': 'rgba(29,42,34,0.03)', 'fill': 'rgba(29,42,34,0.06)', 'fill-strong': 'rgba(29,42,34,0.12)', 'line': 'rgba(29,42,34,0.10)',
-                'good': '#1f7a3a', 'bad': '#c0392b', 'band-bg': '#1f4d33', 'band-text': '#ffffff', 'band-accent': '#e9d8a6' } }
+                'good': '#1f7a3a', 'bad': '#c0392b', 'band-bg': '#1f4d33', 'band-text': '#ffffff', 'band-accent': '#e9d8a6', 'head-bg': '#e9e6dc' } }
         };
 
         // The bright team colours vanish on a white background, so the light theme uses darker ones
@@ -1356,77 +1367,58 @@ function processStep2() {
                 
                 let courseSel = document.getElementById('course-selector');
                 let course = courseSel && courseSel.selectedIndex >= 0 ? courseSel.options[courseSel.selectedIndex].text : "Golf Course";
-                let dateVal = document.getElementById('round-date')?.value; 
-                let dateStr = dateVal ? new Date(dateVal).toLocaleDateString() : new Date().toLocaleDateString();
+                let dateStr = formatRoundDate(document.getElementById('round-date')?.value);
                 
                 let mode = document.getElementById('hole-format')?.value || '18'; 
                 let nineType = document.getElementById('nine-hole-type')?.value || 'nassau';
-                let segments = (mode === '9' && nineType === 'straight') ? 1 : 3; 
-                
-                let formatCount = 0; 
-                let fStrs = [];
-                
+                let segLabels = mode === '9' ? (nineType === 'straight' ? ['9 holes'] : ['First 4', 'Last 5', 'Total']) : ['Front', 'Back', 'Total'];
                 let bet = parseInt(document.getElementById('bet-amount')?.value) || 0; 
                 let skins = parseInt(document.getElementById('skins-amount')?.value) || 0;
-                
-                if(document.getElementById('fmt-1')?.checked) { formatCount++; fStrs.push(`• 1-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-1-birdies')?.checked?' (All Birdies Count)':''}`); }
-                if(document.getElementById('fmt-2')?.checked) { formatCount++; fStrs.push(`• 2-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-2-birdies')?.checked?' (All Birdies Count)':''}`); }
-                if(document.getElementById('fmt-3')?.checked) { formatCount++; fStrs.push(`• 3-Ball: ${Array(segments).fill(bet).join('/')}${document.getElementById('fmt-3-birdies')?.checked?' (All Birdies Count)':''}`); }
+                let formats = [1, 2, 3].filter(f => document.getElementById(`fmt-${f}`)?.checked);
+                let birdieFormats = formats.filter(f => document.getElementById(`fmt-${f}-birdies`)?.checked);
+                let teamEntry = segLabels.length * formats.length * bet;
                 
                 let gCount = parseInt(document.getElementById('group-count')?.value || 0); 
                 let pCount = parseInt(document.getElementById('players-per-group')?.value || 0);
                 let teamLines = []; 
-                let totalP = 0;
-                
                 for(let g=1; g<=gCount; g++) { 
                     let names = []; 
                     for(let p=1; p<=pCount; p++) { 
                         let n = tempRosterCache[`g${g}-p${p}-name`]; 
-                        if(n && typeof n === 'string' && n.trim() !== "") { 
-                            names.push(n.split(' ')[0]); 
-                            if(!tempRosterCache[`g${g}-p${p}-ghost`]) totalP++; 
-                        } 
+                        if(n && typeof n === 'string' && n.trim() !== "") names.push(n.split(' ')[0]); 
                     } 
-                    if(names.length > 0) teamLines.push({id: g, names: names.join(', '), time: tempRosterCache[`g${g}-time`] || '08:00 AM'}); 
+                    if(names.length > 0) teamLines.push({id: g, names: names.join(', '), time: tempRosterCache[`g${g}-time`] || '08:00'}); 
                 }
-
                 let isScrambled = document.getElementById('is-scrambled')?.value === 'yes';
-                
-                let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\n🏆 CHOOSE-UP TOURNAMENT 🏆\nDate: ${dateStr}\nCourse: ${course}\n`;
-                if (mode === '9') st += `Format: 9 Holes (${nineType === 'nassau' ? '4/5 Nassau Split' : 'Straight 9'})\n\n`; else st += `Format: 18 Holes\n\n`;
-                
-                let totPer = (segments * formatCount * bet) + skins;
-                st += `💰 THE ACTION:\nEntry Fee: $${totPer}/player\n(Team: $${totPer-skins} | Skins: $${skins})\n\n`; 
-                st += fStrs.join('\n') + `\n\n`;
+                let holesText = mode === '9' ? `9 holes${nineType === 'nassau' ? ' (4/5 Nassau)' : ''}` : '18 holes';
 
-                if(!isScrambled) { 
-                    st += `🏌️‍♂️ PAIRINGS & TEAMS:\n`; 
-                    teamLines.forEach(t => { 
-                        let friendlyTime = formatFriendlyTime(t.time);
-                        st += `Team ${t.id} (${friendlyTime}):\n${t.names}\n\n`; 
-                    }); 
+                let st = `JB Golf · Tournament\n${dateStr} · ${course} · ${holesText}\n\n`;
+                st += `Entry $${teamEntry + skins} per player\n`;
+                if (formats.length > 0) st += `• Team bets $${teamEntry}: ${formats.map(f => f + '-Ball').join(' and ')}, $${bet} each ${segLabels.join(' / ')}\n`;
+                if (skins > 0) st += `• Skins $${skins}\n`;
+                if (birdieFormats.length > 0) st += `• All birdies count in ${birdieFormats.map(f => f + '-Ball').join(' and ')}\n`;
+
+                if (!isScrambled) {
+                    st += `\nTeams\n`;
+                    teamLines.forEach(t => { st += `Team ${t.id} · ${formatFriendlyTime(t.time)}: ${t.names}\n`; });
                 } else {
-                    st += `🤝 THE DRAFTED TEAMS (For the Money):\n`; 
-                    teamLines.forEach(t => { st += `Team ${t.id}: ${t.names}\n`; }); 
-                    st += `\n🏌️‍♂️ PHYSICAL PAIRINGS & TEE TIMES:\n`;
+                    st += `\nTeams\n`;
+                    teamLines.forEach(t => { st += `Team ${t.id}: ${t.names}\n`; });
+                    st += `\nCarts\n`;
                     let cartCount = parseInt(document.getElementById('cart-group-count')?.value || 0);
                     for(let c=1; c<=cartCount; c++) {
                         let cNames = []; 
-                        let cTime = tempRosterCache[`cart${c}-time`] || '08:00';
                         for(let p=1; p<=4; p++) { 
                             let val = tempRosterCache[`cart${c}-p${p}`]; 
                             if(val && typeof val === 'string') { 
                                 let pts = val.split('-'); 
-                                let cachedName = tempRosterCache[`g${pts[0]}-p${pts[1]}-name`] || '';
-                                cNames.push(cachedName.split(' ')[0]); 
+                                cNames.push((tempRosterCache[`g${pts[0]}-p${pts[1]}-name`] || '').split(' ')[0]); 
                             } 
                         }
-                        let friendlyTime = formatFriendlyTime(cTime);
-                        if(cNames.length > 0) st += `Cart ${c} (${friendlyTime}):\n${cNames.join(', ')}\n\n`;
+                        if(cNames.length > 0) st += `Cart ${c} · ${formatFriendlyTime(tempRosterCache[`cart${c}-time`] || '08:00')}: ${cNames.join(', ')}\n`;
                     }
                 }
-                
-                st += `📲 PRO TIP: To use the scoring link like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
+                st += `\nTip: open your link in Safari, tap Share, then Add to Home Screen for the full-screen app.`;
 
                 document.getElementById('share-modal-title').innerText = "Share Pre-Round Info";
                 document.getElementById('share-text-content').value = st;
@@ -1440,11 +1432,19 @@ function processStep2() {
         function shareSpectatorLink() {
             const baseUrl = window.location.href.split('?')[0]; 
             const spectatorLink = `${baseUrl}?spectator=true`;
-            let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\nFollow our live tournament leaderboard here:\n\n${spectatorLink}\n\n📲 PRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
+            let st = `JB Golf · Live leaderboard\n${spectatorLink}`;
             
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
             document.getElementById('share-text-content').value = st;
             document.getElementById('share-modal').classList.add('active');
+        }
+
+        // "2026-10-26" -> "Mon, Oct 26". Parsed as a local date so US time zones don't show the day before.
+        function formatRoundDate(value) {
+            let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(value || '');
+            let d = m ? new Date(+m[1], +m[2] - 1, +m[3]) : (value ? new Date(value) : new Date());
+            if (isNaN(d)) return value;
+            return d.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
         }
 
         function formatFriendlyTime(time24) {
@@ -2085,21 +2085,12 @@ function closeHoleScoringAndReturn() {
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
 
-            // --- FIX IS HERE: Hide the floating button for spectators ---
-            let floatBtn = document.getElementById('floating-scoring-btn');
-            if (floatBtn) {
-                floatBtn.style.display = (urlParams.get('spectator') === 'true') ? 'none' : 'block';
-            }
-            // ------------------------------------------------------------
 
             document.getElementById('dashboard-title').innerText = (urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings";
             
-            let totalPlayers = roundData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
             let orderedSegments = getOrderedSegments(roundData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
             let totalBets = roundData.formats.length * betsPerFormat; 
-            let totalTeamPot = totalPlayers * roundData.betAmount * totalBets; 
-            let skinsPot = totalPlayers * roundData.skinsAmount;
             
             let rulesHTML = '';
             roundData.formats.forEach(f => {
@@ -2114,10 +2105,8 @@ function closeHoleScoringAndReturn() {
                 });
             });
 
-            let finHTML = `<details class="dash-details">
-                <summary><span>Purse &amp; rules</span><b>$${totalTeamPot + skinsPot}</b></summary>
-                <div class="dash-row"><span>Team bets pot</span><b>$${totalTeamPot}</b></div>
-                <div class="dash-row"><span>Skins pot</span><b>$${skinsPot}</b></div>
+            let finHTML = `<details class="dash-details rules-details">
+                <summary><span>Rules</span></summary>
                 <div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
                 <div class="dash-row"><span>Per bet</span><span>$${roundData.betAmount}</span></div>
                 <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>
@@ -2335,6 +2324,7 @@ function closeHoleScoringAndReturn() {
                 fullHTML += `<div class="dash-note">4/5 Nassau split: First 4, Last 5 and Overall</div>`;
             }
 
+            fullHTML += `<p class="dash-footnote" style="margin-top: 24px;">Swipe a scorecard sideways for the back nine and totals.</p>`;
             rData.groups.forEach(g => {
                 fullHTML += `<section class="dash-section">
                     <div class="dash-section-title team-head"><span style="color: ${teamColor(g)};">Team ${g.id}</span><span>Capt ${g.captain.split(' ')[0]}</span></div>
@@ -2490,8 +2480,9 @@ function closeHoleScoringAndReturn() {
             return summaryHTML + fullHTML;
         }
 
-        // Each real player's buy-in, winnings (skins + share of team bets) and net, all in cents
-        function calculatePlayerNets(rData, sDb) {
+        // Every payout in one place: skins by hole, each team bet's result, and each real player's
+        // paid / won / net, all in cents. Skins use gross scores; team bets use net scores.
+        function calculatePayouts(rData, sDb) {
             let realPlayers = [];
             rData.groups.forEach(g => g.players.forEach(p => { if (!p.isGhost) realPlayers.push({ key: `${g.id}-${p.id}`, gid: g.id, name: p.name, color: teamColor(g) }); }));
             let totalPlayers = realPlayers.length;
@@ -2499,23 +2490,24 @@ function closeHoleScoringAndReturn() {
             let totalBets = rData.formats.length * (orderedSegments.length > 1 ? 3 : 1);
 
             // Gross skins: lowest score under par, outright
-            let skinsByPlayer = {}; let totalSkins = 0;
+            let skins = [];
             for (let h = 1; h <= 18; h++) {
                 let par = rData.course.pars[h-1]; let hs = [];
-                rData.groups.forEach(g => g.players.forEach(p => { let sc = sDb[g.id]?.[p.id]?.[h]; if (sc && !p.isGhost) hs.push({ key: `${g.id}-${p.id}`, s: sc }); }));
+                rData.groups.forEach(g => g.players.forEach(p => { let sc = sDb[g.id]?.[p.id]?.[h]; if (sc && !p.isGhost) hs.push({ key: `${g.id}-${p.id}`, name: p.name, s: sc }); }));
                 if (hs.length === 0) continue;
                 let min = Math.min(...hs.map(x => x.s));
                 let winners = hs.filter(x => x.s === min);
-                if (min < par && winners.length === 1) { skinsByPlayer[winners[0].key] = (skinsByPlayer[winners[0].key] || 0) + 1; totalSkins++; }
+                if (min < par && winners.length === 1) skins.push({ hole: h, key: winners[0].key, name: winners[0].name, gross: min, par });
             }
+            let skinsPotCents = totalPlayers * rData.skinsAmount * 100;
             // No skins won means the skins pot goes back to everyone, so it's left out of buy-ins
-            let skinsBuyIn = totalSkins > 0 ? rData.skinsAmount : 0;
-            let perSkinCents = totalSkins > 0 ? totalPlayers * rData.skinsAmount * 100 / totalSkins : 0;
+            let skinsRefunded = skins.length === 0;
+            let perSkinCents = skins.length > 0 ? skinsPotCents / skins.length : 0;
 
             // Team bets: each format/segment (plus overall) pot goes to the lowest team net, split on ties
             let teamWinCents = {};
             rData.groups.forEach(g => teamWinCents[g.id] = 0);
-            let potCents = totalPlayers * rData.betAmount * 100;
+            let betPotCents = totalPlayers * rData.betAmount * 100;
             let teamSegNet = (g, f, seg) => {
                 let net = 0, played = 0;
                 for (let h = seg.s; h <= seg.e; h++) {
@@ -2526,17 +2518,21 @@ function closeHoleScoringAndReturn() {
                 }
                 return { net, played };
             };
-            let payBet = results => {
+            let bets = [];
+            let settleBet = (f, label, results) => {
                 results = results.filter(r => r.played > 0);
-                if (results.length === 0 || potCents === 0) return;
-                let min = Math.min(...results.map(r => r.net));
-                let winners = results.filter(r => r.net === min);
-                winners.forEach(w => teamWinCents[w.id] += potCents / winners.length);
+                let bet = { format: f, label, winners: [], net: null };
+                if (results.length > 0) {
+                    bet.net = Math.min(...results.map(r => r.net));
+                    bet.winners = results.filter(r => r.net === bet.net).map(r => r.id);
+                    if (betPotCents > 0) bet.winners.forEach(id => teamWinCents[id] += betPotCents / bet.winners.length);
+                }
+                bets.push(bet);
             };
             rData.formats.forEach(f => {
-                orderedSegments.forEach(seg => payBet(rData.groups.map(g => ({ id: g.id, ...teamSegNet(g, f, seg) }))));
+                orderedSegments.forEach(seg => settleBet(f, seg.label.replace(/\s*\(.*\)/, ''), rData.groups.map(g => ({ id: g.id, ...teamSegNet(g, f, seg) }))));
                 if (orderedSegments.length > 1) {
-                    payBet(rData.groups.map(g => {
+                    settleBet(f, 'Total', rData.groups.map(g => {
                         let tot = { id: g.id, net: 0, played: 0 };
                         orderedSegments.forEach(seg => { let r = teamSegNet(g, f, seg); tot.net += r.net; tot.played += r.played; });
                         return tot;
@@ -2544,16 +2540,23 @@ function closeHoleScoringAndReturn() {
                 }
             });
 
-            let buyInCents = (rData.betAmount * totalBets + skinsBuyIn) * 100;
-            let nets = realPlayers.map(rp => {
+            let buyInCents = (rData.betAmount * totalBets + (skinsRefunded ? 0 : rData.skinsAmount)) * 100;
+            let players = realPlayers.map(rp => {
                 let teammates = realPlayers.filter(x => x.gid === rp.gid).length;
-                let exactWon = (skinsByPlayer[rp.key] || 0) * perSkinCents + teamWinCents[rp.gid] / teammates;
-                return { ...rp, buyInCents, exactWon, wonCents: Math.round(exactWon) };
+                let skinCount = skins.filter(sk => sk.key === rp.key).length;
+                let exactSkins = skinCount * perSkinCents, exactTeam = teamWinCents[rp.gid] / teammates;
+                return { ...rp, buyInCents, skinCount, skinsCents: Math.round(exactSkins), teamCents: Math.round(exactTeam), exactWon: exactSkins + exactTeam, wonCents: Math.round(exactSkins + exactTeam) };
             });
             // Rounding each share to the cent can leave the total a cent or two off; give the difference to the biggest winner
-            let drift = Math.round(nets.reduce((a, n) => a + n.exactWon, 0)) - nets.reduce((a, n) => a + n.wonCents, 0);
-            if (drift !== 0 && nets.length > 0) nets.reduce((top, n) => n.wonCents > top.wonCents ? n : top).wonCents += drift;
-            return nets.map(({ exactWon, ...n }) => ({ ...n, netCents: n.wonCents - n.buyInCents }));
+            let drift = Math.round(players.reduce((a, n) => a + n.exactWon, 0)) - players.reduce((a, n) => a + n.wonCents, 0);
+            if (drift !== 0 && players.length > 0) players.reduce((top, n) => n.wonCents > top.wonCents ? n : top).wonCents += drift;
+            players = players.map(({ exactWon, ...n }) => ({ ...n, netCents: n.wonCents - n.buyInCents }));
+
+            return { players, skins, perSkinCents, skinsPotCents, skinsRefunded, bets, betPotCents, totalBets, teamPotCents: betPotCents * totalBets, teamWinCents };
+        }
+
+        function calculatePlayerNets(rData, sDb) {
+            return calculatePayouts(rData, sDb).players;
         }
 
         // Fewest payments that settle everyone up: biggest loser pays biggest winner, repeat.
@@ -2576,286 +2579,133 @@ function closeHoleScoringAndReturn() {
             return payments;
         }
 
-        function formatCents(c) { return `$${(Math.abs(c) / 100).toFixed(2)}`; }
+        function formatCents(c) { return `$${(Math.abs(c) / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`; }
+        function formatDollars(c) { return formatCents(c).replace(/\.00$/, ''); }
 
-        function generateSettleUpHTML(rData, sDb) {
-            let nets = calculatePlayerNets(rData, sDb).sort((a, b) => b.netCents - a.netCents);
-            if (nets.length === 0) return '';
-            let html = `<div class="payout-header">Settle up</div>`;
-            html += `<div class="payout-sub">Each player's winnings minus their buy-in</div>`;
-            nets.forEach(n => {
-                let color = n.netCents > 0 ? 'var(--good)' : (n.netCents < 0 ? 'var(--bad)' : 'var(--text-muted)');
-                let sign = n.netCents > 0 ? '+' : (n.netCents < 0 ? '−' : '');
-                html += `<div class="payout-row"><span class="payout-winner" style="color:${n.color}">${n.name.split(' ')[0]}</span><span class="payout-amount" style="color:${color}">${sign}${formatCents(n.netCents)}</span></div>`;
+        function formatBetsWon(n) {
+            let whole = Math.floor(n + 1e-9), frac = n - whole;
+            if (frac < 0.01) return `${whole}`;
+            if (Math.abs(frac - 0.5) < 0.01) return `${whole || ''}½`;
+            return n.toFixed(1);
+        }
+
+        function formatSignedCents(c) { return `${c > 0 ? '+' : (c < 0 ? '−' : '')}${formatCents(c)}`; }
+
+        // Payouts in this order: purse, each player's paid / won / net, how it was won, then the quick settle-up
+        function generateFinancialSummaryHTML(rData, sDb) {
+            let pay = calculatePayouts(rData, sDb);
+            if (pay.players.length === 0) return "<p>No data.</p>";
+            let g = id => rData.groups.find(x => x.id === id);
+
+            let html = `<div class="payout-header">Purse</div>
+                <div class="payout-row"><span>Total purse</span><b class="payout-amount">${formatCents(pay.teamPotCents + pay.skinsPotCents)}</b></div>
+                <div class="payout-row"><span>Team bets <span class="payout-note">${pay.totalBets} bets × ${formatCents(pay.betPotCents)}</span></span><span class="payout-amount">${formatCents(pay.teamPotCents)}</span></div>
+                <div class="payout-row"><span>Skins <span class="payout-note">${pay.skinsRefunded ? 'none won, refunded' : `${pay.skins.length} won × ${formatCents(pay.perSkinCents)}`}</span></span><span class="payout-amount">${formatCents(pay.skinsPotCents)}</span></div>`;
+
+            html += `<div class="payout-header">Players</div>
+                <div class="table-wrapper"><table class="money-table"><thead><tr><th class="name-col">Player</th><th>Paid</th><th>Skins</th><th>Team</th><th>Net</th></tr></thead><tbody>`;
+            [...pay.players].sort((a, b) => b.netCents - a.netCents).forEach(p => {
+                let color = p.netCents > 0 ? 'var(--good)' : (p.netCents < 0 ? 'var(--bad)' : 'var(--text-muted)');
+                html += `<tr><td class="name-col" style="color:${p.color};">${p.name.split(' ')[0]}</td>
+                    <td>${formatCents(p.buyInCents)}</td>
+                    <td>${p.skinsCents ? formatCents(p.skinsCents) : '–'}</td>
+                    <td>${p.teamCents ? formatCents(p.teamCents) : '–'}</td>
+                    <td class="money-net" style="color:${color};">${formatSignedCents(p.netCents)}</td></tr>`;
             });
-            let payments = calculateSettlements(nets);
+            html += `</tbody></table></div>`;
+            if (pay.skinsRefunded && rData.skinsAmount > 0) html += `<p class="dash-footnote">No skins were won, so nobody pays the skins buy-in.</p>`;
+
+            // How it was won: team bet grid + skins by hole
+            let segLabels = [...new Set(pay.bets.map(b => b.label))];
+            html += `<details class="dash-details"><summary><span>How it was won</span></summary>
+                <div class="payout-sub">Team bets</div>
+                <div class="table-wrapper"><table class="money-table bets-grid"><thead><tr><th class="name-col"></th>${segLabels.map(l => `<th>${l}</th>`).join('')}</tr></thead><tbody>`;
+            rData.formats.forEach(f => {
+                html += `<tr><td class="name-col">${f}-Ball</td>`;
+                segLabels.forEach(label => {
+                    let bet = pay.bets.find(b => b.format === f && b.label === label);
+                    let cell = '–';
+                    if (bet && bet.winners.length === 1) { let w = g(bet.winners[0]); cell = `<b style="color:${teamColor(w)};">T${w.id}</b> ${formatNetToPar(bet.net)}`; }
+                    else if (bet && bet.winners.length > 1) cell = `Tie ${formatNetToPar(bet.net)}`;
+                    html += `<td>${cell}</td>`;
+                });
+                html += `</tr>`;
+            });
+            html += `</tbody></table></div>`;
+            rData.groups.forEach(team => {
+                let won = pay.bets.reduce((a, b) => a + (b.winners.includes(team.id) ? 1 / b.winners.length : 0), 0);
+                let mates = pay.players.filter(p => p.gid === team.id).length;
+                if (won > 0) html += `<div class="dash-row stacked">
+                    <div class="dash-row-line"><b style="color:${teamColor(team)};">Team ${team.id} · ${team.captain.split(' ')[0]}</b><b class="payout-amount">${formatCents(pay.teamWinCents[team.id])}</b></div>
+                    <div class="payout-note" style="margin: 2px 0 0;">Won ${formatBetsWon(won)} of ${pay.totalBets} bets${mates > 1 ? ` · ${formatCents(pay.teamWinCents[team.id] / mates)} each` : ''}</div>
+                </div>`;
+            });
+            html += `<div class="payout-sub">Skins${pay.skins.length ? ` · ${formatCents(pay.perSkinCents)} each` : ''}</div>`;
+            if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won</span></div>`;
+            pay.skins.forEach(sk => {
+                let who = pay.players.find(p => p.key === sk.key);
+                html += `<div class="payout-row"><span>Hole ${sk.hole} <span class="payout-note">par ${sk.par}</span></span><span><b style="color:${who ? who.color : 'inherit'};">${sk.name.split(' ')[0]}</b> ${sk.gross}</span></div>`;
+            });
+            html += `</details>`;
+
+            // Last: the shortcut that skips everyone paying in first
+            let payments = calculateSettlements(pay.players);
             if (payments.length > 0) {
-                html += `<div class="payout-sub">Who pays who (rounded to whole dollars)</div>`;
+                html += `<div class="payout-header">Who pays who</div>
+                    <div class="payout-sub">Quick settle: skips everyone paying their entry and skins first. Whole dollars.</div>`;
                 payments.forEach(pm => {
-                    html += `<div class="payout-row"><span>${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}</span><span class="payout-amount">${formatCents(pm.cents)}</span></div>`;
+                    html += `<div class="payout-row"><span>${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}</span><span class="payout-amount">${formatDollars(pm.cents)}</span></div>`;
                 });
             }
             return html;
         }
 
-        function generateFinancialSummaryHTML(rData, sDb) {
-            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0); 
-            if(totalPlayers === 0) return "<p>No data.</p>";
-
-            let skinsHTML = `<div class="payout-header">Skins</div>`; 
-            let skinsPot = totalPlayers * rData.skinsAmount; 
-            let playerSkins = {}; let totalSkinsWon = 0;
-
-            for(let h=1; h<=18; h++) {
-                let par = rData.course.pars[h-1]; let hs = [];
-                rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) { hs.push({id: p.id, gid: g.id, n: p.name, c: teamColor(g), s: s}); } }); });
-                if(hs.length > 0) {
-                    let min = Math.min(...hs.map(x=>x.s));
-                    if(min < par) { 
-                        let winners = hs.filter(x=>x.s===min); 
-                        if(winners.length===1) { 
-                            let w = winners[0]; let key = `${w.gid}-${w.id}`; 
-                            if(!playerSkins[key]) playerSkins[key] = { name: w.n, color: w.c, holes: [] }; 
-                            playerSkins[key].holes.push(h); totalSkinsWon++; 
-                        } 
-                    }
-                }
-            }
-
-            if(totalSkinsWon > 0 && skinsPot > 0) {
-                let perSkin = skinsPot / totalSkinsWon; 
-                skinsHTML += `<div class="payout-sub">Pot $${skinsPot} · $${perSkin.toFixed(2)} per skin</div>`;
-                Object.values(playerSkins).forEach(ps => { 
-                    let totalWon = ps.holes.length * perSkin; 
-                    skinsHTML += `<div class="payout-row"><span class="payout-winner" style="color:${ps.color}">${ps.name.split(' ')[0]} (Holes: ${ps.holes.join(', ')})</span><span class="payout-amount">$${totalWon.toFixed(2)}</span></div>`; 
-                });
-            } else { skinsHTML += `<div class="payout-row">No gross skins won / No skins pot.</div>`; }
-
-            let teamHTML = `<div class="payout-header">Team bets</div>`;
-            let orderedSegments = getOrderedSegments(rData); 
-            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1; 
-            let totalBets = rData.formats.length * betsPerFormat;
-            let potPerBet = totalPlayers * rData.betAmount; let teamPayouts = {};
-            
-            if(potPerBet > 0) {
-                rData.groups.forEach(g => { teamPayouts[g.id] = { total: 0, c: teamColor(g), n: g.captain.split(' ')[0], count: g.players.filter(p => !p.isGhost).length }; });
-                rData.formats.forEach(f => {
-                    orderedSegments.forEach(seg => {
-                        let segData = [];
-                        rData.groups.forEach(g => {
-                            let segNet = 0, segPlayed = 0;
-                            for(let h=seg.s; h<=seg.e; h++) {
-                                let basePar = rData.course.pars[h-1]; let hs = [];
-                                g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                if(hs.length >= f) { 
-                                    let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
-                                    let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
-                                    if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
-                                    segNet += net; segPlayed++; 
-                                }
-                            }
-                            if(segPlayed > 0) segData.push({id: g.id, net: segNet});
-                        });
-                        
-                        if(segData.length > 0) {
-                            let minNet = Math.min(...segData.map(d => d.net)); 
-                            let winners = segData.filter(d => d.net === minNet); 
-                            let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-sub">${f}-Ball · ${seg.label} · $${potPerBet} pot</div>`;
-                            winners.forEach(w => { 
-                                teamPayouts[w.id].total += split; 
-                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} (Capt: ${teamPayouts[w.id].n}) [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
-                            });
-                        }
-                    });
-
-                    if (orderedSegments.length > 1) {
-                        let totData = [];
-                        rData.groups.forEach(g => {
-                            let overallNet = 0, overallPlayed = 0;
-                            orderedSegments.forEach(seg => {
-                                let segNet = 0, segPlayed = 0;
-                                for(let h=seg.s; h<=seg.e; h++) {
-                                    let basePar = rData.course.pars[h-1]; let hs = [];
-                                    g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                    if(hs.length >= f) { 
-                                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
-                                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
-                                        if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
-                                        segNet += net; segPlayed++; 
-                                    }
-                                }
-                                if(segPlayed > 0) { overallNet += segNet; overallPlayed += segPlayed; }
-                            });
-                            if(overallPlayed > 0) totData.push({id: g.id, net: overallNet});
-                        });
-
-                        if(totData.length > 0) {
-                            let minNet = Math.min(...totData.map(d => d.net)); 
-                            let winners = totData.filter(d => d.net === minNet); 
-                            let split = potPerBet / winners.length;
-                            teamHTML += `<div class="payout-sub">${f}-Ball · Overall · $${potPerBet} pot</div>`;
-                            winners.forEach(w => { 
-                                teamPayouts[w.id].total += split; 
-                                teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${teamPayouts[w.id].c}">Team ${w.id} (Capt: ${teamPayouts[w.id].n}) [${formatNetToPar(minNet)}] ${winners.length>1?'(TIE)':''}</span><span class="payout-amount">$${split.toFixed(2)}</span></div>`; 
-                            });
-                        }
-                    }
-                });
-
-                teamHTML += `<div class="payout-sub">Team totals</div>`;
-                Object.keys(teamPayouts).forEach(tid => {
-                    let tp = teamPayouts[tid];
-                    if(tp.total > 0) {
-                        let perPlayer = tp.total / tp.count;
-                        teamHTML += `<div class="payout-row"><span class="payout-winner" style="color:${tp.c};">Team ${tid} (Capt: ${tp.n}) Total</span><span class="payout-amount" style="font-size:16px;">$${tp.total.toFixed(2)}</span></div>`;
-                        teamHTML += `<div class="payout-row muted"><span>Each teammate</span><span>$${perPlayer.toFixed(2)}</span></div>`;
-                    }
-                });
-            } else { teamHTML += `<div class="payout-row">No Team Bets configured.</div>`; }
-
-            return generateSettleUpHTML(rData, sDb) + skinsHTML + teamHTML;
-        }
-
         // ==========================================
         // SHARE & ARCHIVE ENGINE
         // ==========================================
+        // Same order as the payouts page: purse, skins, each player, team bets, then who pays who
         function openResultsShareModal() {
             let rData = activeViewRoundData; 
             let sDb = activeViewScoresDb;
-            
-            let totalPlayers = rData.groups.reduce((acc, g) => acc + g.players.filter(p=>!p.isGhost).length, 0);
-            let orderedSegments = getOrderedSegments(rData); 
-            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1; 
-            let totalBets = rData.formats.length * betsPerFormat;
-            let totalTeamPot = totalPlayers * rData.betAmount * totalBets; 
-            let skinsPot = totalPlayers * rData.skinsAmount;
+            let pay = calculatePayouts(rData, sDb);
+            let first = name => name.split(' ')[0];
 
-            let st = `⛳🎣 JB FISHING & GOLF APP 🎣⛳\n===========================\n🏆 TOURNAMENT FINAL RESULTS 🏆\nDate: ${rData.date}\nCourse: ${rData.course.name}\n\n`;
-            st += `💰 TOTAL PURSE: $${totalTeamPot + skinsPot}\nTeam Pot: $${totalTeamPot} | Skins Pot: $${skinsPot}\n\n`;
+            let st = `JB Golf · Final Results\n${formatRoundDate(rData.date)} · ${rData.course.name}\n\n`;
+            st += `Purse ${formatCents(pay.teamPotCents + pay.skinsPotCents)} · Team bets ${formatCents(pay.teamPotCents)} · Skins ${formatCents(pay.skinsPotCents)}\n`;
+            if (pay.skins.length > 0) {
+                let byPlayer = {};
+                pay.skins.forEach(sk => { (byPlayer[sk.key] = byPlayer[sk.key] || { name: first(sk.name), holes: [] }).holes.push(sk.hole); });
+                st += `Skins (${formatCents(pay.perSkinCents)} each): ${Object.values(byPlayer).map(b => `${b.name} ${b.holes.join(', ')}`).join(' · ')}\n`;
+            } else if (rData.skinsAmount > 0) {
+                st += `Skins: none won, buy-in refunded\n`;
+            }
 
-            st += `🏆 TEAM STANDINGS (To Par):\n`;
-            rData.groups.forEach(g => {
-                st += `Team ${g.id} (Capt: ${g.captain.split(' ')[0]}):\n`;
-                rData.formats.forEach(f => {
-                    st += `  ${f}-Ball:\n`; 
-                    let overallNet = 0;
-                    orderedSegments.forEach(seg => {
-                        let segNet = 0;
-                        for(let h=seg.s; h<=seg.e; h++) {
-                            let basePar = rData.course.pars[h-1]; let hs = [];
-                            g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                            if(hs.length >= f) { 
-                                let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
-                                let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
-                                if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
-                                segNet += net; 
-                            }
-                        }
-                        st += `    ${seg.label}: [${formatNetToPar(segNet)}]\n`; overallNet += segNet;
-                    });
-                    if (orderedSegments.length > 1) { st += `    Overall Total: [${formatNetToPar(overallNet)}]\n`; }
-                }); 
-                st += `\n`;
+            st += `\nPlayers (paid ${formatCents(pay.players[0]?.buyInCents || 0)} each)\n`;
+            [...pay.players].sort((a, b) => b.netCents - a.netCents).forEach(p => {
+                let parts = [];
+                if (p.skinsCents) parts.push(`skins ${formatCents(p.skinsCents)}`);
+                if (p.teamCents) parts.push(`team ${formatCents(p.teamCents)}`);
+                st += `${first(p.name)} ${formatSignedCents(p.netCents).replace('−', '-')}${parts.length ? ` (${parts.join(', ')})` : ''}\n`;
             });
 
-            st += `🔥 GROSS SKINS WON:\n`;
-            let playerSkins = {}; let totalSkins = 0;
-            for(let h=1; h<=18; h++) {
-                let par = rData.course.pars[h-1]; let hs = [];
-                rData.groups.forEach(g => { g.players.forEach(p => { let s = sDb[g.id]?.[p.id]?.[h]; if(s && !p.isGhost) hs.push({id: p.id, gid: g.id, n: p.name, s: s}); }); });
-                if(hs.length > 0) {
-                    let min = Math.min(...hs.map(x=>x.s));
-                    if(min < par) { 
-                        let winners = hs.filter(x=>x.s===min); 
-                        if(winners.length===1) { 
-                            let k = `${winners[0].gid}-${winners[0].id}`; 
-                            if(!playerSkins[k]) playerSkins[k] = {n: winners[0].n.split(' ')[0], holes: []}; 
-                            playerSkins[k].holes.push(h); totalSkins++; 
-                        } 
-                    }
-                }
-            }
-            if(totalSkins > 0 && skinsPot > 0) {
-                let perSkin = skinsPot / totalSkins; 
-                st += `Value Per Skin: $${perSkin.toFixed(2)}\n`;
-                Object.values(playerSkins).forEach(ps => { st += `  ${ps.n} | $${(ps.holes.length * perSkin).toFixed(2)} | Holes: ${ps.holes.join(', ')}\n`; });
-            } else { st += `  No gross skins won.\n`; }
-
-            let tp = {}; 
-            rData.groups.forEach(g => tp[g.id] = {n:g.captain.split(' ')[0], t:0, c:g.players.filter(p => !p.isGhost).length});
-            let pot = totalPlayers * rData.betAmount;
-            
-            if(pot > 0) {
-                rData.formats.forEach(f => {
-                    orderedSegments.forEach(seg => {
-                        let segData = [];
-                        rData.groups.forEach(g => {
-                            let segNet = 0, segPlayed = 0;
-                            for(let h=seg.s; h<=seg.e; h++) {
-                                let basePar = rData.course.pars[h-1]; let hs = [];
-                                g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                if(hs.length >= f) { 
-                                    let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
-                                    let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
-                                    if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
-                                    segNet += net; segPlayed++; 
-                                }
-                            }
-                            if(segPlayed > 0) segData.push({id: g.id, net: segNet});
-                        });
-                        if(segData.length > 0) {
-                            let min = Math.min(...segData.map(d=>d.net)); 
-                            let w = segData.filter(d=>d.net===min); 
-                            let split = pot/w.length;
-                            w.forEach(win => { tp[win.id].t += split; });
-                        }
-                    });
-                    
-                    if (orderedSegments.length > 1) {
-                        let totData = [];
-                        rData.groups.forEach(g => {
-                            let overallNet = 0, overallPlayed = 0;
-                            orderedSegments.forEach(seg => {
-                                let segNet = 0, segPlayed = 0;
-                                for(let h=seg.s; h<=seg.e; h++) {
-                                    let basePar = rData.course.pars[h-1]; let hs = [];
-                                    g.players.forEach(p => { let score = sDb[g.id]?.[p.id]?.[h]; if(score) hs.push(getPlayerNetScore(rData, p, h, score)); });
-                                    if(hs.length >= f) { 
-                                        let nets = hs.map(s => s - basePar).sort((a,b) => a-b); 
-                                        let net = nets.slice(0,f).reduce((a,b) => a+b, 0); 
-                                        if (rData.birdieRules && rData.birdieRules[f]) { nets.slice(f).forEach(n => { if(n < 0) net += n; }); } 
-                                        segNet += net; segPlayed++; 
-                                    }
-                                }
-                                if(segPlayed > 0) { overallNet += segNet; overallPlayed += segPlayed; }
-                            });
-                            if(overallPlayed > 0) totData.push({id: g.id, net: overallNet});
-                        });
-                        if(totData.length > 0) {
-                            let min = Math.min(...totData.map(d=>d.net)); 
-                            let w = totData.filter(d=>d.net===min); 
-                            let split = pot/w.length;
-                            w.forEach(win => { tp[win.id].t += split; });
-                        }
-                    }
+            st += `\nTeam bets\n`;
+            rData.formats.forEach(f => {
+                let cells = pay.bets.filter(b => b.format === f).map(b => {
+                    if (b.winners.length === 0) return `${b.label} –`;
+                    if (b.winners.length > 1) return `${b.label} tie ${formatNetToPar(b.net)}`;
+                    return `${b.label} T${b.winners[0]} ${formatNetToPar(b.net)}`;
                 });
-            }
-
-            st += `\n💰 FINAL TEAM TOTALS:\n`;
-            Object.values(tp).forEach((team, idx) => {
-                if(team.t > 0) { st += `Team ${Object.keys(tp)[idx]} (Capt: ${team.n}):\n  Team Total Payout: $${team.t.toFixed(2)}\n  Per Player Piece: $${(team.t/team.c).toFixed(2)}\n`; }
+                st += `${f}-Ball: ${cells.join(' · ')}\n`;
+            });
+            rData.groups.forEach(team => {
+                let won = pay.bets.reduce((a, b) => a + (b.winners.includes(team.id) ? 1 / b.winners.length : 0), 0);
+                if (won > 0) st += `Team ${team.id} (${first(team.captain)}) won ${formatBetsWon(won)} of ${pay.totalBets}: ${formatCents(pay.teamWinCents[team.id])}\n`;
             });
 
-            let nets = calculatePlayerNets(rData, sDb).sort((a, b) => b.netCents - a.netCents);
-            if (nets.length > 0) {
-                st += `\n🤝 SETTLE UP (winnings minus buy-in):\n`;
-                nets.forEach(n => { st += `  ${n.name.split(' ')[0]}: ${n.netCents > 0 ? '+' : (n.netCents < 0 ? '-' : '')}${formatCents(n.netCents)}\n`; });
-                let payments = calculateSettlements(nets);
-                if (payments.length > 0) {
-                    st += `\n💸 WHO PAYS WHO (whole dollars):\n`;
-                    payments.forEach(pm => { st += `  ${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}: ${formatCents(pm.cents)}\n`; });
-                }
+            let payments = calculateSettlements(pay.players);
+            if (payments.length > 0) {
+                st += `\nWho pays who (quick settle, whole dollars)\n`;
+                payments.forEach(pm => { st += `${first(pm.from)} → ${first(pm.to)} ${formatDollars(pm.cents)}\n`; });
             }
 
             document.getElementById('share-modal-title').innerText = "Share Final Results";
@@ -2892,7 +2742,7 @@ function closeHoleScoringAndReturn() {
                 
                 const baseUrl = window.location.href.split('?')[0]; 
                 const magicLink = `${baseUrl}?cart=${c.id}`;
-                const message = encodeURIComponent(`⛳🎣 JB FISHING & GOLF APP 🎣⛳\n\nHere is the live scorecard for Cart ${c.id} (${cartCaptain}). Click here to start scoring:\n\n${magicLink}\n\n📲 PRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
+                const message = encodeURIComponent(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${magicLink}\n\nTip: open your link in Safari, tap Share, then Add to Home Screen for the full-screen app.`);
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 const smsLink = isIOS ? `sms:&body=${message}` : `sms:?body=${message}`;
                 html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="window.location.href='${smsLink}'">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
