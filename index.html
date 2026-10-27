@@ -322,6 +322,8 @@
         .om-pressed-line { font-size: 12px; margin-top: 2px; }
         .om-press-mark td { font-size: 13px; font-weight: 700; color: var(--bad); border-bottom: 1px solid var(--line); padding: 6px; white-space: normal; }
         .om-second { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .om-nine-break td { padding: 22px 6px 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-gold); border-bottom: 2px solid var(--accent-gold); }
+        .om-nine-break.first td { padding-top: 8px; }
         .om-b-win { font-weight: 800; text-decoration: underline; }
         .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
         .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
@@ -3078,11 +3080,16 @@ function closeHoleScoringAndReturn() {
                 let cell = (n, h) => n.bets.map(b => running(n, b, h)).filter(v => v !== null).map(formatMatchBet).join(' ');
                 html += `<div class="payout-sub">Nassau hole by hole · low gross · + = ${m.names[0]} up (strokes)</div>`;
                 html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
-                playedNassau.forEach(({ h, key }) => {
+                let cols = overall ? 4 : 3;
+                playedNassau.forEach(({ h, key }, i) => {
                     let n = m.nassau[key], [a, b] = n.lows[h];
+                    // Clean break at the turn: a header row for each nine
+                    if (ninesNassau.length > 1 && (i === 0 || playedNassau[i - 1].key !== key)) {
+                        html += `<tr class="om-nine-break${i === 0 ? ' first' : ''}"><td colspan="${cols}">${key === 'back' ? 'Back 9' : 'Front 9'}</td></tr>`;
+                    }
                     let low = `<span class="${a < b ? 'om-a' : ''}">${a}</span> v <span class="${b < a ? 'om-b-win' : ''}">${b}</span>`;
                     html += `<tr><td><b>${h}</b></td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
-                    pressList.filter(pr => pr.after === h).forEach(pr => { html += `<tr class="om-press-mark"><td colspan="${overall ? 4 : 3}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
+                    pressList.filter(pr => pr.after === h).forEach(pr => { html += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
                 });
                 html += `</tbody></table>`;
             }
@@ -3105,7 +3112,7 @@ function closeHoleScoringAndReturn() {
                 if (nine.rows.length === 0) return;
                 let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
                 html += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
-                html += `<div class="payout-row sub"><span>Team birdies ${nine.birdies[0]} – ${nine.birdies[1]} (eagle = 2)</span><b class="payout-amount">${formatMatchMoney(nine.birdieMoney)}</b></div>`;
+                html += `<div class="payout-row sub"><span>Team birdies ${nine.birdies[0]} – ${nine.birdies[1]}</span><b class="payout-amount">${formatMatchMoney(nine.birdieMoney)}</b></div>`;
                 let nassauNine = m.nassau[nine.key]?.money || 0;
                 html += `<div class="payout-row"><span>${title} total${nine.finished ? '' : ' so far'}${m.nassau[nine.key]?.finished ? ' with Nassau' : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney + nassauNine)}</b></div>`;
             });
