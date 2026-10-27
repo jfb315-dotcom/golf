@@ -3450,7 +3450,9 @@ function closeHoleScoringAndReturn() {
                 
                 const baseUrl = window.location.href.split('?')[0]; 
                 const magicLink = `${baseUrl}?cart=${c.id}`;
-                const message = encodeURIComponent(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
+                // Course, date and tee time so everyone knows where and when
+                let details = [formatRoundDate(roundData.date), roundData.course?.name, c.time ? `Tee ${formatFriendlyTime(c.time)}` : ''].filter(Boolean).join(' · ');
+                const message = encodeURIComponent(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
                 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
                 const smsLink = isIOS ? `sms:&body=${message}` : `sms:?body=${message}`;
                 html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="window.location.href='${smsLink}'">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
