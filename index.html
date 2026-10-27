@@ -573,7 +573,7 @@
         <div class="top-row">
             <button type="button" class="back-to-scoring" onclick="switchScreen('step-dashboard', 'step-3')">‹ BACK TO SCORING</button>
         </div>
-        <div class="clean-eyebrow">Live</div>
+        <div class="clean-eyebrow" id="dashboard-eyebrow">Live</div>
         <h2 class="clean-title" id="dashboard-title">Standings</h2>
         <div id="dashboard-cart-progress"></div>
         <div id="dashboard-scorecards"></div>
@@ -771,6 +771,7 @@ const curatedColors = ['#00f3ff', 'var(--good)', '#ff007f', '#ccff00', '#ff5e00'
 let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, currentHoles: { admin: 1 }, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
 let scoresDb = {}; 
 let clipboards = {};
+let showingFinalResults = false; // a cart looking at a finalized round's results
 let matchPresses = {}; // Our Match presses: { front|back|overall: { A|B: hole pressed after } }
 let currentTeamFilter = "ALL"; 
 let lockedTeamId = null; 
@@ -899,9 +900,12 @@ function toggle9HoleOptions() {
                     if (doc.exists) {
                         const data = doc.data();
 
-                        if (data.isArchived) {
+                        const hoursSinceFinal = (new Date().getTime() - (data.archivedAt || 0)) / (1000 * 60 * 60);
+                        // Carts keep the final results for 48 hours too, like the spectator link
+                        showingFinalResults = !!data.isArchived && lockedTeamId !== null && !isSpectator && hoursSinceFinal <= 48;
+                        if (data.isArchived && !showingFinalResults) {
                             if (isSpectator) {
-                                const hoursPassed = (new Date().getTime() - (data.archivedAt || 0)) / (1000 * 60 * 60);
+                                const hoursPassed = hoursSinceFinal;
                                 if (hoursPassed > 48) {
                                     document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                                     document.getElementById('step-dead-link').classList.add('active'); 
@@ -913,8 +917,8 @@ function toggle9HoleOptions() {
                                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                                 if (lockedTeamId !== null) {
                                     document.getElementById('step-dead-link').classList.add('active'); 
-                                    document.getElementById('step-dead-title').innerText = "⏳ Waiting for Admin...";
-                                    document.getElementById('step-dead-sub').innerText = "The next tournament hasn't officially started yet. Hang tight!";
+                                    document.getElementById('step-dead-title').innerText = "⛳ Round Complete";
+                                    document.getElementById('step-dead-sub').innerText = "This round's results have expired. You'll get a new link for the next round.";
                                 } else if (!document.getElementById('step-8').classList.contains('active') && !document.getElementById('step-9').classList.contains('active') && !document.getElementById('step-add-course').classList.contains('active')) {
                                     document.getElementById('step-1').classList.add('active'); 
                                 }
@@ -922,6 +926,7 @@ function toggle9HoleOptions() {
                             }
                         } else {
                             document.getElementById('step-dead-link').classList.remove('active');
+                            if (!isSpectator) document.querySelectorAll('#step-dashboard button').forEach(btn => btn.style.display = '');
                         }
 
                         // Smarter merge so per-cart currentHoles don't get overwritten by other clients
@@ -967,11 +972,11 @@ function toggle9HoleOptions() {
                             roundData.course = allAvailableCourses[roundData.course] || { name: "Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; 
                         }
 
-                        if (isSpectator) {
+                        if (isSpectator || showingFinalResults) {
                             document.getElementById('admin-finalize-container').style.display = 'none';
+                            viewDashboard();
                             const dashBtns = document.querySelectorAll('#step-dashboard button');
                             dashBtns.forEach(btn => btn.style.display = 'none'); 
-                            viewDashboard();
                             return;
                         }
 
@@ -2463,7 +2468,8 @@ function closeHoleScoringAndReturn() {
             activeViewScoresDb = scoresDb;
 
 
-            document.getElementById('dashboard-title').innerText = (urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings";
+            document.getElementById('dashboard-eyebrow').innerText = showingFinalResults ? 'Round complete' : 'Live';
+            document.getElementById('dashboard-title').innerText = showingFinalResults ? "Final results" : ((urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings");
             
             let orderedSegments = getOrderedSegments(roundData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
@@ -2497,7 +2503,7 @@ function closeHoleScoringAndReturn() {
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
             document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(scorecardView(roundData), scoresDb); 
             document.getElementById('dashboard-payouts').innerHTML = hasTournamentMoney(roundData) ? generateFinancialSummaryHTML(roundData, scoresDb) : '';
-            document.getElementById('dashboard-our-match').innerHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, true) : '';
+            document.getElementById('dashboard-our-match').innerHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults) : '';
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
