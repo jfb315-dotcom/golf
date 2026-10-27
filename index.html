@@ -322,6 +322,13 @@
         .om-pressed-line { font-size: 12px; margin-top: 2px; }
         .om-press-mark td { font-size: 13px; font-weight: 700; color: var(--bad); border-bottom: 1px solid var(--line); padding: 6px; white-space: normal; }
         .om-second { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
+        .om-nine-break td { padding: 22px 6px 6px; font-size: 12px; font-weight: 800; letter-spacing: 0.12em; text-transform: uppercase; color: var(--accent-gold); border-bottom: 2px solid var(--accent-gold); }
+        .om-nine-break.first td { padding-top: 8px; }
+        .om-birdies { margin-top: 6px; }
+        .om-birdies-head { padding: 8px 4px 2px 14px; font-size: 15px; color: var(--text-muted); }
+        .om-birdie-line { padding: 3px 4px 3px 26px; font-size: 15px; }
+        .om-birdie-line b { display: inline-block; min-width: 52px; letter-spacing: 0.04em; }
+        .om-birdie-line.muted { color: var(--text-muted); }
         .om-b-win { font-weight: 800; text-decoration: underline; }
         .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
         .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
@@ -2970,6 +2977,7 @@ function closeHoleScoringAndReturn() {
                 let bets = [0];
                 let rows = [];
                 let birdies = [0, 0];
+                let birdieLog = sides.map(side => side.map(() => [])); // [side][player] -> holes birdied
                 done.forEach((h, i) => {
                     let a = nets(0, h), b = nets(1, h);
                     let result = a[0] !== b[0] ? (a[0] < b[0] ? 1 : -1) : (a[1] !== b[1] ? (a[1] < b[1] ? 1 : -1) : 0); // + = A wins the hole
@@ -2978,11 +2986,15 @@ function closeHoleScoringAndReturn() {
                     if (!isLast && bets[bets.length - 1] !== 0) bets.push(0); // automatic press
                     let units = sides.map(side => side.reduce((u, x) => u + Math.max(0, par(h) - gross(x, h)), 0));
                     birdies[0] += units[0]; birdies[1] += units[1];
+                    sides.forEach((side, si) => side.forEach((x, pi) => {
+                        let u = Math.max(0, par(h) - gross(x, h));
+                        if (u) birdieLog[si][pi].push({ hole: h, units: u });
+                    }));
                     rows.push({ hole: h, result, bets: [...bets], lowNets: [a[0], b[0]], secondNets: [a[1], b[1]], units });
                 });
                 let ballMoney = bets.reduce((a, m) => a + Math.sign(m) * amount, 0);
                 let birdieMoney = (birdies[0] - birdies[1]) * amount;
-                return { key, holes, amount, done, finished, rows, bets, birdies, ballMoney, birdieMoney };
+                return { key, holes, amount, done, finished, rows, bets, birdies, birdieLog, ballMoney, birdieMoney };
             });
 
             let totalMoney = nines.reduce((a, n) => a + n.ballMoney + n.birdieMoney, 0) + MATCH_BETS.reduce((a, k) => a + (nassau[k]?.money || 0), 0);
@@ -3078,11 +3090,16 @@ function closeHoleScoringAndReturn() {
                 let cell = (n, h) => n.bets.map(b => running(n, b, h)).filter(v => v !== null).map(formatMatchBet).join(' ');
                 html += `<div class="payout-sub">Nassau hole by hole · low gross · + = ${m.names[0]} up (strokes)</div>`;
                 html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
-                playedNassau.forEach(({ h, key }) => {
+                let cols = overall ? 4 : 3;
+                playedNassau.forEach(({ h, key }, i) => {
                     let n = m.nassau[key], [a, b] = n.lows[h];
+                    // Clean break at the turn: a header row for each nine
+                    if (ninesNassau.length > 1 && (i === 0 || playedNassau[i - 1].key !== key)) {
+                        html += `<tr class="om-nine-break${i === 0 ? ' first' : ''}"><td colspan="${cols}">${key === 'back' ? 'Back 9' : 'Front 9'}</td></tr>`;
+                    }
                     let low = `<span class="${a < b ? 'om-a' : ''}">${a}</span> v <span class="${b < a ? 'om-b-win' : ''}">${b}</span>`;
                     html += `<tr><td><b>${h}</b></td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
-                    pressList.filter(pr => pr.after === h).forEach(pr => { html += `<tr class="om-press-mark"><td colspan="${overall ? 4 : 3}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
+                    pressList.filter(pr => pr.after === h).forEach(pr => { html += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
                 });
                 html += `</tbody></table>`;
             }
@@ -3105,7 +3122,7 @@ function closeHoleScoringAndReturn() {
                 if (nine.rows.length === 0) return;
                 let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
                 html += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
-                html += `<div class="payout-row sub"><span>Team birdies ${nine.birdies[0]} – ${nine.birdies[1]} (eagle = 2)</span><b class="payout-amount">${formatMatchMoney(nine.birdieMoney)}</b></div>`;
+                html += ourMatchBirdiesHTML(m, nine);
                 let nassauNine = m.nassau[nine.key]?.money || 0;
                 html += `<div class="payout-row"><span>${title} total${nine.finished ? '' : ' so far'}${m.nassau[nine.key]?.finished ? ' with Nassau' : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney + nassauNine)}</b></div>`;
             });
@@ -3115,6 +3132,20 @@ function closeHoleScoringAndReturn() {
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; first/second-ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             if (live) html += `<button type="button" class="text-link" onclick="openOurMatchShareModal()">Share Our Match</button>`;
             return html + `</section>`;
+        }
+
+        // Who made each birdie and where: "BREN 1, 7, 10 eagle", then the net per side in dollars
+        function ourMatchBirdieHoles(log) { return log.map(b => `${b.hole}${b.units === 2 ? ' eagle' : b.units >= 3 ? ' albatross' : ''}`).join(', '); }
+        function ourMatchBirdiesHTML(m, nine) {
+            let html = `<div class="om-birdies"><div class="om-birdies-head">Team birdies</div>`;
+            m.sides.forEach((side, si) => side.forEach((x, pi) => {
+                let log = nine.birdieLog[si][pi];
+                if (log.length) html += `<div class="om-birdie-line ${si === 0 ? 'om-a' : 'om-b'}"><b>${x.player.name.split(' ')[0].slice(0, 4).toUpperCase()}</b> ${ourMatchBirdieHoles(log)}</div>`;
+            }));
+            if (!nine.birdies[0] && !nine.birdies[1]) html += `<div class="om-birdie-line muted">None yet</div>`;
+            let net = nine.birdies[0] - nine.birdies[1];
+            html += `<div class="payout-row sub"><span>${nine.birdies[0]} – ${nine.birdies[1]}${net ? ` · net ${Math.abs(net)} × $${nine.amount}` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.birdieMoney)}</b></div>`;
+            return html + `</div>`;
         }
 
         function pressOurMatch(key, side) {
@@ -3166,6 +3197,7 @@ function closeHoleScoringAndReturn() {
                 st += `\n${nine.key === 'back' ? 'Back' : 'Front'} 9 ($${nine.amount})\n`;
                 st += `Bets: ${nine.bets.map(formatMatchBet).join(' ')} → ${formatMatchMoney(nine.ballMoney)}\n`;
                 st += `Team birdies ${nine.birdies[0]}–${nine.birdies[1]} → ${formatMatchMoney(nine.birdieMoney)}\n`;
+                m.sides.forEach((side, si) => side.forEach((x, pi) => { let log = nine.birdieLog[si][pi]; if (log.length) st += `  ${x.player.name.split(' ')[0].slice(0, 4).toUpperCase()} ${ourMatchBirdieHoles(log)}\n`; }));
             });
             st += `\n${m.finished ? 'Final' : 'So far'}: ${matchSettleLine(m, m.totalMoney)}\n`;
             document.getElementById('share-modal-title').innerText = "Share Our Match";
