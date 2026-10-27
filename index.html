@@ -1010,8 +1010,11 @@ function toggle9HoleOptions() {
         // ==========================================
         // SETUP & SCRAMBLED PAIRINGS ENGINE
         // ==========================================
-        function goToStep2() {
-            roundData.course = allAvailableCourses[document.getElementById('course-selector').value]; 
+        // Course, money and hole settings from the setup form. Applied again when the round starts, because
+        // live updates from the carts replace roundData while the admin is on the roster screen.
+        function applySetupFormToRoundData() {
+            roundData.courseKey = document.getElementById('course-selector').value;
+            roundData.course = allAvailableCourses[roundData.courseKey]; 
             roundData.betAmount = parseInt(document.getElementById('bet-amount').value) || 0; 
             roundData.skinsAmount = parseInt(document.getElementById('skins-amount').value) || 0; 
             roundData.playMode = document.getElementById('hole-format').value; 
@@ -1024,6 +1027,10 @@ function toggle9HoleOptions() {
             } else { 
                 roundData.startHole = 1; roundData.endHole = 18; 
             }
+        }
+
+        function goToStep2() {
+            applySetupFormToRoundData();
 
             const gCount = parseInt(document.getElementById('group-count').value); 
             const pCount = parseInt(document.getElementById('players-per-group').value);
@@ -1251,6 +1258,7 @@ function processStep2() {
                 // Keep existing scores when editing setup mid-round (bet amounts, formats, etc. can change safely)
             }
 
+            applySetupFormToRoundData();
             roundData.date = document.getElementById('round-date').value || new Date().toLocaleDateString(); 
             roundData.isScrambled = isScrambled;
             roundData.formats = []; 
@@ -1326,10 +1334,11 @@ function processStep2() {
             roundData.currentHole = getHoleSequence()[0]; 
             currentTeamFilter = "ALL";
 
-            // Initialize independent hole tracking per cart + admin
-            roundData.currentHoles = { admin: roundData.startHole };
+            // Initialize independent hole tracking per cart + admin (an edit keeps everyone's place)
+            let previousHoles = isEditingMidRound ? (roundData.currentHoles || {}) : {};
+            roundData.currentHoles = { admin: previousHoles.admin || roundData.startHole };
             roundData.carts.forEach(c => {
-                roundData.currentHoles[c.id] = roundData.startHole;
+                roundData.currentHoles[c.id] = previousHoles[c.id] || roundData.startHole;
             });
             
             let cleanRoundData = JSON.parse(JSON.stringify(roundData));
@@ -1337,7 +1346,10 @@ function processStep2() {
             
             sessionStorage.removeItem('isEditingMidRound');
             
-            activeTournamentRef.set({ roundData: cleanRoundData, scoresDb: cleanScoresDb, isArchived: false, clipboards: clipboards }).then(() => {
+            let save = isEditingMidRound
+                ? activeTournamentRef.update({ roundData: cleanRoundData })
+                : activeTournamentRef.set({ roundData: cleanRoundData, scoresDb: cleanScoresDb, isArchived: false, clipboards: clipboards });
+            save.then(() => {
                 document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
                 renderPillNav(); 
                 renderScoreEntry(); 
@@ -1355,20 +1367,63 @@ function processStep2() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
             
-            // Restore current format + birdie rules + money values so "All Birdies Count" state is correct
+            // Load the live round into the setup and roster screens, so editing from any phone (or after
+            // the app reloads) starts from what's actually being played
             restoreSetupFormFromRoundData();
+            loadRosterFromRoundData();
             
             window.scrollTo(0,0);
+        }
+
+        // Rebuild this phone's roster cache from the live round: names, strokes, ghosts, tee times and carts
+        function loadRosterFromRoundData() {
+            if (!roundData || !roundData.groups) return;
+            tempRosterCache = {};
+            roundData.groups.forEach(g => {
+                g.players.forEach((p, i) => {
+                    let key = `g${g.id}-p${i + 1}`;
+                    tempRosterCache[`${key}-name`] = p.name;
+                    tempRosterCache[`${key}-strokes`] = (p.strokeHoles || []).join(', ');
+                    tempRosterCache[`${key}-ghost`] = p.isGhost ? `${p.sourceG}-${p.sourceP}` : '';
+                });
+            });
+            tempRosterCache['isScrambled'] = roundData.isScrambled ? 'yes' : 'no';
+            (roundData.carts || []).forEach(c => {
+                if (roundData.isScrambled) {
+                    tempRosterCache[`cart${c.id}-time`] = c.time || '';
+                    c.players.forEach((cp, i) => { tempRosterCache[`cart${c.id}-p${i + 1}`] = `${cp.g}-${cp.p}`; });
+                } else {
+                    tempRosterCache[`g${c.id}-time`] = c.time || '';
+                }
+            });
+            if (roundData.isScrambled) document.getElementById('cart-group-count').value = roundData.carts.length;
+            if (roundData.date) document.getElementById('round-date').value = roundData.date;
+            try { localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache)); } catch (e) {}
         }
 
         function restoreSetupFormFromRoundData() {
             if (!roundData || !roundData.formats) return;
 
             // Money values
-            const betEl = document.getElementById('bet-amount');
-            const skinsEl = document.getElementById('skins-amount');
-            if (betEl) betEl.value = roundData.betAmount || 20;
-            if (skinsEl) skinsEl.value = roundData.skinsAmount || 10;
+            document.getElementById('bet-amount').value = roundData.betAmount ?? 0;
+            document.getElementById('skins-amount').value = roundData.skinsAmount ?? 0;
+
+            // Teams and players per team
+            document.getElementById('group-count').value = roundData.groups.length;
+            document.getElementById('players-per-group').value = Math.max(1, ...roundData.groups.map(g => g.players.length));
+
+            // Course: by the key saved at start, else by name; a course only the admin's phone knows is added for this round
+            let courseKey = roundData.courseKey && allAvailableCourses[roundData.courseKey] ? roundData.courseKey
+                : Object.keys(allAvailableCourses).find(k => allAvailableCourses[k].name === roundData.course?.name);
+            if (!courseKey && roundData.course) {
+                courseKey = '__live_round';
+                allAvailableCourses[courseKey] = roundData.course;
+                let opt = document.createElement('option');
+                opt.value = courseKey; opt.textContent = roundData.course.name;
+                document.getElementById('course-selector').appendChild(opt);
+            }
+            if (courseKey) document.getElementById('course-selector').value = courseKey;
+            if (roundData.nineHoleType) document.getElementById('nine-hole-type').value = roundData.nineHoleType;
 
             // Hole format & start type (be careful changing these mid-round)
             const holeFmt = document.getElementById('hole-format');
@@ -1608,6 +1663,7 @@ function getViewKey() {
 }
 
 function setTeamFilter(filterValue) {
+    cancelAutoAdvance();
     // Save current hole for the view we're leaving
     if (roundData.currentHoles) {
         const prevKey = (lockedTeamId !== null) ? lockedTeamId : (currentTeamFilter === "ALL" ? "admin" : currentTeamFilter);
@@ -1634,6 +1690,7 @@ function setTeamFilter(filterValue) {
     }
 }
         function changeHole(direction) {
+            cancelAutoAdvance();
             let seq = getHoleSequence(); 
             let idx = seq.indexOf(roundData.currentHole); 
             let nextIdx = idx + direction;
@@ -1708,6 +1765,7 @@ function setHoleHeader(hole, par) {
     document.getElementById('current-par-display-top').innerText = `${who} · Par ${par}`;
 }
       function renderFullScorecardForCart() {
+    cancelAutoAdvance();
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
     if (!cart) {
         document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
@@ -1760,8 +1818,12 @@ function setHoleHeader(hole, par) {
     }, 100);
 }
 let cartHoleOpen = false; // a cart is on one hole's score entry rather than its hole list
+// The move to the next hole after the last score; cancelled if the scorer goes somewhere else first
+let autoAdvanceTimer = null;
+function cancelAutoAdvance() { if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; } }
 
 function openHoleForScoring(holeNum) {
+    cancelAutoAdvance();
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
     cartHoleOpen = true;
@@ -2109,7 +2171,8 @@ function closeHoleScoringAndReturn() {
                             showHoleCompleteToast();
                         }
                         
-                        setTimeout(() => { 
+                        autoAdvanceTimer = setTimeout(() => { 
+                            autoAdvanceTimer = null;
                             changeHole(1); 
                         }, 2200); // 2200ms delay (set by user)
                     }
