@@ -321,6 +321,7 @@
         .om-press-alert.quiet .text-link { color: var(--accent-gold); }
         .om-pressed-line { font-size: 12px; margin-top: 2px; }
         .om-press-mark td { font-size: 13px; font-weight: 700; color: var(--bad); border-bottom: 1px solid var(--line); padding: 6px; white-space: normal; }
+        .om-second { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
         .om-b-win { font-weight: 800; text-decoration: underline; }
         .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
         .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
@@ -2967,7 +2968,7 @@ function closeHoleScoringAndReturn() {
                     if (!isLast && bets[bets.length - 1] !== 0) bets.push(0); // automatic press
                     let units = sides.map(side => side.reduce((u, x) => u + Math.max(0, par(h) - gross(x, h)), 0));
                     birdies[0] += units[0]; birdies[1] += units[1];
-                    rows.push({ hole: h, result, bets: [...bets], lowNets: [a[0], b[0]], units });
+                    rows.push({ hole: h, result, bets: [...bets], lowNets: [a[0], b[0]], secondNets: [a[1], b[1]], units });
                 });
                 let ballMoney = bets.reduce((a, m) => a + Math.sign(m) * amount, 0);
                 let birdieMoney = (birdies[0] - birdies[1]) * amount;
@@ -3083,11 +3084,11 @@ function closeHoleScoringAndReturn() {
                 if (nine.rows.length === 0) {
                     html += `<div class="payout-row muted">No holes finished yet</div>`;
                 } else {
-                    html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Low net</th><th>Won</th><th>Bets</th><th>Birdies</th></tr></thead><tbody>`;
+                    html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Net</th><th>Won</th><th>Bets</th><th>Birdies</th></tr></thead><tbody>`;
                     nine.rows.forEach(r => {
                         let won = r.result > 0 ? `<span class="om-a">${m.names[0].split(' ')[0]}</span>` : (r.result < 0 ? `<span class="om-b">${m.names[1].split(' ')[0]}</span>` : '–');
                         let bird = [r.units[0] ? `<span class="om-a">${'●'.repeat(r.units[0])}</span>` : '', r.units[1] ? `<span class="om-b">${'●'.repeat(r.units[1])}</span>` : ''].filter(Boolean).join(' ') || '';
-                        html += `<tr><td><b>${r.hole}</b></td><td>${r.lowNets[0]} v ${r.lowNets[1]}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
+                        html += `<tr><td><b>${r.hole}</b></td><td>${r.lowNets[0]} v ${r.lowNets[1]}${r.lowNets[0] === r.lowNets[1] ? `<div class="om-second">2nd ${r.secondNets[0]} v ${r.secondNets[1]}</div>` : ''}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
                     });
                     html += `</tbody></table>`;
                 }
