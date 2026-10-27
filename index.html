@@ -156,7 +156,9 @@
         .hole-list-row.current .hole-list-num { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
         .hole-list-par { width: 48px; flex-shrink: 0; font-size: 14px; color: var(--text-muted); }
         .hole-list-scores { flex-grow: 1; display: flex; justify-content: flex-end; gap: 6px; }
-        .hole-list-score { width: 28px; text-align: center; font-size: 17px; font-weight: 800; }
+        .hole-list-score { width: 40px; text-align: center; font-size: 17px; font-weight: 800; }
+        .hole-list-names { position: sticky; top: var(--list-names-top, 0px); z-index: 20; display: flex; padding: 8px 12px; background: var(--bg-dark); border-bottom: 1px solid var(--line); }
+        .hole-list-names .hole-list-score { font-size: 12px; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; color: var(--text-muted); }
 
         /* Standings */
         .screen.clean.dash { max-width: 1000px; }
@@ -1821,7 +1823,14 @@ function setHoleHeader(hole, par) {
     let seq = getHoleSequence();
     let html = `<div class="clean-eyebrow">Cart ${cart.id}</div>
         <h2 class="clean-title" style="margin-bottom: 4px;">Scorecard</h2>
-        <p class="clean-sub" style="margin-bottom: 12px;">Tap a hole to enter or fix scores</p>
+        <p class="clean-sub" style="margin-bottom: 12px;">Tap a hole to enter or fix scores</p>`;
+
+    // Player names over their score columns, pinned while the holes scroll
+    let names = cart.players.map(cp => {
+        let player = roundData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p);
+        return player ? `<span class="hole-list-score">${player.name.split(' ')[0].slice(0, 4)}</span>` : '';
+    }).join('');
+    html += `<div class="hole-list-names" aria-hidden="true"><span class="hole-list-scores">${names}</span></div>
         <div class="scorecard-list" id="cart-scorecard-list">`;
 
     seq.forEach(holeNum => {
@@ -1849,6 +1858,8 @@ function setHoleHeader(hole, par) {
 
     html += `</div>`;
     document.getElementById('entry-container').innerHTML = html;
+    // Pin the name row just under the app's own pinned header
+    document.documentElement.style.setProperty('--list-names-top', document.querySelector('#step-3 .sticky-top').offsetHeight + 'px');
 
     // Auto-scroll to current hole
     setTimeout(() => {
