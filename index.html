@@ -542,7 +542,7 @@
         <button type="button" class="btn-success" onclick="viewDashboard()">View standings &amp; scorecards <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
         
         <div id="admin-share-btn-container" class="list-rows">
-            <button type="button" class="list-row" onclick="openShareMenu()">Text live links to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" id="cart-links-row" onclick="openShareMenu()">Text live links to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="shareSpectatorLink()">Share spectator leaderboard <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="editMidRound()">Edit setup / rosters <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row danger-row" onclick="validateAndFinalize()">Finalize / archive round <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
@@ -1839,6 +1839,11 @@ function processStep2() {
                 return; 
             }
             let container = document.getElementById('pill-nav-container'); 
+            // Our Match only: the admin keeps every score, so no cart tabs or cart links
+            let omOnly = isOurMatchOnly(roundData);
+            container.style.display = omOnly ? 'none' : '';
+            document.getElementById('cart-links-row').style.display = omOnly ? 'none' : '';
+            if (omOnly) { currentTeamFilter = "ALL"; return; }
             
             // We ensure classes are assigned correctly
             let html = `<div class="pill ${currentTeamFilter === 'ALL' ? 'active' : ''}" onclick="setTeamFilter('ALL')">ADMIN</div>`;
@@ -1952,7 +1957,7 @@ function renderScoreEntry() {
 
 function setHoleHeader(hole, par) {
     let isAdminView = currentTeamFilter === "ALL" && lockedTeamId === null;
-    let who = isAdminView ? 'All teams' : `Cart ${currentTeamFilter}`;
+    let who = isOurMatchOnly(roundData) ? 'Our Match' : (isAdminView ? 'All teams' : `Cart ${currentTeamFilter}`);
     // The admin sees every team at once, so its screen uses a compact layout
     document.getElementById('step-3').classList.toggle('admin-view', isAdminView);
     document.getElementById('current-hole-display-top').innerText = hole;
@@ -2419,7 +2424,7 @@ function closeHoleScoringAndReturn() {
             let totalBets = roundData.formats.length * betsPerFormat; 
             
             let rulesHTML = '';
-            roundData.formats.forEach(f => {
+            if (!isOurMatchOnly(roundData)) roundData.formats.forEach(f => {
                 let on = roundData.birdieRules && roundData.birdieRules[f];
                 rulesHTML += `<div class="dash-row"><span>${f}-Ball: all birdies count</span><b style="color:${on ? 'var(--good)' : 'var(--text-muted)'};">${on ? 'On' : 'Off'}</b></div>`;
             });
@@ -2441,12 +2446,15 @@ function closeHoleScoringAndReturn() {
             </details>`;
 
             // Cart progress is an admin tool; carts and spectators don't need it
-            let showProgress = urlParams.get('spectator') !== 'true' && lockedTeamId === null;
+            let showProgress = urlParams.get('spectator') !== 'true' && lockedTeamId === null && !isOurMatchOnly(roundData);
             document.getElementById('dashboard-cart-progress').innerHTML = showProgress ? generateCartProgressHTML(roundData, scoresDb) : '';
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
-            document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb); 
+            document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(scorecardView(roundData), scoresDb); 
             document.getElementById('dashboard-payouts').innerHTML = hasTournamentMoney(roundData) ? generateFinancialSummaryHTML(roundData, scoresDb) : '';
             document.getElementById('dashboard-our-match').innerHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, true) : '';
+            // Our Match only: the match goes first, scorecards after
+            let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
+            dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
         }
@@ -2694,7 +2702,7 @@ function closeHoleScoringAndReturn() {
                                     displayScore = `${score}/${net}`; 
                                 }
                                 let cellContent = `${displayScore}${dots}`;
-                                if (!p.isGhost && skinsWon[h] === `${g.id}-${p.id}`) {
+                                if (!p.isGhost && rData.skinsAmount && skinsWon[h] === `${g.id}-${p.id}`) {
                                     let randId = Math.random().toString(36).substr(2, 9);
                                     cellContent = `<div class="skin-container"><svg class="skin-orbit" viewBox="0 0 100 100"><path id="skinPath-${randId}" d="M 50, 50 m -40, 0 a 40,40 0 1,1 80,0 a 40,40 0 1,1 -80,0" fill="transparent"/><text><textPath href="#skinPath-${randId}" startOffset="0%" textLength="250" lengthAdjust="spacing">SKIN • SKIN • SKIN • </textPath></text></svg><span style="position:relative; z-index:2;">${cellContent}</span></div>`;
                                 }
@@ -2804,6 +2812,7 @@ function closeHoleScoringAndReturn() {
             }
 
             // Return BOTH the Summary Table and the Individual Scorecards!
+            if (rData.formats.length === 0) return fullHTML; // no team games (Our Match only): just the cards
             return summaryHTML + fullHTML;
         }
 
@@ -2913,7 +2922,8 @@ function closeHoleScoringAndReturn() {
             let sideName = side => side.map(x => x.player.name.split(' ')[0]).join(' & ');
             let names = [sideName(sides[0]), sideName(sides[1])];
 
-            let order = [...getHoleSequenceFor(rData)].sort((a, b) => a - b);
+            let order = getHoleSequenceFor(rData); // play order, so a round starting on 10 counts 10-18 first
+            let pos = h => order.indexOf(h);
             let par = h => rData.course.pars[h - 1];
             let gross = (x, h) => sDb[x.g]?.[x.p]?.[h];
             let complete = h => sides.every(side => side.every(x => gross(x, h)));
@@ -2935,7 +2945,7 @@ function closeHoleScoringAndReturn() {
                 if (holes.length === 0) return;
                 let done = doneUpTo(holes);
                 let finished = done.length === holes.length;
-                let strokes = from => done.filter(h => from == null || h > from).reduce((a, h) => a + lowGross(0, h) - lowGross(1, h), 0); // + = A has more strokes (A behind)
+                let strokes = from => done.filter(h => from == null || pos(h) > pos(from)).reduce((a, h) => a + lowGross(0, h) - lowGross(1, h), 0); // + = A has more strokes (A behind)
                 let bets = [{ label: 'Main', diff: strokes(null), from: null }];
                 ['A', 'B'].forEach(side => {
                     let after = presses[key]?.[side];
@@ -2952,7 +2962,7 @@ function closeHoleScoringAndReturn() {
             });
 
             // ---- First ball / second ball and birdies, per nine ----
-            let nines = ['front', 'back'].filter(k => segHoles[k].length).map(key => {
+            let nines = ['front', 'back'].filter(k => segHoles[k].length).sort((x, y) => pos(segHoles[x][0]) - pos(segHoles[y][0])).map(key => {
                 let holes = segHoles[key];
                 let amount = key === 'back' ? om.ballBet * 2 : om.ballBet;
                 let done = doneUpTo(holes);
@@ -2977,7 +2987,7 @@ function closeHoleScoringAndReturn() {
 
             let totalMoney = nines.reduce((a, n) => a + n.ballMoney + n.birdieMoney, 0) + MATCH_BETS.reduce((a, k) => a + (nassau[k]?.money || 0), 0);
             let finished = nines.every(n => n.finished) && MATCH_BETS.every(k => !nassau[k] || nassau[k].finished);
-            return { sides, names, nassau, nines, totalMoney, finished };
+            return { sides, names, nassau, nines, totalMoney, finished, pos };
         }
 
         // Holes played in this round, for any round data (getHoleSequence reads the live round)
@@ -3016,7 +3026,7 @@ function closeHoleScoringAndReturn() {
                 if (b.by) list.push({ key, by: b.by, after: b.from, start: m.nassau[key].holes[m.nassau[key].holes.indexOf(b.from) + 1] ?? b.from + 1,
                     text: `${m.names[b.by === 'A' ? 0 : 1]} pressed the ${labels[key]}` });
             }));
-            return list.sort((a, b) => a.start - b.start);
+            return list.sort((a, b) => m.pos(a.start) - m.pos(b.start));
         }
 
         // Nassau standing in words, + = side 1 behind on strokes
@@ -3061,10 +3071,10 @@ function closeHoleScoringAndReturn() {
             // Nassau hole by hole: low gross each side, then every Nassau bet's running score (+ = side 1 up)
             let ninesNassau = ['front', 'back'].filter(k => m.nassau[k]);
             let overall = m.nassau.overall;
-            let playedNassau = ninesNassau.flatMap(k => m.nassau[k].done.map(h => ({ h, key: k })));
+            let playedNassau = ninesNassau.flatMap(k => m.nassau[k].done.map(h => ({ h, key: k }))).sort((x, y) => m.pos(x.h) - m.pos(y.h));
             if (playedNassau.length) {
-                let running = (n, b, h) => b.from != null && h <= b.from ? null
-                    : -n.done.filter(x => x <= h && (b.from == null || x > b.from)).reduce((a, x) => a + n.lows[x][0] - n.lows[x][1], 0);
+                let running = (n, b, h) => b.from != null && m.pos(h) <= m.pos(b.from) ? null
+                    : -n.done.filter(x => m.pos(x) <= m.pos(h) && (b.from == null || m.pos(x) > m.pos(b.from))).reduce((a, x) => a + n.lows[x][0] - n.lows[x][1], 0);
                 let cell = (n, h) => n.bets.map(b => running(n, b, h)).filter(v => v !== null).map(formatMatchBet).join(' ');
                 html += `<div class="payout-sub">Nassau hole by hole · low gross · + = ${m.names[0]} up (strokes)</div>`;
                 html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
@@ -3197,6 +3207,9 @@ function closeHoleScoringAndReturn() {
 
         // Payouts in this order: purse, each player's paid / won / net, how it was won, then the quick settle-up
         function hasTournamentMoney(rData) { return !!(rData.betAmount || rData.skinsAmount); }
+        // Our Match only: the admin keeps all four scores, so no carts, team games or purse
+        function isOurMatchOnly(rData) { return !!rData.ourMatch && !hasTournamentMoney(rData); }
+        function scorecardView(rData) { return isOurMatchOnly(rData) ? { ...rData, formats: [] } : rData; }
 
         function generateFinancialSummaryHTML(rData, sDb) {
             let pay = calculatePayouts(rData, sDb);
@@ -3510,7 +3523,7 @@ function closeHoleScoringAndReturn() {
             if(!activeViewRoundData.nineHoleType) { activeViewRoundData.nineHoleType = 'straight'; }
             
             try { 
-                document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb); 
+                document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb); 
                 document.getElementById('archived-payout-summary-container').innerHTML = hasTournamentMoney(activeViewRoundData) ? generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb) : ''; 
                 document.getElementById('archived-our-match-container').innerHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, activeViewRoundData.matchPresses || {}, false) : '';
                 switchScreen('step-8', 'step-9'); 
