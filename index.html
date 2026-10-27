@@ -254,6 +254,7 @@
         .clean .select-wrap.slot select { height: 44px; font-size: 16px; padding-left: 14px; }
         .om-label { gap: 8px; letter-spacing: 0.04em; font-weight: 800; }
         .om-side-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .om-sides-note { margin: -4px 4px 10px; font-size: 13px; color: var(--text-muted); }
         .om-side-name { width: 52px; flex-shrink: 0; font-size: 13px; font-weight: bold; color: var(--text-muted); }
         .roster-num { width: 22px; flex-shrink: 0; font-size: 18px; font-weight: 800; color: var(--text-muted); }
         .clean input.roster-name-input { flex-grow: 1; min-width: 0; height: 44px; padding: 0; background: none; border-radius: 0; font-size: 18px; font-weight: 600; }
@@ -464,7 +465,8 @@
         <button type="button" class="text-link" onclick="openPreRoundBlindDrawModal()">Assign blind draw (ghost)</button>
 
         <div id="om-sides" style="display: none;">
-            <div class="field-label">Our Match · pick the sides</div>
+            <div class="field-label">Our Match · sides</div>
+            <p class="om-sides-note">Set to Team 1 vs Team 2. Change only if the sides are different.</p>
             <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="om-a1" aria-label="Side 1 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-a2" aria-label="Side 1 second player" onchange="saveOurMatchSides()"></select></div></div>
             <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="om-b1" aria-label="Side 2 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-b2" aria-label="Side 2 second player" onchange="saveOurMatchSides()"></select></div></div>
         </div>
@@ -1193,16 +1195,25 @@ function toggle9HoleOptions() {
             document.getElementById('om-options').style.display = on ? '' : 'none';
             let sides = document.getElementById('om-sides');
             if (sides) sides.style.display = on ? '' : 'none';
+            if (on && sides) renderOurMatchSides();
         }
 
         // Side pickers list the real (non-ghost) players typed on the roster; values are "team-slot"
         function renderOurMatchSides() {
             const gCount = parseInt(document.getElementById('group-count').value);
             const pCount = parseInt(document.getElementById('players-per-group').value);
-            let options = '<option value="">Pick a player</option>';
+            let options = '<option value="">Pick</option>';
+            let real = {}; // team -> its real players' slots, in roster order
             for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
                 let name = (tempRosterCache[`g${g}-p${p}-name`] || '').trim();
-                if (name && !tempRosterCache[`g${g}-p${p}-ghost`]) options += `<option value="${g}-${p}">${name.split(' ')[0]} · Team ${g}</option>`;
+                if (name && !tempRosterCache[`g${g}-p${p}-ghost`]) {
+                    options += `<option value="${g}-${p}">${name.split(' ')[0]} (T${g})</option>`;
+                    (real[g] = real[g] || []).push(`${g}-${p}`);
+                }
+            }
+            // Nothing picked yet: Team 1's first two against Team 2's first two
+            if (OM_SEATS.every(id => !tempRosterCache[id]) && real[1]?.length >= 2 && real[2]?.length >= 2) {
+                [real[1][0], real[1][1], real[2][0], real[2][1]].forEach((slot, i) => { tempRosterCache[OM_SEATS[i]] = slot; });
             }
             OM_SEATS.forEach(id => {
                 let sel = document.getElementById(id);
@@ -1337,10 +1348,11 @@ function processStep2() {
             const isEditingMidRound = sessionStorage.getItem('isEditingMidRound') === 'true';
 
             if (document.getElementById('om-enabled').checked) {
+                renderOurMatchSides();
                 saveOurMatchSides();
                 let picked = OM_SEATS.map(id => tempRosterCache[id]);
                 if (picked.some(v => !v) || new Set(picked).size !== 4) {
-                    alert("Our Match: pick two different players for each side (on the roster screen), or turn Our Match off.");
+                    alert("Our Match needs 4 different players, 2 on each side. Check the Our Match sides at the bottom of the roster, or turn Our Match off.");
                     return;
                 }
             }
