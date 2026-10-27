@@ -2608,7 +2608,12 @@ function closeHoleScoringAndReturn() {
             if (drift !== 0 && players.length > 0) players.reduce((top, n) => n.wonCents > top.wonCents ? n : top).wonCents += drift;
             players = players.map(({ exactWon, ...n }) => ({ ...n, netCents: n.wonCents - n.buyInCents }));
 
-            return { players, skins, perSkinCents, skinsPotCents, skinsRefunded, bets, betPotCents, totalBets, teamPotCents: betPotCents * totalBets, teamWinCents };
+            return { players, skins, perSkinCents, skinsPotCents, skinsRefunded, bets, betPotCents, totalBets, teamPotCents: betPotCents * totalBets, teamWinCents, teamEntryCents: rData.betAmount * totalBets * 100 };
+        }
+
+        // Skins are always collected in cash up front, so player-to-player settling covers team bets only
+        function teamBetSettlements(pay) {
+            return calculateSettlements(pay.players.map(p => ({ name: p.name, netCents: p.teamCents - pay.teamEntryCents })));
         }
 
         function calculatePlayerNets(rData, sDb) {
@@ -2685,7 +2690,7 @@ function closeHoleScoringAndReturn() {
             });
 
             // Skins by hole
-            html += `<div class="payout-header">Skins · ${formatCents(pay.skinsPotCents)} pot</div>`;
+            html += `<div class="payout-header">Skins · ${formatCents(pay.skinsPotCents)} cash pot</div>`;
             if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won${rData.skinsAmount > 0 ? ', so nobody pays the skins buy-in' : ''}</span></div>`;
             else html += `<div class="payout-sub">${pay.skins.length} won × ${formatCents(pay.perSkinCents)}</div>`;
             pay.skins.forEach(sk => {
@@ -2707,10 +2712,10 @@ function closeHoleScoringAndReturn() {
             }
 
             // Last: the shortcut that skips everyone paying in first
-            let payments = calculateSettlements(pay.players);
+            let payments = teamBetSettlements(pay);
             if (payments.length > 0) {
-                html += `<div class="payout-header">Who pays who</div>
-                    <div class="payout-sub">If nobody paid an entry fee: what each player owes the others. Whole dollars.</div>`;
+                html += `<div class="payout-header">Who pays who · team bets</div>
+                    <div class="payout-sub">If nobody paid the team entry: what each player owes the others. Skins are paid from the cash pot. Whole dollars.</div>`;
                 payments.forEach(pm => {
                     html += `<div class="payout-row"><span>${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}</span><span class="payout-amount">${formatDollars(pm.cents)}</span></div>`;
                 });
@@ -2765,9 +2770,9 @@ function closeHoleScoringAndReturn() {
                 });
             }
 
-            let payments = calculateSettlements(pay.players);
+            let payments = teamBetSettlements(pay);
             if (payments.length > 0) {
-                st += `\nWho pays who (if nobody paid an entry fee)\n`;
+                st += `\nWho pays who, team bets only (skins paid from the cash pot)\n`;
                 payments.forEach(pm => { st += `${first(pm.from)} → ${first(pm.to)} ${formatDollars(pm.cents)}\n`; });
             }
 
