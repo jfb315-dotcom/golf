@@ -42,6 +42,10 @@
         .pin-pad button:active { background: var(--fill-strong); }
         .pin-pad .pin-cancel { font-size: 15px; font-weight: 600; color: var(--text-muted); background: transparent; }
         .pin-pad .pin-back { background: transparent; font-size: 22px; }
+        .edit-round-banner { display: none; align-items: center; justify-content: space-between; gap: 12px; margin: 4px 0 16px; padding: 12px 14px; border-radius: 12px; background: var(--fill-strong); font-size: 14px; color: var(--text-main); }
+        body.editing-round .edit-round-banner { display: flex; }
+        body.editing-round #step-1 .clean-eyebrow { display: none; } /* not a new round */
+        .edit-round-banner button { flex-shrink: 0; height: 40px; padding: 0 14px; border: none; border-radius: 20px; background: #c62828; color: #ffffff; font-size: 14px; font-weight: 800; cursor: pointer; }
         .safari-banner { display: flex; align-items: center; gap: 12px; margin: 4px 0 8px; padding: 12px 14px; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 14px; line-height: 1.35; position: relative; z-index: 600; }
         .safari-banner button { flex-shrink: 0; width: 32px; height: 32px; border: none; border-radius: 16px; background: rgba(0,0,0,0.15); color: inherit; font-size: 14px; cursor: pointer; }
         .offline-banner { background: #5c1f1f; color: #fff; border: 1px solid var(--bad); border-radius: 6px; padding: 8px 10px; margin-top: 6px; font-size: 13px; font-weight: bold; text-align: center; }
@@ -319,6 +323,7 @@
 
     <div id="step-1" class="screen clean active">
         <div class="clean-eyebrow">New round</div>
+        <div class="edit-round-banner"><span>Editing the live round. Changes save when you tap Start round.</span><button type="button" onclick="cancelMidRoundEdit()">‹ Back to round</button></div>
         <h2 class="clean-title">Tournament setup</h2>
 
         <div class="field-label">Course</div>
@@ -416,6 +421,7 @@
             <button type="button" class="text-link back-link-top" onclick="backToStep1()">‹ Setup</button>
             <input type="date" id="round-date" class="date-chip" aria-label="Round date">
         </div>
+        <div class="edit-round-banner"><span>Editing the live round. Changes save when you tap Start round.</span><button type="button" onclick="cancelMidRoundEdit()">‹ Back to round</button></div>
         <h2 class="clean-title">Draft rosters</h2>
         <p class="clean-sub">Captain goes first. Strokes are hole numbers.</p>
 
@@ -441,6 +447,7 @@
         <div class="top-row">
             <button type="button" class="text-link back-link-top" onclick="switchScreen('step-2-half', 'step-2')">‹ Rosters</button>
         </div>
+        <div class="edit-round-banner"><span>Editing the live round. Changes save when you tap Start round.</span><button type="button" onclick="cancelMidRoundEdit()">‹ Back to round</button></div>
         <h2 class="clean-title">Cart pairings</h2>
         <p class="clean-sub">Who rides together. Scores still count for each player's drafted team.</p>
 
@@ -873,6 +880,7 @@ function toggle9HoleOptions() {
                             roundData.currentHole = roundData.currentHoles[getViewKey()] || incomingRound.currentHole || roundData.startHole;
                         }
                         hasLoadedRound = true;
+                        lastCloudRound = JSON.parse(JSON.stringify(roundData));
                         loadedRoundId = incomingRound.roundId;
 
                         if(!roundData.groups) roundData.groups = [];
@@ -1345,6 +1353,7 @@ function processStep2() {
             let cleanScoresDb = JSON.parse(JSON.stringify(scoresDb));
             
             sessionStorage.removeItem('isEditingMidRound');
+            document.body.classList.remove('editing-round');
             
             let save = isEditingMidRound
                 ? activeTournamentRef.update({ roundData: cleanRoundData })
@@ -1364,6 +1373,7 @@ function processStep2() {
         
         function editMidRound() {
             sessionStorage.setItem('isEditingMidRound', 'true');
+            document.body.classList.add('editing-round');
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
             document.getElementById('step-1').classList.add('active');
             
@@ -1373,6 +1383,24 @@ function processStep2() {
             loadRosterFromRoundData();
             
             window.scrollTo(0,0);
+        }
+
+        // Leave Edit Setup without saving: put back the live round and return to scoring
+        let lastCloudRound = null;
+        function cancelMidRoundEdit() {
+            sessionStorage.removeItem('isEditingMidRound');
+            document.body.classList.remove('editing-round');
+            if (lastCloudRound) {
+                let hole = roundData.currentHole;
+                roundData = JSON.parse(JSON.stringify(lastCloudRound));
+                roundData.currentHole = hole;
+            }
+            loadRosterFromRoundData();
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById('step-3').classList.add('active');
+            renderPillNav();
+            renderScoreEntry();
+            window.scrollTo(0, 0);
         }
 
         // Rebuild this phone's roster cache from the live round: names, strokes, ghosts, tee times and carts
