@@ -252,6 +252,9 @@
         .roster-name-input::-webkit-calendar-picker-indicator { display: none !important; }
         .select-wrap.slot { flex-grow: 1; min-width: 0; }
         .clean .select-wrap.slot select { height: 44px; font-size: 16px; padding-left: 14px; }
+        .om-label { gap: 8px; letter-spacing: 0.04em; font-weight: 800; }
+        .om-side-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+        .om-side-name { width: 52px; flex-shrink: 0; font-size: 13px; font-weight: bold; color: var(--text-muted); }
         .roster-num { width: 22px; flex-shrink: 0; font-size: 18px; font-weight: 800; color: var(--text-muted); }
         .clean input.roster-name-input { flex-grow: 1; min-width: 0; height: 44px; padding: 0; background: none; border-radius: 0; font-size: 18px; font-weight: 600; }
         .clean input.roster-stroke-input { width: 88px; flex-shrink: 0; height: 36px; padding: 0 8px; border-radius: 18px; font-size: 14px; font-weight: 600; text-align: center; }
@@ -300,6 +303,20 @@
         .bets-grid td { font-size: 14px; }
         .payout-winner { color: var(--text-main); font-weight: bold; }
         .payout-amount { color: var(--text-main); font-weight: 800; white-space: nowrap; }
+        .om-sides { display: flex; align-items: center; gap: 10px; padding: 4px 4px 0; font-size: 17px; font-weight: 700; }
+        .om-vs { color: var(--text-muted); font-size: 13px; font-weight: 600; }
+        .om-a, .om-side.a { color: var(--accent-gold); } .om-b, .om-side.b { color: var(--text-main); }
+        .om-bet { border-bottom: 1px solid var(--line); padding-bottom: 6px; }
+        .om-bet .payout-row:first-child { border-bottom: none; }
+        .om-press { display: block; width: 100%; margin: 8px 0 4px; height: 48px; border: none; border-radius: 24px; background: var(--bad); color: #fff; font-size: 15px; font-weight: 800; letter-spacing: 0.04em; cursor: pointer; animation: back-pulse 1.6s ease-in-out infinite; }
+        .om-chart { width: 100%; min-width: 0; border-collapse: collapse; margin-top: 6px; text-align: left; }
+        .om-chart th { font-size: 11px; text-transform: uppercase; letter-spacing: 0.06em; color: var(--text-muted); text-align: left; padding: 6px; border-bottom: 1px solid var(--line); }
+        .om-chart td { padding: 8px 6px; border-bottom: 1px solid var(--line); font-size: 14px; white-space: nowrap; }
+        .om-chart td.om-bets { font-family: ui-monospace, Menlo, monospace; font-weight: 700; white-space: normal; }
+        .om-total { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding: 14px 12px; border-radius: 14px; background: var(--fill-soft); font-size: 14px; color: var(--text-muted); }
+        .om-total b { font-size: 18px; color: var(--text-main); }
+        .om-press-alert { margin: 6px auto 0; padding: 6px 10px; border-radius: 10px; background: var(--bad); color: #fff; font-size: 13px; font-weight: 700; text-align: center; }
+        .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
         .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
         .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
         .archive-info { flex: 1; }
@@ -377,6 +394,20 @@
             <div class="format-row"><label class="format-label"><input type="checkbox" id="fmt-1" value="1-ball" onchange="calculateLiveBuyIn()"> 1-Ball</label><label class="birdie-label">All birdies count <input type="checkbox" class="switch" id="fmt-1-birdies"></label></div>
             <div class="format-row"><label class="format-label"><input type="checkbox" id="fmt-2" value="2-ball" checked onchange="calculateLiveBuyIn()"> 2-Ball</label><label class="birdie-label">All birdies count <input type="checkbox" class="switch" id="fmt-2-birdies" checked></label></div>
             <div class="format-row"><label class="format-label"><input type="checkbox" id="fmt-3" value="3-ball" checked onchange="calculateLiveBuyIn()"> 3-Ball</label><label class="birdie-label">All birdies count <input type="checkbox" class="switch" id="fmt-3-birdies" checked></label></div>
+            <div class="format-row"><label class="format-label om-label" for="om-enabled">OUR MATCH <span class="payout-note">2 on 2</span></label><input type="checkbox" class="switch" id="om-enabled" aria-label="Our Match" onchange="toggleOurMatchOptions()"></div>
+        </div>
+        <div id="om-options" style="display: none;">
+            <div class="clean-grid-2">
+                <div>
+                    <div class="field-label">Nassau per bet</div>
+                    <div class="money-field"><span>$</span><input type="number" id="om-nassau" min="0" value="50" inputmode="numeric" aria-label="Nassau dollars per bet" onfocus="this.select()" onclick="this.select()"></div>
+                </div>
+                <div>
+                    <div class="field-label">1st/2nd ball front</div>
+                    <div class="money-field"><span>$</span><input type="number" id="om-ball" min="0" value="25" inputmode="numeric" aria-label="First and second ball dollars per bet on the front nine" onfocus="this.select()" onclick="this.select()"></div>
+                </div>
+            </div>
+            <p class="clean-sub" style="margin: 8px 4px 0;">Back nine and birdies on the back are double the front. Pick the two sides on the next screen.</p>
         </div>
 
         <div class="clean-grid-2">
@@ -432,6 +463,12 @@
 
         <button type="button" class="text-link" onclick="openPreRoundBlindDrawModal()">Assign blind draw (ghost)</button>
 
+        <div id="om-sides" style="display: none;">
+            <div class="field-label">Our Match · pick the sides</div>
+            <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="om-a1" aria-label="Side 1 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-a2" aria-label="Side 1 second player" onchange="saveOurMatchSides()"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="om-b1" aria-label="Side 2 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-b2" aria-label="Side 2 second player" onchange="saveOurMatchSides()"></select></div></div>
+        </div>
+
         <div class="field-label">Carts</div>
         <div class="segmented" data-select="is-scrambled"><button type="button" data-value="no">Ride with team</button><button type="button" data-value="yes">Scramble carts</button></div>
         <select id="is-scrambled" class="segmented-source">
@@ -481,6 +518,7 @@
                 <button type="button" class="hole-nav-btn" onclick="changeHole(1)" aria-label="Next hole"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             </div>
             <div id="sync-status" style="text-align: center; font-size: 10px; color: var(--good); margin-top: 4px;">● Synced</div>
+            <div id="om-press-alert" class="om-press-alert" style="display:none;"></div>
             <div id="offline-banner" class="offline-banner" style="display:none;">📴 No signal. Scores are saved on this phone and will sync when signal returns. No need to re-enter them.</div>
         </div>
         
@@ -510,6 +548,7 @@
         <div id="dashboard-cart-progress"></div>
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts"></div>
+        <div id="dashboard-our-match"></div>
         <div id="dashboard-financial-summary"></div>
         <div class="dash-actions">
             <button type="button" class="bar-primary" onclick="openResultsShareModal()">Share results</button>
@@ -538,6 +577,7 @@
         <h2 class="clean-title">Results</h2>
         <div id="archived-card-container"></div>
         <div id="archived-payout-summary-container"></div>
+        <div id="archived-our-match-container"></div>
         <button class="btn-secondary" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 20px auto; display: block;">← Back to Archives</button>
     </div>
 
@@ -701,6 +741,7 @@ const curatedColors = ['#00f3ff', 'var(--good)', '#ff007f', '#ccff00', '#ff5e00'
 let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, currentHoles: { admin: 1 }, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
 let scoresDb = {}; 
 let clipboards = {};
+let matchPresses = {}; // Our Match presses: { front|back|overall: { A|B: hole pressed after } }
 let currentTeamFilter = "ALL"; 
 let lockedTeamId = null; 
 let myClientId = Math.random().toString(36).substr(2, 9);
@@ -869,6 +910,7 @@ function toggle9HoleOptions() {
                         
                         scoresDb = data.scoresDb || {};
                         clipboards = data.clipboards || {};
+                        matchPresses = data.matchPresses || {};
                         
                         if(!roundData.playMode) { roundData.playMode = '18'; } 
                         if(!roundData.startType) { roundData.startType = (roundData.startHole === 10) ? 'back' : 'front'; } 
@@ -932,6 +974,7 @@ function toggle9HoleOptions() {
                             if (document.getElementById('step-3').classList.contains('active')) {
                                 updateUIWithoutLosingFocus();
                             }
+                            updateOurMatchAlert();
                             if (document.getElementById('step-dashboard').classList.contains('active')) viewDashboard(); 
                         }
                     } else { 
@@ -1081,6 +1124,7 @@ function toggle9HoleOptions() {
                 for(let g=1; g<=gCount; g++) document.getElementById(`g${g}-time-wrap`).style.display = isScram ? 'none' : '';
             });
             document.getElementById('is-scrambled').dispatchEvent(new Event('change'));
+            renderOurMatchSides();
             refreshSegments();
             
             switchScreen('step-1', 'step-2');
@@ -1141,6 +1185,38 @@ function toggle9HoleOptions() {
             savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error("Saving players failed: ", err));
         }
 
+        // ===== Our Match setup =====
+        const OM_SEATS = ['om-a1', 'om-a2', 'om-b1', 'om-b2'];
+
+        function toggleOurMatchOptions() {
+            let on = document.getElementById('om-enabled').checked;
+            document.getElementById('om-options').style.display = on ? '' : 'none';
+            let sides = document.getElementById('om-sides');
+            if (sides) sides.style.display = on ? '' : 'none';
+        }
+
+        // Side pickers list the real (non-ghost) players typed on the roster; values are "team-slot"
+        function renderOurMatchSides() {
+            const gCount = parseInt(document.getElementById('group-count').value);
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            let options = '<option value="">Pick a player</option>';
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let name = (tempRosterCache[`g${g}-p${p}-name`] || '').trim();
+                if (name && !tempRosterCache[`g${g}-p${p}-ghost`]) options += `<option value="${g}-${p}">${name.split(' ')[0]} · Team ${g}</option>`;
+            }
+            OM_SEATS.forEach(id => {
+                let sel = document.getElementById(id);
+                sel.innerHTML = options;
+                sel.value = tempRosterCache[id] || '';
+            });
+            document.getElementById('om-sides').style.display = document.getElementById('om-enabled').checked ? '' : 'none';
+        }
+
+        function saveOurMatchSides() {
+            OM_SEATS.forEach(id => { tempRosterCache[id] = document.getElementById(id).value; });
+            try { localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache)); } catch (e) {}
+        }
+
         function saveRosterCache() {
             const gCount = parseInt(document.getElementById('group-count').value); 
             const pCount = parseInt(document.getElementById('players-per-group').value);
@@ -1160,6 +1236,7 @@ function toggle9HoleOptions() {
             }
             tempRosterCache['isScrambled'] = document.getElementById('is-scrambled').value;
             localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
+            renderOurMatchSides(); // names may have changed
         }
 
         function backToStep1() { 
@@ -1258,6 +1335,15 @@ function processStep2() {
 
         function buildRoundDataAndStart(isScrambled) {
             const isEditingMidRound = sessionStorage.getItem('isEditingMidRound') === 'true';
+
+            if (document.getElementById('om-enabled').checked) {
+                saveOurMatchSides();
+                let picked = OM_SEATS.map(id => tempRosterCache[id]);
+                if (picked.some(v => !v) || new Set(picked).size !== 4) {
+                    alert("Our Match: pick two different players for each side (on the roster screen), or turn Our Match off.");
+                    return;
+                }
+            }
             
             if (!isEditingMidRound) {
                 if (liveRoundInCloud && !confirm("⚠️ A round is already in progress.\n\nStarting a new round will ERASE all of its scores for every cart. Continue?")) return;
@@ -1290,6 +1376,7 @@ function processStep2() {
             const pCount = parseInt(document.getElementById('players-per-group').value);
             if (!isEditingMidRound) rememberRosterPlayers(gCount, pCount);
             
+            let slotToId = {}; // roster slot "team-slot" -> player id (ids skip empty slots)
             for (let g = 1; g <= gCount; g++) {
                 let teamPlayers = []; 
                 if (!scoresDb[g]) scoresDb[g] = {}; 
@@ -1314,10 +1401,22 @@ function processStep2() {
                         teamPlayers.push({ id: validPlayerId, name: name, strokeHoles: strokes }); 
                     }
                     if (!scoresDb[g][validPlayerId]) scoresDb[g][validPlayerId] = {}; 
+                    slotToId[`${g}-${p}`] = validPlayerId;
                     validPlayerId++;
                 }
                 let c = curatedColors[(g - 1) % curatedColors.length];
                 roundData.groups.push({ id: g, captain: teamPlayers[0] ? teamPlayers[0].name : `Team ${g}`, players: teamPlayers, color: c });
+            }
+
+            // Our Match: two sides of two, by player id
+            roundData.ourMatch = null;
+            if (document.getElementById('om-enabled').checked) {
+                let seat = id => { let slot = tempRosterCache[id]; let [g] = slot.split('-').map(Number); return { g, p: slotToId[slot] }; };
+                roundData.ourMatch = {
+                    sides: [[seat('om-a1'), seat('om-a2')], [seat('om-b1'), seat('om-b2')]],
+                    nassauBet: parseInt(document.getElementById('om-nassau').value) || 0,
+                    ballBet: parseInt(document.getElementById('om-ball').value) || 0
+                };
             }
 
             if(isScrambled) {
@@ -1438,6 +1537,13 @@ function processStep2() {
                 }
             });
             if (roundData.isScrambled) document.getElementById('cart-group-count').value = roundData.carts.length;
+            OM_SEATS.forEach(id => { delete tempRosterCache[id]; });
+            if (roundData.ourMatch) {
+                roundData.ourMatch.sides.flat().forEach((cp, i) => {
+                    let slot = roundData.groups.find(g => g.id === cp.g).players.findIndex(p => p.id === cp.p) + 1;
+                    tempRosterCache[OM_SEATS[i]] = `${cp.g}-${slot}`;
+                });
+            }
             if (roundData.date) document.getElementById('round-date').value = roundData.date;
             try { localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache)); } catch (e) {}
         }
@@ -1448,6 +1554,12 @@ function processStep2() {
             // Money values
             document.getElementById('bet-amount').value = roundData.betAmount ?? 0;
             document.getElementById('skins-amount').value = roundData.skinsAmount ?? 0;
+
+            // Our Match
+            let om = roundData.ourMatch;
+            document.getElementById('om-enabled').checked = !!om;
+            if (om) { document.getElementById('om-nassau').value = om.nassauBet; document.getElementById('om-ball').value = om.ballBet; }
+            toggleOurMatchOptions();
 
             // Teams and players per team
             document.getElementById('group-count').value = roundData.groups.length;
@@ -1775,6 +1887,7 @@ function setTeamFilter(filterValue) {
 function renderScoreEntry() {
     const container = document.getElementById('entry-container');
     if (!container) return;
+    updateOurMatchAlert();
 
     // Prev/Next only on the admin view; cart views use the full hole list instead
     const holeNav = document.querySelector('.hole-nav');
@@ -2030,6 +2143,7 @@ function closeHoleScoringAndReturn() {
             });
 
             trackCloudWrite(activeTournamentRef.update(...fieldsAndValues));
+            updateOurMatchAlert();
         }
 
         // Firestore keeps writes on the phone until it has signal, so a write still pending after a few seconds means no signal
@@ -2292,6 +2406,7 @@ function closeHoleScoringAndReturn() {
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
             document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(roundData, scoresDb); 
             document.getElementById('dashboard-payouts').innerHTML = generateFinancialSummaryHTML(roundData, scoresDb);
+            document.getElementById('dashboard-our-match').innerHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, true) : '';
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
         }
@@ -2736,6 +2851,230 @@ function closeHoleScoringAndReturn() {
             return calculatePayouts(rData, sDb).players;
         }
 
+        // ==========================================
+        // OUR MATCH: 2-on-2 side game, kept separate from the tournament money. Money is from Side A's view.
+        //  - Nassau (gross): low ball, stroke play, Front / Back / Overall; each side may press each bet once,
+        //    whenever it is behind in that bet or in a press on it. A press covers the holes after it's made.
+        //  - First ball, then second ball (net): low balls decide the hole, second balls only if low balls tie.
+        //    A new bet starts automatically whenever the newest bet goes 1 down. Front amount, back doubles.
+        //  - Birdies (gross): each birdie is worth that nine's ball amount; an eagle counts as two.
+        // ==========================================
+        const MATCH_BETS = ['front', 'back', 'overall'];
+
+        function calculateOurMatch(rData, sDb, presses) {
+            let om = rData.ourMatch;
+            if (!om || !om.sides || om.sides.length !== 2) return null;
+            presses = presses || {};
+            let lookup = cp => rData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p);
+            let sides = om.sides.map(side => side.map(cp => ({ g: cp.g, p: cp.p, player: lookup(cp) })));
+            if (sides.some(side => side.some(x => !x.player))) return null;
+            let sideName = side => side.map(x => x.player.name.split(' ')[0]).join(' & ');
+            let names = [sideName(sides[0]), sideName(sides[1])];
+
+            let order = [...getHoleSequenceFor(rData)].sort((a, b) => a - b);
+            let par = h => rData.course.pars[h - 1];
+            let gross = (x, h) => sDb[x.g]?.[x.p]?.[h];
+            let complete = h => sides.every(side => side.every(x => gross(x, h)));
+            // Holes count only once all four have scored, and only in order (a gap stops the count)
+            let doneUpTo = holes => { let out = []; for (let h of holes) { if (!complete(h)) break; out.push(h); } return out; };
+
+            let lowGross = (si, h) => Math.min(...sides[si].map(x => gross(x, h)));
+            let nets = (si, h) => sides[si].map(x => getPlayerNetScore(rData, x.player, h, gross(x, h))).sort((a, b) => a - b);
+
+            // ---- Nassau ----
+            let segHoles = {
+                front: order.filter(h => h <= 9),
+                back: order.filter(h => h >= 10),
+            };
+            segHoles.overall = segHoles.front.length && segHoles.back.length ? order : [];
+            let nassau = {};
+            MATCH_BETS.forEach(key => {
+                let holes = segHoles[key];
+                if (holes.length === 0) return;
+                let done = doneUpTo(holes);
+                let finished = done.length === holes.length;
+                let strokes = from => done.filter(h => from == null || h > from).reduce((a, h) => a + lowGross(0, h) - lowGross(1, h), 0); // + = A has more strokes (A behind)
+                let bets = [{ label: 'Main', diff: strokes(null), from: null }];
+                ['A', 'B'].forEach(side => {
+                    let after = presses[key]?.[side];
+                    if (after != null) bets.push({ label: `${side === 'A' ? names[0] : names[1]} press (from ${holes[holes.indexOf(after) + 1] ?? after + 1})`, diff: strokes(after), from: after, by: side });
+                });
+                let behind = side => bets.some(b => side === 'A' ? b.diff > 0 : b.diff < 0);
+                let canPress = {};
+                ['A', 'B'].forEach(side => {
+                    canPress[side] = presses[key]?.[side] == null && !finished && done.length > 0 && behind(side);
+                });
+                let money = finished ? bets.reduce((a, b) => a + (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0), 0) : 0;
+                nassau[key] = { holes, done, finished, bets, canPress, lastDone: done[done.length - 1] ?? null, money };
+            });
+
+            // ---- First ball / second ball and birdies, per nine ----
+            let nines = ['front', 'back'].filter(k => segHoles[k].length).map(key => {
+                let holes = segHoles[key];
+                let amount = key === 'back' ? om.ballBet * 2 : om.ballBet;
+                let done = doneUpTo(holes);
+                let finished = done.length === holes.length;
+                let bets = [0];
+                let rows = [];
+                let birdies = [0, 0];
+                done.forEach((h, i) => {
+                    let a = nets(0, h), b = nets(1, h);
+                    let result = a[0] !== b[0] ? (a[0] < b[0] ? 1 : -1) : (a[1] !== b[1] ? (a[1] < b[1] ? 1 : -1) : 0); // + = A wins the hole
+                    bets = bets.map(m => m + result);
+                    let isLast = i === holes.length - 1;
+                    if (!isLast && bets[bets.length - 1] !== 0) bets.push(0); // automatic press
+                    let units = sides.map(side => side.reduce((u, x) => u + Math.max(0, par(h) - gross(x, h)), 0));
+                    birdies[0] += units[0]; birdies[1] += units[1];
+                    rows.push({ hole: h, result, bets: [...bets], lowNets: [a[0], b[0]], units });
+                });
+                let ballMoney = bets.reduce((a, m) => a + Math.sign(m) * amount, 0);
+                let birdieMoney = (birdies[0] - birdies[1]) * amount;
+                return { key, holes, amount, done, finished, rows, bets, birdies, ballMoney, birdieMoney };
+            });
+
+            let totalMoney = nines.reduce((a, n) => a + n.ballMoney + n.birdieMoney, 0) + MATCH_BETS.reduce((a, k) => a + (nassau[k]?.money || 0), 0);
+            let finished = nines.every(n => n.finished) && MATCH_BETS.every(k => !nassau[k] || nassau[k].finished);
+            return { sides, names, nassau, nines, totalMoney, finished };
+        }
+
+        // Holes played in this round, for any round data (getHoleSequence reads the live round)
+        function getHoleSequenceFor(rData) {
+            let front = [1,2,3,4,5,6,7,8,9], back = [10,11,12,13,14,15,16,17,18];
+            if (rData.playMode === '9') return rData.startType === 'back' ? back : front;
+            return rData.startType === 'back' ? [...back, ...front] : [...front, ...back];
+        }
+
+        // Our Match is shown to the admin and to carts that have one of its four players; spectators never see it
+        function canSeeOurMatch(rData) {
+            if (!rData.ourMatch || new URLSearchParams(window.location.search).get('spectator') === 'true') return false;
+            if (lockedTeamId === null) return true;
+            let cart = rData.carts.find(c => c.id === lockedTeamId);
+            let mine = rData.isScrambled && cart ? cart.players : (rData.groups.find(g => g.id === lockedTeamId)?.players.map(p => ({ g: lockedTeamId, p: p.id })) || []);
+            return rData.ourMatch.sides.flat().some(cp => mine.some(m => m.g === cp.g && m.p === cp.p));
+        }
+
+        function formatMatchBet(m) { return m > 0 ? `+${m}` : (m < 0 ? `−${-m}` : 'E'); }
+        // Dollars from side 1's point of view: "+$75" / "−$50" / "$0"
+        function formatMatchMoney(d) { return d === 0 ? '$0' : `${d > 0 ? '+' : '−'}$${Math.abs(d).toLocaleString('en-US')}`; }
+        function matchSettleLine(m, total) {
+            if (total === 0) return 'All square, nobody owes';
+            let [win, lose] = total > 0 ? [m.names[0], m.names[1]] : [m.names[1], m.names[0]];
+            let each = Math.abs(total) / 2;
+            return `${lose} owe ${win} $${Math.abs(total).toLocaleString('en-US')} ($${each.toLocaleString('en-US', { maximumFractionDigits: 2 })} each)`;
+        }
+
+        // Nassau standing in words, + = side 1 behind on strokes
+        function nassauText(m, diff) {
+            if (diff === 0) return 'All square';
+            return `${diff < 0 ? m.names[0] : m.names[1]} up ${Math.abs(diff)}`;
+        }
+
+        function generateOurMatchHTML(rData, sDb, presses, live) {
+            let m = calculateOurMatch(rData, sDb, presses);
+            if (!m) return '';
+            let om = rData.ourMatch;
+            let labels = { front: 'Front 9', back: 'Back 9', overall: 'Overall' };
+            let html = `<section class="dash-section om-section" id="our-match">
+                <div class="dash-section-title team-head"><span>Our Match</span><span>${m.finished ? 'Final' : 'Live'}</span></div>
+                <div class="om-sides"><span class="om-side a">${m.names[0]}</span><span class="om-vs">vs</span><span class="om-side b">${m.names[1]}</span></div>`;
+
+            // Nassau
+            html += `<div class="payout-sub">Nassau · low ball gross, stroke play · $${om.nassauBet} a bet</div>`;
+            MATCH_BETS.forEach(key => {
+                let n = m.nassau[key];
+                if (!n) return;
+                html += `<div class="om-bet"><div class="payout-row"><b>${labels[key]}</b><span class="payout-note">${n.finished ? 'final' : (n.done.length ? `thru ${n.lastDone}` : 'not started')}</span></div>`;
+                n.bets.forEach(b => {
+                    let money = n.finished ? (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0) : null;
+                    html += `<div class="payout-row sub"><span>${b.label === 'Main' ? 'Main bet' : b.label}</span><span>${nassauText(m, b.diff)}${money !== null ? ` · <b class="payout-amount">${formatMatchMoney(money)}</b>` : ''}</span></div>`;
+                });
+                if (live) {
+                    ['A', 'B'].forEach((side, i) => {
+                        if (n.canPress[side]) html += `<button type="button" class="om-press" onclick="pressOurMatch('${key}','${side}')">PRESS ${labels[key].toUpperCase()} · ${m.names[i]}</button>`;
+                    });
+                }
+                html += `</div>`;
+            });
+
+            // First ball / second ball and birdies, one chart per nine
+            m.nines.forEach(nine => {
+                let title = nine.key === 'back' ? 'Back 9' : 'Front 9';
+                html += `<div class="payout-sub">${title} · first ball / second ball, net · $${nine.amount} a bet · + = ${m.names[0]} up</div>`;
+                if (nine.rows.length === 0) {
+                    html += `<div class="payout-row muted">No holes finished yet</div>`;
+                } else {
+                    html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Low net</th><th>Won</th><th>Bets</th><th>Birdies</th></tr></thead><tbody>`;
+                    nine.rows.forEach(r => {
+                        let won = r.result > 0 ? `<span class="om-a">${m.names[0].split(' ')[0]}</span>` : (r.result < 0 ? `<span class="om-b">${m.names[1].split(' ')[0]}</span>` : '–');
+                        let bird = [r.units[0] ? `<span class="om-a">${'●'.repeat(r.units[0])}</span>` : '', r.units[1] ? `<span class="om-b">${'●'.repeat(r.units[1])}</span>` : ''].filter(Boolean).join(' ') || '';
+                        html += `<tr><td><b>${r.hole}</b></td><td>${r.lowNets[0]} v ${r.lowNets[1]}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
+                    });
+                    html += `</tbody></table>`;
+                }
+                if (nine.rows.length === 0) return;
+                let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
+                html += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
+                html += `<div class="payout-row sub"><span>Birdies ${nine.birdies[0]} – ${nine.birdies[1]} (eagle = 2)</span><b class="payout-amount">${formatMatchMoney(nine.birdieMoney)}</b></div>`;
+                let nassauNine = m.nassau[nine.key]?.money || 0;
+                html += `<div class="payout-row"><span>${title} total${nine.finished ? '' : ' so far'}${m.nassau[nine.key]?.finished ? ' with Nassau' : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney + nassauNine)}</b></div>`;
+            });
+            if (m.nassau.overall?.finished) html += `<div class="payout-row"><span>Overall Nassau</span><b class="payout-amount">${formatMatchMoney(m.nassau.overall.money)}</b></div>`;
+
+            html += `<div class="om-total"><span>${m.finished ? 'Final' : 'So far'}: ${formatMatchMoney(m.totalMoney)} ${m.names[0]}</span><b>${matchSettleLine(m, m.totalMoney)}</b></div>`;
+            html += `<p class="dash-footnote">Nassau is paid when each bet finishes; first/second-ball bets and birdies count as they stand. Birdies are gross.</p>`;
+            if (live) html += `<button type="button" class="text-link" onclick="openOurMatchShareModal()">Share Our Match</button>`;
+            return html + `</section>`;
+        }
+
+        function pressOurMatch(key, side) {
+            let m = calculateOurMatch(roundData, scoresDb, matchPresses);
+            let n = m && m.nassau[key];
+            if (!n || !n.canPress[side]) return;
+            let name = m.names[side === 'A' ? 0 : 1];
+            let label = { front: 'front 9', back: 'back 9', overall: 'overall' }[key];
+            let next = n.holes[n.holes.indexOf(n.lastDone) + 1];
+            if (!confirm(`${name} press the ${label} ($${roundData.ourMatch.nassauBet}), starting on hole ${next}?\n\nEach side gets one press per bet.`)) return;
+            matchPresses = { ...matchPresses, [key]: { ...(matchPresses[key] || {}), [side]: n.lastDone } };
+            trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('matchPresses', key, side), n.lastDone));
+            viewDashboard();
+            document.getElementById('our-match')?.scrollIntoView({ block: 'start' });
+        }
+
+        // Scoring screen nudge when a side can press
+        function updateOurMatchAlert() {
+            let el = document.getElementById('om-press-alert');
+            if (!el) return;
+            let m = canSeeOurMatch(roundData) ? calculateOurMatch(roundData, scoresDb, matchPresses) : null;
+            let open = [];
+            if (m) MATCH_BETS.forEach(key => ['A', 'B'].forEach((side, i) => {
+                if (m.nassau[key]?.canPress[side]) open.push(`${m.names[i]} (${{ front: 'front', back: 'back', overall: 'overall' }[key]})`);
+            }));
+            el.style.display = open.length ? '' : 'none';
+            el.innerHTML = open.length ? `Our Match: press available for ${open.join(', ')} <button type="button" class="text-link" onclick="viewDashboard(); document.getElementById('our-match')?.scrollIntoView({block:'start'});">Open ›</button>` : '';
+        }
+
+        function openOurMatchShareModal() {
+            let m = calculateOurMatch(activeViewRoundData, activeViewScoresDb, activeViewRoundData.matchPresses || matchPresses);
+            if (!m) return;
+            let om = activeViewRoundData.ourMatch;
+            let labels = { front: 'Front', back: 'Back', overall: 'Overall' };
+            let st = `JB Golf · Our Match\n${formatRoundDate(activeViewRoundData.date)} · ${activeViewRoundData.course.name}\n${m.names[0]} vs ${m.names[1]}\n`;
+            st += `\nNassau ($${om.nassauBet} a bet)\n`;
+            MATCH_BETS.forEach(key => {
+                let n = m.nassau[key]; if (!n) return;
+                n.bets.forEach(b => { st += `${labels[key]} ${b.label === 'Main' ? '' : b.label + ' '}: ${nassauText(m, b.diff)}${n.finished ? '' : ` (thru ${n.lastDone ?? '–'})`}\n`; });
+            });
+            m.nines.forEach(nine => {
+                st += `\n${nine.key === 'back' ? 'Back' : 'Front'} 9 ($${nine.amount})\n`;
+                st += `Bets: ${nine.bets.map(formatMatchBet).join(' ')} → ${formatMatchMoney(nine.ballMoney)}\n`;
+                st += `Birdies ${nine.birdies[0]}–${nine.birdies[1]} → ${formatMatchMoney(nine.birdieMoney)}\n`;
+            });
+            st += `\n${m.finished ? 'Final' : 'So far'}: ${matchSettleLine(m, m.totalMoney)}\n`;
+            document.getElementById('share-modal-title').innerText = "Share Our Match";
+            document.getElementById('share-text-content').value = st;
+            document.getElementById('share-modal').classList.add('active');
+        }
+
         // Fewest payments that settle everyone up: biggest loser pays biggest winner, repeat.
         // Amounts are rounded to whole dollars (cash), keeping the dollar totals balanced.
         function calculateSettlements(nets) {
@@ -2993,7 +3332,7 @@ function closeHoleScoringAndReturn() {
 
             saveToArchive(); 
             // The results text reads activeView*, which is only set if the standings page was opened first
-            activeViewRoundData = JSON.parse(JSON.stringify(roundData));
+            activeViewRoundData = JSON.parse(JSON.stringify({ ...roundData, matchPresses }));
             activeViewScoresDb = JSON.parse(JSON.stringify(scoresDb));
             
             // WIPE ROSTER AND JOKE CACHES ON FINALIZE
@@ -3028,7 +3367,7 @@ function closeHoleScoringAndReturn() {
 
         function saveToArchive() {
             let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
-            archive.push({ date: roundData.date || new Date().toLocaleDateString(), course: roundData.course, roundData: roundData, scoresDb: scoresDb });
+            archive.push({ date: roundData.date || new Date().toLocaleDateString(), course: roundData.course, roundData: { ...roundData, matchPresses }, scoresDb: scoresDb });
             localStorage.setItem('tournamentArchive', JSON.stringify(archive));
         }
 
@@ -3081,6 +3420,7 @@ function closeHoleScoringAndReturn() {
             try { 
                 document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(activeViewRoundData, activeViewScoresDb); 
                 document.getElementById('archived-payout-summary-container').innerHTML = generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb); 
+                document.getElementById('archived-our-match-container').innerHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, activeViewRoundData.matchPresses || {}, false) : '';
                 switchScreen('step-8', 'step-9'); 
             } catch (error) { 
                 alert("⚠️ This round is from an older version of the app and is missing data for the new layout."); 
