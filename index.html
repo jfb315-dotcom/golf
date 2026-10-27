@@ -2946,6 +2946,9 @@ function closeHoleScoringAndReturn() {
             }
 
             saveToArchive(); 
+            // The results text reads activeView*, which is only set if the standings page was opened first
+            activeViewRoundData = JSON.parse(JSON.stringify(roundData));
+            activeViewScoresDb = JSON.parse(JSON.stringify(scoresDb));
             
             // WIPE ROSTER AND JOKE CACHES ON FINALIZE
             tempRosterCache = {};
@@ -2973,7 +2976,8 @@ function closeHoleScoringAndReturn() {
                 archivedAt: new Date().getTime() 
             }).catch(err => console.log(err));
 
-            setTimeout(() => { if(confirm("Round Finalized successfully! Generate text results to copy/share?")) { openResultsShareModal(); } }, 150);
+            openResultsShareModal();
+            document.getElementById('share-modal-title').innerText = "Round finalized · Share results";
         }
 
         function saveToArchive() {
