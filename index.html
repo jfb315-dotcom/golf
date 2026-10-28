@@ -332,9 +332,15 @@
         .om-birdie-line.muted { color: var(--text-muted); }
         .om-subtotal { font-weight: 700; }
         .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
-        .alerts-btn { display: block; width: 100%; margin: 10px 0 0; min-height: 48px; border: 1px solid var(--border-color); border-radius: 24px; background: transparent; color: var(--text-main); font-size: 15px; font-weight: 700; cursor: pointer; }
-        .alerts-btn.on { border-color: transparent; background: var(--fill); color: var(--text-muted); font-weight: 600; }
-        .dash-actions .alerts-btn { margin-bottom: 10px; }
+        .alerts-banner { margin: 12px 0 4px; }
+        .ab-big { padding: 16px 18px 14px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+        .ab-title { font-size: 20px; font-weight: 900; line-height: 1.15; }
+        .ab-sub { margin-top: 4px; font-size: 14px; font-weight: 600; opacity: 0.85; }
+        .ab-btn { display: block; width: 100%; height: 50px; margin-top: 12px; border: none; border-radius: 25px; background: var(--on-accent); color: var(--accent-gold); font-size: 17px; font-weight: 800; cursor: pointer; }
+        .ab-later { display: block; margin: 8px auto 0; border: none; background: none; color: var(--on-accent); font-size: 13px; font-weight: 700; text-decoration: underline; opacity: 0.8; cursor: pointer; }
+        .ab-chip { display: flex; justify-content: flex-end; }
+        .ab-chip button { border: 1px solid var(--border-color); border-radius: 16px; background: var(--fill-soft); color: var(--text-muted); font-size: 13px; font-weight: 700; padding: 6px 12px; cursor: pointer; }
+        .ab-chip.on button { color: var(--good); }
         .om-bet-row { display: grid; grid-template-columns: minmax(0, 1fr) auto 64px; gap: 10px; align-items: center; min-height: 36px; padding: 0 4px 0 14px; font-size: 15px; color: var(--text-muted); }
         .om-bet-row .om-standing { color: var(--text-main); white-space: nowrap; }
         .om-bet-row b { text-align: right; color: var(--text-main); white-space: nowrap; }
@@ -582,6 +588,8 @@
             <div id="offline-banner" class="offline-banner" style="display:none;">📴 No signal. Scores are saved on this phone and will sync when signal returns. No need to re-enter them.</div>
         </div>
         
+        <div class="alerts-banner" style="display:none;"></div>
+
         <div id="clipboard-warning" class="clipboard-banner" style="display:none;">
             Another device is currently keeping score for this cart.
             <button class="btn-primary" style="margin-top:10px; padding: 10px;" onclick="claimClipboard()">✏️ Take Over Scoring</button>
@@ -589,7 +597,6 @@
 
         <div id="entry-container" style="position: relative; z-index: 10;"></div>
         
-        <button type="button" class="alerts-btn" onclick="toggleAlerts()" style="display:none;"></button>
         <button type="button" class="btn-success" onclick="viewDashboard()">View standings &amp; scorecards <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
         
         <div id="admin-share-btn-container" class="list-rows">
@@ -606,13 +613,13 @@
         </div>
         <div class="clean-eyebrow" id="dashboard-eyebrow">Live</div>
         <h2 class="clean-title" id="dashboard-title">Standings</h2>
+        <div class="alerts-banner" style="display:none;"></div>
         <div id="dashboard-cart-progress"></div>
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts"></div>
         <div id="dashboard-our-match"></div>
         <div id="dashboard-financial-summary"></div>
         <div class="dash-actions">
-            <button type="button" class="alerts-btn" onclick="toggleAlerts()" style="display:none;"></button>
             <button type="button" class="bar-primary" onclick="(hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) ? openResultsShareModal() : openOurMatchShareModal()">Share results</button>
             <div id="admin-finalize-container">
                 <button type="button" class="text-link danger-link" onclick="validateAndFinalize()">Finalize &amp; archive round</button>
@@ -964,7 +971,7 @@ function toggle9HoleOptions() {
                             }
                         } else {
                             document.getElementById('step-dead-link').classList.remove('active');
-                            if (!isSpectator) document.querySelectorAll('#step-dashboard button:not(.alerts-btn)').forEach(btn => btn.style.display = '');
+                            if (!isSpectator) document.querySelectorAll('#step-dashboard button:not(.alerts-banner button)').forEach(btn => btn.style.display = '');
                         }
 
                         // Smarter merge so per-cart currentHoles don't get overwritten by other clients
@@ -1014,7 +1021,7 @@ function toggle9HoleOptions() {
                         if (isSpectator || showingFinalResults) {
                             document.getElementById('admin-finalize-container').style.display = 'none';
                             viewDashboard();
-                            const dashBtns = document.querySelectorAll('#step-dashboard button:not(.alerts-btn)');
+                            const dashBtns = document.querySelectorAll('#step-dashboard button:not(.alerts-banner button)');
                             dashBtns.forEach(btn => btn.style.display = 'none'); 
                             return;
                         }
@@ -3563,11 +3570,31 @@ function closeHoleScoringAndReturn() {
             let on = !!sub;
             // Keep this phone's cart up to date (the same phone may be on a different cart next round)
             if (sub && !refreshAlertsButtons.saved) { refreshAlertsButtons.saved = true; saveAlertSubscription(sub).catch(() => {}); }
-            document.querySelectorAll('.alerts-btn').forEach(btn => {
-                btn.style.display = ALERTS_URL ? '' : 'none';
-                btn.classList.toggle('on', on);
-                btn.textContent = on ? '🔔 Alerts are on · tap to turn off' : '🔔 Turn on alerts';
-            });
+            let later = false;
+            try { later = sessionStorage.getItem('jbGolfAlertsLater') === '1'; } catch (e) {}
+            let blocked = window.Notification?.permission === 'denied';
+            let needsHomeScreen = isIPhone() && !isHomeScreenApp();
+            let html = '';
+            if (!ALERTS_URL) html = '';
+            else if (on) html = `<div class="ab-chip on"><button type="button" onclick="turnOffAlerts()">🔔 Alerts on</button></div>`;
+            else if (blocked) html = `<div class="ab-chip"><button type="button" onclick="toggleAlerts()">🔕 Alerts blocked · how to fix</button></div>`;
+            else if (later) html = `<div class="ab-chip"><button type="button" onclick="toggleAlerts()">🔕 Alerts off · turn on</button></div>`;
+            else html = `<div class="ab-big">
+                    <div class="ab-title">🔔 Get alerts for this round</div>
+                    <div class="ab-sub">Birdies, skins, missed holes and final results, right on your phone.</div>
+                    <button type="button" class="ab-btn" onclick="toggleAlerts()">${needsHomeScreen ? 'Show me how' : 'Turn on alerts'}</button>
+                    <button type="button" class="ab-later" onclick="alertsLater()">Not now</button>
+                </div>`;
+            document.querySelectorAll('.alerts-banner').forEach(el => { el.innerHTML = html; el.style.display = html ? '' : 'none'; });
+        }
+
+        function alertsLater() {
+            try { sessionStorage.setItem('jbGolfAlertsLater', '1'); } catch (e) {}
+            refreshAlertsButtons();
+        }
+
+        function turnOffAlerts() {
+            if (confirm('Turn off alerts on this phone?')) toggleAlerts();
         }
 
         async function toggleAlerts() {
@@ -3589,6 +3616,7 @@ function closeHoleScoringAndReturn() {
             let permission = await Notification.requestPermission();
             if (permission !== 'granted') {
                 alert("Alerts are blocked for JB Golf. To allow them, open your phone's Settings → Notifications → JB Golf and turn on Allow Notifications.");
+                refreshAlertsButtons();
                 return;
             }
             try {
