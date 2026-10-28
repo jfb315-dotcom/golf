@@ -362,6 +362,8 @@
         .om-birdie-line b { display: inline-block; min-width: 52px; letter-spacing: 0.04em; }
         .om-birdie-line.muted { color: var(--text-muted); }
         .om-subtotal { font-weight: 700; }
+        .alerts-details { margin-top: 18px; }
+        .alerts-details summary b { font-size: 14px; font-weight: 600; color: var(--text-muted); }
         .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
         .alerts-banner { margin: 12px 0 4px; }
         .ab-big { padding: 16px 18px 14px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
@@ -490,8 +492,8 @@
             </div>
         </div>
 
-        <div id="alerts-setup" style="display:none;">
-            <div class="field-label">Phone alerts</div>
+        <details id="alerts-setup" class="dash-details alerts-details" style="display:none;">
+            <summary><span>Phone alerts</span><b id="alerts-count"></b></summary>
             <div class="alerts-group">To everyone</div>
             <div class="format-container">
                 <div class="format-row"><label class="format-label" for="alert-birdies">Birdies &amp; eagles 🐦</label><input type="checkbox" class="switch" id="alert-birdies" checked></div>
@@ -514,7 +516,7 @@
                 <div class="format-row"><label class="format-label" for="alert-missedHole">Missed a hole ⚠️</label><input type="checkbox" class="switch" id="alert-missedHole" checked></div>
                 <div class="format-row"><label class="format-label" for="alert-behind">No scores in 20 minutes ⏰</label><input type="checkbox" class="switch" id="alert-behind" checked></div>
             </div>
-        </div>
+        </details>
 
         <div class="list-rows">
             <button type="button" id="btn-archive" class="list-row" onclick="viewArchiveList()">Archived rounds <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
@@ -797,7 +799,8 @@
             bogey: ["WOW!! THAT GUY SUCKS 😂", "EVEN THE CART GIRL IS LAUGHING 🛒", "YOU ACTUALLY PAY FOR LESSONS? 💸", "MIGHT BE TIME TO TAKE UP TENNIS 🎾"]
         };
 
-        function changeTheme(themeKey = null) {
+        // fromRound: applying the round's theme on a cart/spectator phone (don't send it back)
+        function changeTheme(themeKey = null, fromRound = false) {
             let key = themeKey || document.getElementById('app-theme-selector').value; 
             if (!appThemes[key]) key = 'coastal'; // older saved themes were retired
             let t = appThemes[key];
@@ -808,6 +811,12 @@
                 localStorage.setItem('savedTheme', key); 
                 let sel = document.getElementById('app-theme-selector');
                 if(sel) sel.value = key;
+                // The admin's theme is the round's theme: carts and spectators follow it
+                let isAdminPhone = lockedTeamId === null && new URLSearchParams(location.search).get('spectator') !== 'true';
+                if (!fromRound && isAdminPhone && typeof liveRoundInCloud !== 'undefined' && liveRoundInCloud && roundData.theme !== key) {
+                    roundData.theme = key;
+                    activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'theme'), key).catch(() => {});
+                }
             }
         }
 
@@ -1075,6 +1084,9 @@ function toggle9HoleOptions() {
                         if(typeof roundData.course === 'string') { 
                             roundData.course = allAvailableCourses[roundData.course] || { name: "Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; 
                         }
+
+                        // Carts and spectators wear the round's theme (the admin's choice)
+                        if ((lockedTeamId !== null || isSpectator) && roundData.theme && roundData.theme !== localStorage.getItem('savedTheme')) changeTheme(roundData.theme, true);
 
                         if (isSpectator || showingFinalResults) {
                             document.getElementById('admin-finalize-container').style.display = 'none';
@@ -1525,6 +1537,7 @@ function processStep2() {
 
             applySetupFormToRoundData();
             roundData.date = document.getElementById('round-date').value || new Date().toLocaleDateString(); 
+            roundData.theme = localStorage.getItem('savedTheme') || 'coastal';
             roundData.isScrambled = isScrambled;
             roundData.formats = []; 
             roundData.birdieRules = {}; 
@@ -1732,6 +1745,7 @@ function processStep2() {
             document.getElementById('skins-amount').value = roundData.skinsAmount ?? 0;
 
             ALERT_TYPES.forEach(t => { document.getElementById(`alert-${t}`).checked = roundData.alerts?.[t] !== false; });
+            updateAlertsCount();
 
             // Our Match
             let om = roundData.ourMatch;
@@ -3631,6 +3645,13 @@ function hideCartHoleHeader() {
         let alertsBannerHtml = ''; // what the alerts tag/card shows right now, for screens drawn later
         let pendingAlertView = (location.hash.match(/view=([\w-]+)/) || [])[1] || null;
 
+        function updateAlertsCount() {
+            let on = ALERT_TYPES.filter(t => document.getElementById(`alert-${t}`)?.checked).length;
+            let el = document.getElementById('alerts-count');
+            if (el) el.textContent = `${on} of ${ALERT_TYPES.length} on`;
+        }
+        document.getElementById('alerts-setup').addEventListener('change', updateAlertsCount);
+
         function alertsDeviceId() {
             let id = null;
             try { id = localStorage.getItem('jbGolfAlertsId'); } catch (e) {}
@@ -3913,6 +3934,7 @@ function hideCartHoleHeader() {
             if (view === 'our-match') setTimeout(() => document.getElementById('our-match')?.scrollIntoView({ block: 'start' }), 50);
         }
         document.getElementById('alerts-setup').style.display = ALERTS_URL ? '' : 'none';
+        updateAlertsCount();
         document.getElementById('admin-message-row').style.display = ALERTS_URL ? '' : 'none';
         refreshAlertsButtons();
         if ('serviceWorker' in navigator) {
@@ -3992,6 +4014,7 @@ function hideCartHoleHeader() {
             document.getElementById('skins-amount').value = 10;
             document.getElementById('om-only').checked = false;
             ALERT_TYPES.forEach(t => { document.getElementById(`alert-${t}`).checked = true; });
+            updateAlertsCount();
             document.getElementById('hole-format').value = '18';
             document.getElementById('fmt-1').checked = false;
             document.getElementById('fmt-2').checked = true;
