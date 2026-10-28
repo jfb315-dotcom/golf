@@ -766,7 +766,7 @@ firebase.initializeApp(firebaseConfig);
 const db = firebase.firestore();
 
 // Phone alerts go through the Cloudflare Worker in cloudflare/alerts-worker.js. Left blank, alerts are off.
-const ALERTS_URL = '';
+const ALERTS_URL = 'https://jbgolf-alerts.jfb315.workers.dev/';
 const ALERTS_PUBLIC_KEY = 'BJVjffPKtgDolmCvKbTo5jVnxnVh1Da0HylhVjm33N2Ckjoo5hZl0RbNhHF6WlZwDKTV7OdQtbCGJtdeAZeDxik';
 const ALERT_TYPES = ['birdies', 'presses', 'cartDone', 'final'];
 const activeTournamentRef = db.collection("tournaments").doc("active_round");
