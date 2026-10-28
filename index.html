@@ -157,6 +157,7 @@
         .hole-strip { display: flex; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .hole-strip::-webkit-scrollbar { display: none; }
         .admin-strip { padding: 8px 2px 4px; }
+        .strip-hole.strip-all { width: auto; padding: 0 14px; border-color: var(--accent-gold); color: var(--accent-gold); font-size: 14px; white-space: nowrap; position: sticky; left: 0; z-index: 2; background: var(--bg-dark); box-shadow: 6px 0 8px var(--bg-dark); }
         .strip-hole { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; margin: 0; padding: 0; cursor: pointer; }
         .strip-hole.done { background: var(--fill-strong); border-color: transparent; color: var(--text-main); }
         .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
@@ -2103,6 +2104,7 @@ function setHoleHeader(hole, par) {
 function renderFullScorecardForCart() {
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
     if (cart) {
+        if (cartListOpen) { renderCartHoleList(); return; }
         if (cartHoleOpen && roundData.currentHole) { openHoleForScoring(roundData.currentHole); return; }
         let seq = getHoleSequence(), mates = realPlayersOf(cart);
         openHoleForScoring(seq.find(h => !holeDoneBy(mates, scoresDb, h)) || seq[seq.length - 1]);
@@ -2111,7 +2113,13 @@ function renderFullScorecardForCart() {
     renderCartHoleList();
 }
 
-// The cart's list of every hole (no longer the cart's home screen; kept for reference)
+// "All scores": the cart's list of every hole with everyone's scores; tap a hole to open it
+function showCartHoleList() {
+    cartListOpen = true;
+    renderCartHoleList();
+    window.scrollTo(0, 0);
+}
+
       function renderCartHoleList() {
     cancelAutoAdvance();
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
@@ -2175,6 +2183,7 @@ function renderFullScorecardForCart() {
     }, 100);
 }
 let cartHoleOpen = false; // a cart is on one hole's score entry rather than its hole list
+let cartListOpen = false; // a cart is looking at All scores
 // The move to the next hole after the last score; cancelled if the scorer goes somewhere else first
 let autoAdvanceTimer = null;
 function cancelAutoAdvance() { if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; } }
@@ -2184,6 +2193,7 @@ function openHoleForScoring(holeNum) {
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
     cartHoleOpen = true;
+    cartListOpen = false;
     document.querySelector('.hole-nav').style.display = 'none';
     setHoleHeader(holeNum, par);
     renderCartHoleHeader(holeNum, par);
@@ -2206,6 +2216,7 @@ function renderCartHoleHeader(hole, par) {
         let cls = h === hole ? ' current' : (done ? ' done' : '');
         return `<button type="button" class="strip-hole${cls}" onclick="openHoleForScoring(${h})" aria-label="Hole ${h}"${h === hole ? ' aria-current="true"' : ''}>${h}</button>`;
     }).join('');
+    strip = `<button type="button" class="strip-hole strip-all" onclick="showCartHoleList()">All scores</button>` + strip;
     header.innerHTML = `<div class="cart-band">
             <div class="cart-band-top"><span>Cart ${currentTeamFilter}</span><span class="band-right">${alertsAreOn ? '<button type="button" class="band-bell" onclick="turnOffAlerts()">🔔 Alerts on</button>' : ''}<span id="band-sync"></span></span></div>
             <div class="cart-band-main"><span class="cart-band-hole">Hole ${hole}</span><span class="cart-band-par">Par ${par}</span></div>
