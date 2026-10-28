@@ -591,6 +591,7 @@
         <div id="roster-container"></div>
         <datalist id="saved-players-list"></datalist>
 
+        <button type="button" class="text-link" onclick="balanceTeams()">⚖️ Balance teams by index</button>
         <button type="button" class="text-link" onclick="openPreRoundBlindDrawModal()">Assign blind draw (ghost)</button>
 
         <div id="om-sides" style="display: none;">
@@ -743,6 +744,7 @@
             <input type="text" id="pl-nick" autocomplete="off" autocapitalize="words" placeholder="e.g. Bubba">
             <label class="field-label" for="pl-tee">Usual tees</label>
             <input type="text" id="pl-tee" list="tee-names" autocomplete="off" autocapitalize="words" placeholder="e.g. Blue">
+            <div id="pl-course-tees" class="dash-footnote"></div>
             <datalist id="tee-names"><option value="Black"><option value="Blue"><option value="White"><option value="Gold"><option value="Silver"><option value="Green"><option value="Red"></datalist>
             <button class="btn-primary" onclick="savePlayerEditor()">Save</button>
             <button class="btn-secondary" id="pl-delete" onclick="deletePlayerFromEditor()">Delete player</button>
@@ -1445,18 +1447,39 @@ function toggle9HoleOptions() {
             return same.length && last ? `${first} ${last[0]}.` : first;
         }
 
-        // A player's usual tees, matched to this course's tee names (so "white" finds "White")
+        // A player's tees for this course: what they played here last time, else their usual tees if the course has them
+        // (courses name tees differently, so an unmatched usual tee is left blank to pick)
         function defaultTeeFor(name) {
-            let usual = savedPlayers[(name || '').trim().toLowerCase()]?.tee || '';
-            let t = findTee(document.getElementById('course-selector')?.value || roundData.courseKey, usual);
-            return t ? t.name : usual;
+            let sp = savedPlayers[(name || '').trim().toLowerCase()];
+            let key = document.getElementById('course-selector')?.value || roundData.courseKey;
+            let t = findTee(key, sp?.tees?.[key]) || findTee(key, sp?.tee);
+            return t ? t.name : '';
         }
         function rosterTeeSelect(g, p) {
             let tees = courseTees(document.getElementById('course-selector').value);
             if (!tees.length) return '';
             let current = tempRosterCache[`g${g}-p${p}-tee`] || defaultTeeFor(tempRosterCache[`g${g}-p${p}-name`]);
-            let opts = `<option value="">Tees</option>` + tees.map(t => `<option value="${t.name}"${t.name === current ? ' selected' : ''}>${t.name}</option>`).join('');
-            return `<select class="roster-tee-select" id="g${g}-p${p}-tee" aria-label="Tees" onchange="saveRosterCache()">${opts}</select>`;
+            return `<select class="roster-tee-select" id="g${g}-p${p}-tee" aria-label="Tees" onchange="rosterTeeChanged(this)">${teeOptions(tees, current)}</select>`;
+        }
+        function teeOptions(tees, current) {
+            return `<option value="">Tees</option>` + tees.map(t => `<option value="${t.name}"${t.name === current ? ' selected' : ''}>${t.name}</option>`).join('')
+                + `<option value="__add">+ Add a tee…</option>`;
+        }
+        let teeSelectToFill = null;
+        function rosterTeeChanged(sel) {
+            if (sel.value === '__add') {
+                sel.value = tempRosterCache[sel.id] || '';
+                teeSelectToFill = sel.id;
+                let usual = savedPlayers[(document.getElementById(sel.id.replace('-tee', '-name')).value || '').trim().toLowerCase()]?.tee || '';
+                openTeesEditor(usual);
+                return;
+            }
+            saveRosterCache();
+        }
+        // After the tees change, every roster picker gets the new list (keeping each pick)
+        function refreshRosterTeeSelects() {
+            let tees = courseTees(document.getElementById('course-selector').value);
+            document.querySelectorAll('.roster-tee-select').forEach(sel => { sel.innerHTML = teeOptions(tees, sel.value); });
         }
 
         // ===== Tees & ratings for the selected course =====
@@ -1466,10 +1489,16 @@ function toggle9HoleOptions() {
                 if (doc.exists && doc.data().courses) { teeOverrides = doc.data().courses; localStorage.setItem('courseTees', JSON.stringify(teeOverrides)); }
             }).catch(() => {});
         }
-        function openTeesEditor() {
+        function openTeesEditor(newName) {
             let key = document.getElementById('course-selector').value;
             document.getElementById('tees-course-name').textContent = allAvailableCourses[key]?.name || 'Course';
-            renderTeeRows(courseTees(key));
+            let tees = courseTees(key).slice();
+            if (typeof newName === 'string') { // from a roster picker: start a new row, named after the player's usual tees if this course lacks them
+                if (newName && findTee(key, newName)) newName = '';
+                tees.push({ name: newName, yards: null, rating: null, slope: null });
+            } else teeSelectToFill = null;
+            renderTeeRows(tees);
+            if (typeof newName === 'string') setTimeout(() => { let rows = document.querySelectorAll('#tees-rows .tee-edit-row'); rows[rows.length - 1]?.querySelector(newName ? '.te-rating' : '.te-name')?.focus(); }, 50);
             document.getElementById('tees-modal').classList.add('active');
         }
         function renderTeeRows(tees) {
@@ -1502,6 +1531,14 @@ function toggle9HoleOptions() {
             courseTeesRef.set({ courses: { [key]: tees } }, { merge: true }).catch(err => console.error('Saving tees failed', err));
             document.getElementById('tees-modal').classList.remove('active');
             refreshTeeNameList();
+            refreshRosterTeeSelects();
+            let sel = teeSelectToFill && document.getElementById(teeSelectToFill);
+            if (sel) { // the tee just added goes to the player who asked for it
+                let added = tees.filter(t => !orig.some(o => o.name === t.name)).pop();
+                if (added) sel.value = added.name;
+                saveRosterCache();
+            }
+            teeSelectToFill = null;
         }
         // Tee names from every course, for the Players screen's "Usual tees"
         function refreshTeeNameList() {
@@ -1532,6 +1569,9 @@ function toggle9HoleOptions() {
             document.getElementById('player-modal-title').textContent = key ? savedPlayers[key].name : 'Add a player';
             document.getElementById('pl-delete').style.display = key ? '' : 'none';
             renderPlayerStats(key);
+            let byCourse = Object.entries((key && savedPlayers[key].tees) || {}).filter(([k]) => allAvailableCourses[k])
+                .map(([k, t]) => `${allAvailableCourses[k].name.replace(/\s*\(.*\)$/, '')}: <span class="tee-dot" style="background:${teeColor(t)};"></span>${t}`);
+            document.getElementById('pl-course-tees').innerHTML = byCourse.length ? 'Last played · ' + byCourse.join(' · ') : 'Courses name their tees differently. Each course remembers the tee they played there last.';
             document.getElementById('player-modal').classList.add('active');
         }
 
@@ -1573,9 +1613,12 @@ function toggle9HoleOptions() {
                     if (!name || tempRosterCache[`g${g}-p${p}-ghost`]) continue;
                     let key = name.toLowerCase();
                     let parts = splitName(name);
+                    let tee = tempRosterCache[`g${g}-p${p}-tee`] || '';
                     updates[key] = { name: name, strokes: { [courseKey]: (tempRosterCache[`g${g}-p${p}-strokes`] || '').trim() } };
-                    if (!savedPlayers[key]) Object.assign(updates[key], parts, { nick: '', tee: '' }); // new: start a database entry
-                    savedPlayers[key] = { ...parts, nick: '', tee: '', ...(savedPlayers[key] || {}), name: name, strokes: { ...(savedPlayers[key]?.strokes || {}), [courseKey]: updates[key].strokes[courseKey] } };
+                    if (tee) updates[key].tees = { [courseKey]: tee }; // their tees at this course, for next time
+                    if (!savedPlayers[key]) Object.assign(updates[key], parts, { nick: '', tee: tee }); // new: start a database entry
+                    savedPlayers[key] = { ...parts, nick: '', tee: tee, ...(savedPlayers[key] || {}), name: name, strokes: { ...(savedPlayers[key]?.strokes || {}), [courseKey]: updates[key].strokes[courseKey] } };
+                    if (tee) savedPlayers[key].tees = { ...(savedPlayers[key].tees || {}), [courseKey]: tee };
                 }
             }
             if (Object.keys(updates).length === 0) return;
@@ -1710,6 +1753,71 @@ function toggle9HoleOptions() {
                 ${st.index === null ? '<p class="dash-footnote" style="text-align:center;">Index shows after 3 rounds of 18 with tee ratings.</p>' : ''}
                 <div class="hist-head"><span>Round</span><span>Score</span><span>Diff</span></div>
                 <div class="hist-list">${list}</div>`;
+        }
+
+        // ===== Balance teams =====
+        // Each player's strength is their course handicap from these tees (index × slope ÷ 113 + rating − par),
+        // or just the index when the tees have no rating. Teams are dealt out snake-style, then players are
+        // swapped while it brings the team totals closer together. Strokes are left alone.
+        function balanceTeams() {
+            saveRosterCache();
+            const gCount = parseInt(document.getElementById('group-count').value);
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            let courseKey = document.getElementById('course-selector').value;
+            let par = (allAvailableCourses[courseKey]?.pars || []).reduce((a, b) => a + b, 0) || 72;
+            let players = [];
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let k = `g${g}-p${p}`;
+                if (tempRosterCache[`${k}-ghost`]) { alert('Remove the blind draw (ghost) first, balance the teams, then add it back.'); return; }
+                let name = (tempRosterCache[`${k}-name`] || '').trim();
+                if (!name) continue;
+                let index = handicapIndex(playerRounds(name.toLowerCase()));
+                let tee = findTee(courseKey, tempRosterCache[`${k}-tee`]);
+                let ch = index === null ? null : (tee?.rating && tee?.slope ? index * tee.slope / 113 + (tee.rating - par) : index);
+                players.push({ name, index, ch, tee: tempRosterCache[`${k}-tee`] || '', strokes: tempRosterCache[`${k}-strokes`] || '' });
+            }
+            let rated = players.filter(p => p.ch !== null);
+            if (rated.length < 2) { alert('Not enough players have an index yet. An index shows after 3 finished 18-hole rounds.'); return; }
+            if (players.length > gCount * pCount) return;
+            let avg = rated.reduce((s, p) => s + p.ch, 0) / rated.length;
+            players.forEach(p => p.v = p.ch ?? avg); // no index yet: counted as the group's average
+            // snake deal, strongest (lowest) first
+            let teams = Array.from({ length: gCount }, () => []);
+            players.slice().sort((a, b) => a.v - b.v).forEach((pl, i) => {
+                let round = Math.floor(i / gCount), pos = i % gCount;
+                let order = round % 2 ? gCount - 1 - pos : pos;
+                let t = order; while (teams[t].length >= pCount) t = (t + 1) % gCount;
+                teams[t].push(pl);
+            });
+            let total = t => t.reduce((s, p) => s + p.v, 0);
+            let spread = () => { let tots = teams.map(total); return Math.max(...tots) - Math.min(...tots); };
+            for (let improved = true, n = 0; improved && n < 200; n++) {
+                improved = false;
+                for (let a = 0; a < gCount; a++) for (let b = a + 1; b < gCount; b++)
+                    for (let i = 0; i < teams[a].length; i++) for (let j = 0; j < teams[b].length; j++) {
+                        let before = spread();
+                        [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
+                        if (spread() < before - 0.05) improved = true;
+                        else [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
+                    }
+            }
+            teams.forEach(t => t.sort((a, b) => a.v - b.v)); // lowest handicap is captain
+            let fmt = v => fmtIndex(Math.round(v * 10) / 10); // better than scratch shows as +
+            let missing = players.filter(p => p.ch === null).map(p => p.name.split(' ')[0]);
+            let msg = teams.map((t, i) => `Team ${i + 1} (total ${fmt(total(t))}): ${t.map(p => `${p.name.split(' ')[0]} ${p.ch === null ? '?' : fmt(p.ch)}`).join(', ')}`).join('\n')
+                + (missing.length ? `\n\nNo index yet, counted as average: ${missing.join(', ')}` : '')
+                + '\n\nNumbers are course handicaps from each player\'s tees. Use these teams?';
+            if (!confirm(msg)) return;
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let pl = teams[g - 1][p - 1], k = `g${g}-p${p}`;
+                tempRosterCache[`${k}-name`] = pl ? pl.name : '';
+                tempRosterCache[`${k}-tee`] = pl ? pl.tee : '';
+                tempRosterCache[`${k}-strokes`] = pl ? pl.strokes : '';
+                tempRosterCache[`${k}-ghost`] = '';
+            }
+            OM_SEATS.forEach(id => { tempRosterCache[id] = ''; }); // Our Match sides start over from the new teams
+            localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
+            goToStep2();
         }
 
         // ===== Our Match setup =====
