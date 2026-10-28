@@ -141,8 +141,8 @@
         .score-row.active input.score-circle { box-shadow: inset 0 0 0 2px var(--accent-gold); color: var(--accent-gold); }
         .stroke-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-left: 6px; vertical-align: middle; }
         .team-tag { font-size: 12px; font-weight: bold; margin-left: 6px; }
-        .score-keypad { position: sticky; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; padding: 10px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--bg-dark); }
-        .score-keypad button { height: 54px; border: 2px solid var(--accent-gold); border-radius: 27px; background: transparent; color: var(--accent-gold); font-size: 26px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
+        .score-keypad { position: sticky; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--bg-dark); }
+        .score-keypad button { height: 48px; border: 2px solid var(--accent-gold); border-radius: 24px; background: transparent; color: var(--accent-gold); font-size: 24px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
         .score-keypad button:active, .score-keypad button.par-key { background: var(--accent-gold); color: var(--on-accent); }
         .score-keypad .key-clear { grid-column: span 2; background: transparent; border-color: var(--border-color); color: var(--text-muted); font-size: 16px; font-weight: 700; }
         .score-keypad .key-clear:active { background: var(--fill); color: var(--text-main); }
@@ -160,9 +160,6 @@
         .strip-hole { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; margin: 0; padding: 0; cursor: pointer; }
         .strip-hole.done { background: var(--fill-strong); border-color: transparent; color: var(--text-main); }
         .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
-        .band-right { display: inline-flex; align-items: center; gap: 10px; }
-        .band-bell { border: 1px solid rgba(255,255,255,0.25); border-radius: 12px; background: rgba(255,255,255,0.08); color: var(--band-text); padding: 3px 9px; margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; text-transform: none; line-height: 1.2; cursor: pointer; }
-        #step-3.cart-hole-view .alerts-banner:has(.ab-chip.on) { display: none !important; }
         /* A cart's hole: only 2-4 players, so use the room */
         /* sized to the screen height, so four players still fit above the keypad on a short phone */
         #step-3.cart-hole-view .score-row { min-height: clamp(46px, 7.6vh, 64px); margin-bottom: 2px; }
@@ -172,7 +169,16 @@
         #step-3.cart-hole-view .hole-detail { min-height: clamp(200px, 30vh, 250px); padding-top: 6px; }
         #step-3.cart-hole-view .hole-watermark .wm-num { font-size: 170px; }
         #step-3.cart-hole-view .hole-watermark .wm-hole, #step-3.cart-hole-view .hole-watermark .wm-par { font-size: 32px; }
-        #step-3.cart-hole-view #sync-status { display: none; } /* shown inside the band instead */
+        #step-3.cart-hole-view #sync-status { display: none; }
+        .hole-top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 6px; }
+        .hole-top-row .back-link { margin: 0; }
+        .hole-top-row .alerts-banner { margin: 0; }
+        /* on a cart's hole the small tag sits on the back-link line; the big card stays full width above */
+        #step-3.cart-hole-view > .alerts-banner:has(.ab-chip) { display: none !important; }
+        .hole-top-row .alerts-banner:has(.ab-big) { display: none !important; }
+        .key-nav { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 8px; }
+        .score-keypad .key-nav button { height: 36px; flex: 1; border: 1px solid var(--border-color); border-radius: 18px; background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; }
+        .score-keypad .key-nav button:disabled { opacity: 0.3; } /* shown inside the band instead */
 
         /* Cart hole list */
         .hole-list-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; margin: 0; padding: 0 12px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--text-main); text-align: left; cursor: pointer; }
@@ -2098,20 +2104,19 @@ function setHoleHeader(hole, par) {
     document.getElementById('current-hole-display-top').innerText = hole;
     document.getElementById('current-par-display-top').innerText = `${who} · Par ${par}`;
 }
-// Carts score one hole at a time and move with the hole strip: stay on the open hole, or start on the
-// first hole this cart hasn't finished
+// A cart's home is the All scores list; tapping a hole opens it, and a hole that's open stays open
 function renderFullScorecardForCart() {
-    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
-    if (cart) {
-        if (cartHoleOpen && roundData.currentHole) { openHoleForScoring(roundData.currentHole); return; }
-        let seq = getHoleSequence(), mates = realPlayersOf(cart);
-        openHoleForScoring(seq.find(h => !holeDoneBy(mates, scoresDb, h)) || seq[seq.length - 1]);
-        return;
-    }
+    if (cartHoleOpen && !cartListOpen && roundData.currentHole && roundData.carts.find(c => c.id == currentTeamFilter)) { openHoleForScoring(roundData.currentHole); return; }
     renderCartHoleList();
 }
 
-// The cart's list of every hole (no longer the cart's home screen; kept for reference)
+// "All scores": the cart's list of every hole with everyone's scores; tap a hole to open it
+function showCartHoleList() {
+    cartListOpen = true;
+    renderCartHoleList();
+    window.scrollTo(0, 0);
+}
+
       function renderCartHoleList() {
     cancelAutoAdvance();
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
@@ -2175,6 +2180,7 @@ function renderFullScorecardForCart() {
     }, 100);
 }
 let cartHoleOpen = false; // a cart is on one hole's score entry rather than its hole list
+let cartListOpen = false; // a cart is looking at All scores
 // The move to the next hole after the last score; cancelled if the scorer goes somewhere else first
 let autoAdvanceTimer = null;
 function cancelAutoAdvance() { if (autoAdvanceTimer) { clearTimeout(autoAdvanceTimer); autoAdvanceTimer = null; } }
@@ -2184,39 +2190,28 @@ function openHoleForScoring(holeNum) {
     roundData.currentHole = holeNum;
     let par = roundData.course.pars[holeNum - 1];
     cartHoleOpen = true;
+    cartListOpen = false;
     document.querySelector('.hole-nav').style.display = 'none';
     setHoleHeader(holeNum, par);
     renderCartHoleHeader(holeNum, par);
 
-    let html = renderFullHoleDetail(holeNum);
+    // Back link and the Alerts on tag share one line
+    let html = `<div class="hole-top-row"><button type="button" class="back-link" onclick="showCartHoleList()">‹ All holes / scores</button><div class="alerts-banner inline"${alertsBannerHtml ? '' : ' style="display:none;"'}>${alertsBannerHtml}</div></div>`;
+    html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
     activateFirstOpenScore();
 }
-// Hole strip: finished holes filled in, current hole highlighted; tap any to jump there
+// Cart header band: cart, hole and par, with Alerts on / Synced
 function renderCartHoleHeader(hole, par) {
     let header = document.getElementById('cart-hole-header');
-    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
-    let realPlayers = (cart ? cart.players : []).filter(cp => {
-        let p = roundData.groups.find(g => g.id === cp.g)?.players.find(x => x.id === cp.p);
-        return p && !p.isGhost;
-    });
-    let strip = getHoleSequence().map(h => {
-        let done = realPlayers.length > 0 && realPlayers.every(cp => scoresDb[cp.g]?.[cp.p]?.[h]);
-        let cls = h === hole ? ' current' : (done ? ' done' : '');
-        return `<button type="button" class="strip-hole${cls}" onclick="openHoleForScoring(${h})" aria-label="Hole ${h}"${h === hole ? ' aria-current="true"' : ''}>${h}</button>`;
-    }).join('');
     header.innerHTML = `<div class="cart-band">
-            <div class="cart-band-top"><span>Cart ${currentTeamFilter}</span><span class="band-right">${alertsAreOn ? '<button type="button" class="band-bell" onclick="turnOffAlerts()">🔔 Alerts on</button>' : ''}<span id="band-sync"></span></span></div>
+            <div class="cart-band-top"><span>Cart ${currentTeamFilter}</span><span id="band-sync"></span></div>
             <div class="cart-band-main"><span class="cart-band-hole">Hole ${hole}</span><span class="cart-band-par">Par ${par}</span></div>
-        </div>
-        <div class="hole-strip">${strip}</div>`;
+        </div>`;
     header.style.display = '';
     document.getElementById('step-3').classList.add('cart-hole-view');
     updateSyncStatus();
-    let current = header.querySelector('.strip-hole.current');
-    let stripEl = header.querySelector('.hole-strip');
-    if (current) stripEl.scrollLeft = current.offsetLeft - (stripEl.clientWidth - current.offsetWidth) / 2;
 }
 
 // Our Match only: the scrolling hole strip under the hole number, so the admin can see and jump to any hole
@@ -2296,8 +2291,15 @@ function hideCartHoleHeader() {
             let keys = '';
             // Scores top out at 8 (double par on a par 4), so the keypad stops there; the par key is filled in
             for (let n = 1; n <= 8; n++) keys += `<button type="button"${n === par ? ' class="par-key"' : ''} onclick="pressScoreKey('${n}')">${n}</button>`;
+            // Carts get Prev / Next under the keys (the admin has arrows by the hole number)
+            let nav = '';
+            if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
+                let seq = getHoleSequence(), i = seq.indexOf(roundData.currentHole);
+                let prev = seq[i - 1], next = seq[i + 1];
+                nav = `<div class="key-nav"><button type="button" onclick="changeHole(-1)"${prev ? '' : ' disabled'}>‹ ${prev ? 'Hole ' + prev : ''}</button><button type="button" onclick="changeHole(1)"${next ? '' : ' disabled'}>${next ? 'Hole ' + next : ''} ›</button></div>`;
+            }
             return `<div class="score-keypad">${keys}
-                <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>
+                <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>${nav}
             </div>`;
         }
 
@@ -3616,7 +3618,7 @@ function hideCartHoleHeader() {
         // PHONE ALERTS (web push through the Cloudflare Worker)
         // ==========================================
         const pushSubsRef = db.collection("tournaments").doc("push_subs");
-        let alertsAreOn = false;
+        let alertsBannerHtml = ''; // what the alerts tag/card shows right now, for screens drawn later
         let pendingAlertView = (location.hash.match(/view=([\w-]+)/) || [])[1] || null;
 
         function alertsDeviceId() {
@@ -3643,7 +3645,6 @@ function hideCartHoleHeader() {
         async function refreshAlertsButtons() {
             let sub = ALERTS_URL && window.Notification?.permission === 'granted' ? await currentPushSubscription().catch(() => null) : null;
             let on = !!sub;
-            if (on !== alertsAreOn) { alertsAreOn = on; if (cartHoleOpen) renderCartHoleHeader(roundData.currentHole, roundData.course.pars[roundData.currentHole - 1]); }
             // Keep this phone's cart up to date (the same phone may be on a different cart next round)
             if (sub && !refreshAlertsButtons.saved) { refreshAlertsButtons.saved = true; saveAlertSubscription(sub).catch(() => {}); }
             let later = false;
@@ -3661,6 +3662,7 @@ function hideCartHoleHeader() {
                     <button type="button" class="ab-btn" onclick="toggleAlerts()">${needsHomeScreen ? 'Show me how' : 'Turn on alerts'}</button>
                     <button type="button" class="ab-later" onclick="alertsLater()">Not now</button>
                 </div>`;
+            alertsBannerHtml = html;
             document.querySelectorAll('.alerts-banner').forEach(el => { el.innerHTML = html; el.style.display = html ? '' : 'none'; });
         }
 
