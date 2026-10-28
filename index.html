@@ -141,8 +141,8 @@
         .score-row.active input.score-circle { box-shadow: inset 0 0 0 2px var(--accent-gold); color: var(--accent-gold); }
         .stroke-dot { display: inline-block; width: 8px; height: 8px; border-radius: 50%; background: var(--bad); margin-left: 6px; vertical-align: middle; }
         .team-tag { font-size: 12px; font-weight: bold; margin-left: 6px; }
-        .score-keypad { position: sticky; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 10px; padding: 10px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--bg-dark); }
-        .score-keypad button { height: 54px; border: 2px solid var(--accent-gold); border-radius: 27px; background: transparent; color: var(--accent-gold); font-size: 26px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
+        .score-keypad { position: sticky; bottom: 0; z-index: 30; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 8px; padding: 8px 0 calc(8px + env(safe-area-inset-bottom)); background: var(--bg-dark); }
+        .score-keypad button { height: 48px; border: 2px solid var(--accent-gold); border-radius: 24px; background: transparent; color: var(--accent-gold); font-size: 24px; font-weight: 800; margin: 0; padding: 0; cursor: pointer; }
         .score-keypad button:active, .score-keypad button.par-key { background: var(--accent-gold); color: var(--on-accent); }
         .score-keypad .key-clear { grid-column: span 2; background: transparent; border-color: var(--border-color); color: var(--text-muted); font-size: 16px; font-weight: 700; }
         .score-keypad .key-clear:active { background: var(--fill); color: var(--text-main); }
@@ -157,7 +157,6 @@
         .hole-strip { display: flex; gap: 6px; overflow-x: auto; padding: 10px 2px 2px; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
         .hole-strip::-webkit-scrollbar { display: none; }
         .admin-strip { padding: 8px 2px 4px; }
-        .strip-hole.strip-all { width: auto; padding: 0 14px; border-color: var(--accent-gold); color: var(--accent-gold); font-size: 14px; white-space: nowrap; position: sticky; left: 0; z-index: 2; background: var(--bg-dark); box-shadow: 6px 0 8px var(--bg-dark); }
         .strip-hole { flex: 0 0 auto; width: 40px; height: 40px; border-radius: 20px; border: 1px solid var(--border-color); background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; margin: 0; padding: 0; cursor: pointer; }
         .strip-hole.done { background: var(--fill-strong); border-color: transparent; color: var(--text-main); }
         .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
@@ -2099,17 +2098,9 @@ function setHoleHeader(hole, par) {
     document.getElementById('current-hole-display-top').innerText = hole;
     document.getElementById('current-par-display-top').innerText = `${who} · Par ${par}`;
 }
-// Carts score one hole at a time and move with the hole strip: stay on the open hole, or start on the
-// first hole this cart hasn't finished
+// A cart's home is the All scores list; tapping a hole opens it, and a hole that's open stays open
 function renderFullScorecardForCart() {
-    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
-    if (cart) {
-        if (cartListOpen) { renderCartHoleList(); return; }
-        if (cartHoleOpen && roundData.currentHole) { openHoleForScoring(roundData.currentHole); return; }
-        let seq = getHoleSequence(), mates = realPlayersOf(cart);
-        openHoleForScoring(seq.find(h => !holeDoneBy(mates, scoresDb, h)) || seq[seq.length - 1]);
-        return;
-    }
+    if (cartHoleOpen && !cartListOpen && roundData.currentHole && roundData.carts.find(c => c.id == currentTeamFilter)) { openHoleForScoring(roundData.currentHole); return; }
     renderCartHoleList();
 }
 
@@ -2198,36 +2189,22 @@ function openHoleForScoring(holeNum) {
     setHoleHeader(holeNum, par);
     renderCartHoleHeader(holeNum, par);
 
-    let html = renderFullHoleDetail(holeNum);
+    let html = `<button type="button" class="back-link" onclick="showCartHoleList()">‹ All scores</button>`;
+    html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
     activateFirstOpenScore();
 }
-// Hole strip: finished holes filled in, current hole highlighted; tap any to jump there
+// Cart header band: cart, hole and par, with Alerts on / Synced
 function renderCartHoleHeader(hole, par) {
     let header = document.getElementById('cart-hole-header');
-    let cart = roundData.carts.find(c => c.id == currentTeamFilter);
-    let realPlayers = (cart ? cart.players : []).filter(cp => {
-        let p = roundData.groups.find(g => g.id === cp.g)?.players.find(x => x.id === cp.p);
-        return p && !p.isGhost;
-    });
-    let strip = getHoleSequence().map(h => {
-        let done = realPlayers.length > 0 && realPlayers.every(cp => scoresDb[cp.g]?.[cp.p]?.[h]);
-        let cls = h === hole ? ' current' : (done ? ' done' : '');
-        return `<button type="button" class="strip-hole${cls}" onclick="openHoleForScoring(${h})" aria-label="Hole ${h}"${h === hole ? ' aria-current="true"' : ''}>${h}</button>`;
-    }).join('');
-    strip = `<button type="button" class="strip-hole strip-all" onclick="showCartHoleList()">All scores</button>` + strip;
     header.innerHTML = `<div class="cart-band">
             <div class="cart-band-top"><span>Cart ${currentTeamFilter}</span><span class="band-right">${alertsAreOn ? '<button type="button" class="band-bell" onclick="turnOffAlerts()">🔔 Alerts on</button>' : ''}<span id="band-sync"></span></span></div>
             <div class="cart-band-main"><span class="cart-band-hole">Hole ${hole}</span><span class="cart-band-par">Par ${par}</span></div>
-        </div>
-        <div class="hole-strip">${strip}</div>`;
+        </div>`;
     header.style.display = '';
     document.getElementById('step-3').classList.add('cart-hole-view');
     updateSyncStatus();
-    let current = header.querySelector('.strip-hole.current');
-    let stripEl = header.querySelector('.hole-strip');
-    if (current) stripEl.scrollLeft = current.offsetLeft - (stripEl.clientWidth - current.offsetWidth) / 2;
 }
 
 // Our Match only: the scrolling hole strip under the hole number, so the admin can see and jump to any hole
