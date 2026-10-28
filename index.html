@@ -364,6 +364,8 @@
         .om-subtotal { font-weight: 700; }
         .alerts-details { margin-top: 18px; }
         .alerts-details summary b { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+        .alerts-all { display: flex; gap: 18px; padding: 2px 4px 0; }
+        .alerts-all .text-link { padding: 6px 0; }
         .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
         .alerts-banner { margin: 12px 0 4px; }
         .ab-big { padding: 16px 18px 14px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
@@ -494,6 +496,7 @@
 
         <details id="alerts-setup" class="dash-details alerts-details" style="display:none;">
             <summary><span>Phone alerts</span><b id="alerts-count"></b></summary>
+            <div class="alerts-all"><button type="button" class="text-link" onclick="setAllAlerts(true)">All on</button><button type="button" class="text-link" onclick="setAllAlerts(false)">All off</button></div>
             <div class="alerts-group">To everyone</div>
             <div class="format-container">
                 <div class="format-row"><label class="format-label" for="alert-birdies">Birdies &amp; eagles 🐦</label><input type="checkbox" class="switch" id="alert-birdies" checked></div>
@@ -3650,7 +3653,25 @@ function hideCartHoleHeader() {
             let el = document.getElementById('alerts-count');
             if (el) el.textContent = `${on} of ${ALERT_TYPES.length} on`;
         }
-        document.getElementById('alerts-setup').addEventListener('change', updateAlertsCount);
+        // Your alert choices carry over to the next round
+        function saveAlertPrefs() {
+            let prefs = {};
+            ALERT_TYPES.forEach(t => { prefs[t] = !!document.getElementById(`alert-${t}`)?.checked; });
+            try { localStorage.setItem('jbGolfAlertPrefs', JSON.stringify(prefs)); } catch (e) {}
+        }
+        function applyAlertPrefs() {
+            let prefs = {};
+            try { prefs = JSON.parse(localStorage.getItem('jbGolfAlertPrefs')) || {}; } catch (e) {}
+            ALERT_TYPES.forEach(t => { let el = document.getElementById(`alert-${t}`); if (el) el.checked = prefs[t] !== false; });
+            updateAlertsCount();
+        }
+        function setAllAlerts(on) {
+            ALERT_TYPES.forEach(t => { let el = document.getElementById(`alert-${t}`); if (el) el.checked = on; });
+            saveAlertPrefs();
+            updateAlertsCount();
+        }
+        document.getElementById('alerts-setup').addEventListener('change', () => { saveAlertPrefs(); updateAlertsCount(); });
+        applyAlertPrefs();
 
         function alertsDeviceId() {
             let id = null;
@@ -4013,8 +4034,7 @@ function hideCartHoleHeader() {
             document.getElementById('bet-amount').value = 20;
             document.getElementById('skins-amount').value = 10;
             document.getElementById('om-only').checked = false;
-            ALERT_TYPES.forEach(t => { document.getElementById(`alert-${t}`).checked = true; });
-            updateAlertsCount();
+            applyAlertPrefs();
             document.getElementById('hole-format').value = '18';
             document.getElementById('fmt-1').checked = false;
             document.getElementById('fmt-2').checked = true;
