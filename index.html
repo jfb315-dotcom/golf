@@ -496,6 +496,7 @@
                     <option value="augusta">Augusta</option>
                     <option value="slate">Slate</option>
                     <option value="clubhouse">Clubhouse</option>
+                    <option value="neyland">Neyland Night</option>
                 </select>
             </label>
         </div>
@@ -609,6 +610,7 @@
         
         <div id="admin-share-btn-container" class="list-rows">
             <button type="button" class="list-row" id="cart-links-row" onclick="openShareMenu()">Text live links to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" id="admin-message-row" onclick="openMessageModal()" style="display:none;">📣 Send a message to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="shareSpectatorLink()">Share spectator leaderboard <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="editMidRound()">Edit setup / rosters <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row danger-row" onclick="validateAndFinalize()">Finalize / archive round <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
@@ -686,6 +688,20 @@
         </div>
     </div>
 
+    <div id="message-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">📣 Send a message</h2>
+            <label class="field-label" for="message-to">To</label>
+            <div class="select-wrap"><select id="message-to"></select></div>
+            <label class="field-label" for="message-text">Message</label>
+            <textarea id="message-text" maxlength="180" rows="4" placeholder="e.g. Pace of play, pick it up! Lunch at the turn." style="width: 100%; box-sizing: border-box; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none;" oninput="document.getElementById('message-count').textContent = this.value.length + ' / 180'"></textarea>
+            <div id="message-count" class="dash-footnote" style="text-align: right;">0 / 180</div>
+            <p class="dash-footnote">Goes to phones that turned alerts on.</p>
+            <button class="btn-primary" onclick="sendAdminMessage()">Send</button>
+            <button class="btn-secondary" onclick="document.getElementById('message-modal').classList.remove('active')">Cancel</button>
+        </div>
+    </div>
+
     <div id="complete-modal" class="modal-overlay">
         <div class="modal-content" style="text-align: center; max-width: 400px;">
             <h1 style="color: var(--accent-gold); font-size: 2.5em; margin: 10px 0;">⛳</h1>
@@ -727,6 +743,11 @@
                 'bg-table': '#24282b', 'border-color': '#3f454b', 'on-accent': '#1e2124',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.16)', 'line': 'rgba(255,255,255,0.10)',
                 'good': '#8fd48f', 'bad': '#ff7b72', 'band-bg': '#2c3034', 'band-text': '#ecebe6', 'band-accent': '#c9a96e', 'head-bg': '#111315' } },
+            neyland: { mode: 'dark', name: 'Neyland Night', vars: {
+                'bg-dark': '#121212', 'bg-card': '#1e1e1e', 'text-main': '#ffffff', 'text-muted': '#a7a7a7', 'accent-gold': '#ff8200',
+                'bg-table': '#181818', 'border-color': '#3a3a3a', 'on-accent': '#121212',
+                'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.15)', 'line': 'rgba(255,255,255,0.10)',
+                'good': '#7ced7e', 'bad': '#ff6b6b', 'band-bg': '#1e1e1e', 'band-text': '#ffffff', 'band-accent': '#ff8200', 'head-bg': '#000000' } },
             clubhouse: { mode: 'light', name: 'Clubhouse', vars: {
                 'bg-dark': '#f7f6f1', 'bg-card': '#ffffff', 'text-main': '#1d2a22', 'text-muted': '#5b6660', 'accent-gold': '#1f4d33',
                 'bg-table': '#ffffff', 'border-color': '#d6d2c6', 'on-accent': '#ffffff',
@@ -3596,6 +3617,32 @@ function closeHoleScoringAndReturn() {
             document.querySelectorAll('.alerts-banner').forEach(el => { el.innerHTML = html; el.style.display = html ? '' : 'none'; });
         }
 
+        // Admin: type a message and send it to everyone or one cart
+        function openMessageModal() {
+            let opts = `<option value="">Everyone</option>` + roundData.carts.map(c => {
+                let names = realPlayersOf(c).map(x => firstName(x.player.name)).join(', ');
+                return `<option value="${c.id}">Cart ${c.id}${names ? ' · ' + names : ''}</option>`;
+            }).join('');
+            document.getElementById('message-to').innerHTML = opts;
+            document.getElementById('message-text').value = '';
+            document.getElementById('message-count').textContent = '0 / 180';
+            document.getElementById('message-modal').classList.add('active');
+            setTimeout(() => document.getElementById('message-text').focus(), 50);
+        }
+
+        function sendAdminMessage() {
+            let text = document.getElementById('message-text').value.trim();
+            if (!text) { alert('Type a message first.'); return; }
+            let cart = document.getElementById('message-to').value;
+            fetch(ALERTS_URL, {
+                method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: cart ? `📣 Message for Cart ${cart}` : '📣 Message from the admin', body: text, view: 'scoring', tag: `msg-${Date.now()}`, from: alertsDeviceId(), cart })
+            }).then(r => r.json()).then(r => {
+                document.getElementById('message-modal').classList.remove('active');
+                alert(r.sent ? `Sent to ${r.sent} phone${r.sent === 1 ? '' : 's'}.` : 'Sent, but no phones on that cart have alerts turned on yet.');
+            }).catch(() => alert("Couldn't send. Check your signal and try again."));
+        }
+
         function alertsLater() {
             try { sessionStorage.setItem('jbGolfAlertsLater', '1'); } catch (e) {}
             refreshAlertsButtons();
@@ -3807,6 +3854,7 @@ function closeHoleScoringAndReturn() {
             if (view === 'our-match') setTimeout(() => document.getElementById('our-match')?.scrollIntoView({ block: 'start' }), 50);
         }
         document.getElementById('alerts-setup').style.display = ALERTS_URL ? '' : 'none';
+        document.getElementById('admin-message-row').style.display = ALERTS_URL ? '' : 'none';
         refreshAlertsButtons();
         if ('serviceWorker' in navigator) {
             navigator.serviceWorker.addEventListener('message', e => { if (e.data?.type === 'jbgolf-view') openAlertView(e.data.view); });
