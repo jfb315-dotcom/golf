@@ -104,6 +104,7 @@
             border-radius: 9px !important; 
             transition: all 0.2s ease !important; 
         }
+        .pill.pill-msg { flex: 0 0 auto !important; padding: 8px 12px !important; font-size: 18px !important; line-height: 1 !important; border-left: 1px solid var(--border-color) !important; border-radius: 0 9px 9px 0 !important; }
         .pill.active { 
             background: var(--accent-gold) !important; 
             color: var(--on-accent) !important; 
@@ -1962,6 +1963,8 @@ function processStep2() {
                 let isSelected = currentTeamFilter == c.id; 
                 html += `<div class="pill ${isSelected ? 'active' : ''}" onclick="setTeamFilter(${c.id})">CART ${c.id}</div>`; 
             });
+            // Message carts from right here, without scrolling down
+            if (ALERTS_URL) html += `<button type="button" class="pill pill-msg" onclick="openMessageModal()" aria-label="Send a message to carts">📣</button>`;
             
             container.innerHTML = html;
         }
