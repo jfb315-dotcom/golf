@@ -598,6 +598,11 @@
         <div id="entry-container" style="position: relative; z-index: 10;"></div>
         
         <button type="button" class="btn-success" onclick="viewDashboard()">View standings &amp; scorecards <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+
+        <!-- Carts can pass the watch-only leaderboard link along too -->
+        <div id="cart-share-row" class="list-rows" style="display:none;">
+            <button type="button" class="list-row" onclick="shareSpectatorLink()">Share live leaderboard (watch only) <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        </div>
         
         <div id="admin-share-btn-container" class="list-rows">
             <button type="button" class="list-row" id="cart-links-row" onclick="openShareMenu()">Text live links to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
@@ -933,6 +938,7 @@ function toggle9HoleOptions() {
                 lockedTeamId = parseInt(teamParam); 
                 currentTeamFilter = lockedTeamId; 
                 document.getElementById('admin-share-btn-container').style.display = 'none'; 
+                document.getElementById('cart-share-row').style.display = '';
                 document.getElementById('admin-finalize-container').style.display = 'none'; 
             }
             
@@ -1786,8 +1792,7 @@ function processStep2() {
                         if(cNames.length > 0) st += `Cart ${c} · ${formatFriendlyTime(tempRosterCache[`cart${c}-time`] || '08:00')}: ${cNames.join(', ')}\n`;
                     }
                 }
-                st += `\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
-
+                // No PRO TIP here: there's no link yet (it goes with the cart links)
                 document.getElementById('share-modal-title').innerText = "Share Pre-Round Info";
                 document.getElementById('share-text-content').value = st;
                 document.getElementById('share-modal').classList.add('active');
@@ -1798,7 +1803,7 @@ function processStep2() {
         }
 
         function shareSpectatorLink() {
-            const baseUrl = window.location.href.split('?')[0]; 
+            const baseUrl = window.location.href.split('#')[0].split('?')[0]; 
             const spectatorLink = `${baseUrl}?spectator=true`;
             let st = `JB Golf · Live leaderboard\n${spectatorLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
             
