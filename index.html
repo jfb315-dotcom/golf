@@ -273,6 +273,14 @@
         .top-row { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
         .clean input.date-chip { width: auto; height: 40px; min-height: 0; padding: 0 14px; margin: 0; border: none; border-radius: 20px; background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 600; }
         .roster-team { margin-top: 24px; }
+        .roster-add-saved { display: block; margin: 6px 0 0 4px; font-size: 15px; }
+        .rp-list { max-height: 52vh; overflow-y: auto; margin: 10px 0 14px; }
+        .rp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 6px; background: none; border: none; border-bottom: 1px solid var(--line); color: var(--text-main); font-size: 16px; text-align: left; cursor: pointer; }
+        .rp-row:disabled { opacity: .45; cursor: default; }
+        .rp-num { flex: 0 0 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+        .rp-row.on .rp-num { background: var(--accent-gold); border-color: var(--accent-gold); color: var(--on-accent); }
+        .rp-name { flex: 1; }
+        .rp-note { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
         .roster-team-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 6px; }
         .roster-team-name { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; }
         .tee-chip { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin: 0; padding: 0 4px 0 12px; border-radius: 16px; background: var(--fill); color: var(--text-muted); font-size: 14px; font-weight: 600; text-transform: none; }
@@ -406,6 +414,17 @@
         .om-b-win { font-weight: 800; text-decoration: underline; }
         .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
         .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
+        .stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 12px; }
+        .stat-tiles div { background: var(--bg-table); border-radius: 10px; padding: 10px 4px; text-align: center; }
+        .stat-tiles b { display: block; font-size: 22px; color: var(--text-main); }
+        .stat-tiles span { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+        .hist-head, .hist-row { display: grid; grid-template-columns: 1fr 64px 44px; gap: 8px; align-items: center; }
+        .hist-head { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); padding: 0 2px 4px; }
+        .hist-head span:not(:first-child), .hist-score, .hist-diff { text-align: right; }
+        .hist-list { max-height: 220px; overflow-y: auto; margin-bottom: 14px; }
+        .hist-row { padding: 8px 2px; border-top: 1px solid var(--border-color, rgba(128,128,128,.25)); font-size: 14px; color: var(--text-main); }
+        .idx-chip { margin-right: 8px; font-weight: 700; color: var(--text-main); }
+        .players-import { display: block; margin: 14px auto 0; }
         .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
         .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
         .archive-info { flex: 1; }
@@ -580,6 +599,7 @@
         <div id="roster-container"></div>
         <datalist id="saved-players-list"></datalist>
 
+        <button type="button" class="text-link" onclick="balanceTeams()">⚖️ Balance teams by index</button>
         <button type="button" class="text-link" onclick="openPreRoundBlindDrawModal()">Assign blind draw (ghost)</button>
 
         <div id="om-sides" style="display: none;">
@@ -700,9 +720,21 @@
             <button type="button" class="text-link back-link-top" onclick="switchScreen('step-players', 'step-1')">‹ Setup</button>
         </div>
         <h2 class="clean-title">Players</h2>
-        <p class="clean-sub">Saved for every round. Tap a player to edit. Pick them on the roster by typing their name.</p>
+        <p class="clean-sub">Saved for every round. Tap a player for their stats or to edit. Pick them on the roster by typing their name.</p>
         <div id="players-list" class="list-rows"></div>
         <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
+        <button type="button" class="text-link players-import" onclick="importArchivedRounds()">Add past rounds from this phone's archive</button>
+        <p class="dash-footnote">Index is handicap-style: the best scores of each player's last 20 rounds, adjusted for the tee's rating and slope. It is not an official USGA index.</p>
+    </div>
+
+    <div id="roster-picker" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="rp-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Team 1</h2>
+            <p class="clean-sub" style="text-align:center;">Tap players in order, captain first. Tap again to take them off.</p>
+            <input type="text" id="rp-search" placeholder="Search players" autocomplete="off" enterkeyhint="search" oninput="renderRosterPicker()" style="margin-top: 6px;">
+            <div id="rp-list" class="rp-list"></div>
+            <button class="btn-primary" onclick="closeRosterPicker()">Done</button>
+        </div>
     </div>
 
     <div id="tees-modal" class="modal-overlay">
@@ -721,6 +753,7 @@
     <div id="player-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 id="player-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Add a player</h2>
+            <div id="pl-stats"></div>
             <div class="clean-grid-2">
                 <div><label class="field-label" for="pl-first">First name</label><input type="text" id="pl-first" autocomplete="off" autocapitalize="words"></div>
                 <div><label class="field-label" for="pl-last">Last name</label><input type="text" id="pl-last" autocomplete="off" autocapitalize="words"></div>
@@ -729,6 +762,7 @@
             <input type="text" id="pl-nick" autocomplete="off" autocapitalize="words" placeholder="e.g. Bubba">
             <label class="field-label" for="pl-tee">Usual tees</label>
             <input type="text" id="pl-tee" list="tee-names" autocomplete="off" autocapitalize="words" placeholder="e.g. Blue">
+            <div id="pl-course-tees" class="dash-footnote"></div>
             <datalist id="tee-names"><option value="Black"><option value="Blue"><option value="White"><option value="Gold"><option value="Silver"><option value="Green"><option value="Red"></datalist>
             <button class="btn-primary" onclick="savePlayerEditor()">Save</button>
             <button class="btn-secondary" id="pl-delete" onclick="deletePlayerFromEditor()">Delete player</button>
@@ -923,6 +957,7 @@ const ALERTS_PUBLIC_KEY = 'BJVjffPKtgDolmCvKbTo5jVnxnVh1Da0HylhVjm33N2Ckjoo5hZl0
 const ALERT_TYPES = ['birdies', 'doubles', 'skins', 'leadChange', 'turn', 'scoreChanged', 'cartDone', 'allDone', 'final', 'presses', 'matchOver', 'missedHole', 'behind'];
 const activeTournamentRef = db.collection("tournaments").doc("active_round");
 const savedPlayersRef = db.collection("tournaments").doc("saved_players");
+const historyRef = db.collection("tournaments").doc("player_history");
 const courseTeesRef = db.collection("tournaments").doc("course_tees");
 
 db.enablePersistence().catch(err => { 
@@ -1348,7 +1383,7 @@ function toggle9HoleOptions() {
                         <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="Strokes" aria-label="Strokes" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()">
                     </div>`;
                 }
-                html += `</div>`;
+                html += `<button type="button" class="text-link roster-add-saved" onclick="openRosterPicker(${g})">+ Add from saved players</button></div>`;
             }
             document.getElementById('roster-container').innerHTML = html;
             
@@ -1378,6 +1413,7 @@ function toggle9HoleOptions() {
             renderPlayersList();
             loadCourseTees();
             refreshTeeNameList();
+            loadRoundHistory();
             savedPlayersRef.get().then(doc => {
                 if (doc.exists && doc.data().players) {
                     savedPlayers = doc.data().players;
@@ -1429,18 +1465,39 @@ function toggle9HoleOptions() {
             return same.length && last ? `${first} ${last[0]}.` : first;
         }
 
-        // A player's usual tees, matched to this course's tee names (so "white" finds "White")
+        // A player's tees for this course: what they played here last time, else their usual tees if the course has them
+        // (courses name tees differently, so an unmatched usual tee is left blank to pick)
         function defaultTeeFor(name) {
-            let usual = savedPlayers[(name || '').trim().toLowerCase()]?.tee || '';
-            let t = findTee(document.getElementById('course-selector')?.value || roundData.courseKey, usual);
-            return t ? t.name : usual;
+            let sp = savedPlayers[(name || '').trim().toLowerCase()];
+            let key = document.getElementById('course-selector')?.value || roundData.courseKey;
+            let t = findTee(key, sp?.tees?.[key]) || findTee(key, sp?.tee);
+            return t ? t.name : '';
         }
         function rosterTeeSelect(g, p) {
             let tees = courseTees(document.getElementById('course-selector').value);
             if (!tees.length) return '';
             let current = tempRosterCache[`g${g}-p${p}-tee`] || defaultTeeFor(tempRosterCache[`g${g}-p${p}-name`]);
-            let opts = `<option value="">Tees</option>` + tees.map(t => `<option value="${t.name}"${t.name === current ? ' selected' : ''}>${t.name}</option>`).join('');
-            return `<select class="roster-tee-select" id="g${g}-p${p}-tee" aria-label="Tees" onchange="saveRosterCache()">${opts}</select>`;
+            return `<select class="roster-tee-select" id="g${g}-p${p}-tee" aria-label="Tees" onchange="rosterTeeChanged(this)">${teeOptions(tees, current)}</select>`;
+        }
+        function teeOptions(tees, current) {
+            return `<option value="">Tees</option>` + tees.map(t => `<option value="${t.name}"${t.name === current ? ' selected' : ''}>${t.name}</option>`).join('')
+                + `<option value="__add">+ Add a tee…</option>`;
+        }
+        let teeSelectToFill = null;
+        function rosterTeeChanged(sel) {
+            if (sel.value === '__add') {
+                sel.value = tempRosterCache[sel.id] || '';
+                teeSelectToFill = sel.id;
+                let usual = savedPlayers[(document.getElementById(sel.id.replace('-tee', '-name')).value || '').trim().toLowerCase()]?.tee || '';
+                openTeesEditor(usual);
+                return;
+            }
+            saveRosterCache();
+        }
+        // After the tees change, every roster picker gets the new list (keeping each pick)
+        function refreshRosterTeeSelects() {
+            let tees = courseTees(document.getElementById('course-selector').value);
+            document.querySelectorAll('.roster-tee-select').forEach(sel => { sel.innerHTML = teeOptions(tees, sel.value); });
         }
 
         // ===== Tees & ratings for the selected course =====
@@ -1450,10 +1507,16 @@ function toggle9HoleOptions() {
                 if (doc.exists && doc.data().courses) { teeOverrides = doc.data().courses; localStorage.setItem('courseTees', JSON.stringify(teeOverrides)); }
             }).catch(() => {});
         }
-        function openTeesEditor() {
+        function openTeesEditor(newName) {
             let key = document.getElementById('course-selector').value;
             document.getElementById('tees-course-name').textContent = allAvailableCourses[key]?.name || 'Course';
-            renderTeeRows(courseTees(key));
+            let tees = courseTees(key).slice();
+            if (typeof newName === 'string') { // from a roster picker: start a new row, named after the player's usual tees if this course lacks them
+                if (newName && findTee(key, newName)) newName = '';
+                tees.push({ name: newName, yards: null, rating: null, slope: null });
+            } else teeSelectToFill = null;
+            renderTeeRows(tees);
+            if (typeof newName === 'string') setTimeout(() => { let rows = document.querySelectorAll('#tees-rows .tee-edit-row'); rows[rows.length - 1]?.querySelector(newName ? '.te-rating' : '.te-name')?.focus(); }, 50);
             document.getElementById('tees-modal').classList.add('active');
         }
         function renderTeeRows(tees) {
@@ -1486,6 +1549,14 @@ function toggle9HoleOptions() {
             courseTeesRef.set({ courses: { [key]: tees } }, { merge: true }).catch(err => console.error('Saving tees failed', err));
             document.getElementById('tees-modal').classList.remove('active');
             refreshTeeNameList();
+            refreshRosterTeeSelects();
+            let sel = teeSelectToFill && document.getElementById(teeSelectToFill);
+            if (sel) { // the tee just added goes to the player who asked for it
+                let added = tees.filter(t => !orig.some(o => o.name === t.name)).pop();
+                if (added) sel.value = added.name;
+                saveRosterCache();
+            }
+            teeSelectToFill = null;
         }
         // Tee names from every course, for the Players screen's "Usual tees"
         function refreshTeeNameList() {
@@ -1498,11 +1569,12 @@ function toggle9HoleOptions() {
         function openPlayersScreen() { renderPlayersList(); switchScreen('step-1', 'step-players'); }
 
         function renderPlayersList() {
+            let idx = key => { let i = handicapIndex(playerRounds(key)); return i === null ? '' : `<b class="idx-chip">${fmtIndex(i)}</b>`; };
             let rows = Object.entries(savedPlayers).map(([key, sp]) => ({ key, ...playerInfo(sp) }))
                 .sort((a, b) => (a.last || a.first).localeCompare(b.last || b.first) || a.first.localeCompare(b.first));
             let html = rows.map(r => `<button type="button" class="list-row player-row" onclick="openPlayerEditor('${r.key.replace(/'/g, "\\'")}')">
                     <span><b>${r.first} ${r.last}</b>${r.nick ? ` <span class="payout-note">"${r.nick}"</span>` : ''}</span>
-                    <span class="row-note">${r.tee ? `<span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : 'No tees set'}</span></button>`).join('');
+                    <span class="row-note">${idx(r.key)}${r.tee ? `<span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : 'No tees set'}</span></button>`).join('');
             document.getElementById('players-list').innerHTML = html || '<p class="clean-sub">No players yet. Add one, or they are added when you build a roster.</p>';
             let c = document.getElementById('players-count'); if (c) c.textContent = rows.length ? `${rows.length}` : '';
         }
@@ -1512,8 +1584,12 @@ function toggle9HoleOptions() {
             editingPlayerKey = key;
             let info = key ? playerInfo(savedPlayers[key]) : { first: '', last: '', nick: '', tee: '' };
             ['first', 'last', 'nick', 'tee'].forEach(f => { document.getElementById('pl-' + f).value = info[f]; });
-            document.getElementById('player-modal-title').textContent = key ? 'Edit player' : 'Add a player';
+            document.getElementById('player-modal-title').textContent = key ? savedPlayers[key].name : 'Add a player';
             document.getElementById('pl-delete').style.display = key ? '' : 'none';
+            renderPlayerStats(key);
+            let byCourse = Object.entries((key && savedPlayers[key].tees) || {}).filter(([k]) => allAvailableCourses[k])
+                .map(([k, t]) => `${allAvailableCourses[k].name.replace(/\s*\(.*\)$/, '')}: <span class="tee-dot" style="background:${teeColor(t)};"></span>${t}`);
+            document.getElementById('pl-course-tees').innerHTML = byCourse.length ? 'Last played · ' + byCourse.join(' · ') : 'Courses name their tees differently. Each course remembers the tee they played there last.';
             document.getElementById('player-modal').classList.add('active');
         }
 
@@ -1555,15 +1631,266 @@ function toggle9HoleOptions() {
                     if (!name || tempRosterCache[`g${g}-p${p}-ghost`]) continue;
                     let key = name.toLowerCase();
                     let parts = splitName(name);
+                    let tee = tempRosterCache[`g${g}-p${p}-tee`] || '';
                     updates[key] = { name: name, strokes: { [courseKey]: (tempRosterCache[`g${g}-p${p}-strokes`] || '').trim() } };
-                    if (!savedPlayers[key]) Object.assign(updates[key], parts, { nick: '', tee: '' }); // new: start a database entry
-                    savedPlayers[key] = { ...parts, nick: '', tee: '', ...(savedPlayers[key] || {}), name: name, strokes: { ...(savedPlayers[key]?.strokes || {}), [courseKey]: updates[key].strokes[courseKey] } };
+                    if (tee) updates[key].tees = { [courseKey]: tee }; // their tees at this course, for next time
+                    if (!savedPlayers[key]) Object.assign(updates[key], parts, { nick: '', tee: tee }); // new: start a database entry
+                    savedPlayers[key] = { ...parts, nick: '', tee: tee, ...(savedPlayers[key] || {}), name: name, strokes: { ...(savedPlayers[key]?.strokes || {}), [courseKey]: updates[key].strokes[courseKey] } };
+                    if (tee) savedPlayers[key].tees = { ...(savedPlayers[key].tees || {}), [courseKey]: tee };
                 }
             }
             if (Object.keys(updates).length === 0) return;
             localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
             renderSavedPlayersList();
             savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error("Saving players failed: ", err));
+        }
+
+        // ==========================================
+        // ROUND HISTORY + STATS (tournaments/player_history: { rounds: { roundId: {...} } })
+        // ==========================================
+        let roundHistory = {};
+
+        function loadRoundHistory() {
+            try { roundHistory = JSON.parse(localStorage.getItem('roundHistory')) || {}; } catch(e) { roundHistory = {}; }
+            historyRef.get().then(doc => {
+                if (doc.exists && doc.data().rounds) {
+                    roundHistory = doc.data().rounds;
+                    localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
+                    if (document.getElementById('step-players')?.classList.contains('active')) renderPlayersList();
+                }
+            }).catch(err => console.log('History offline: ', err));
+        }
+
+        function courseKeyFor(rData) {
+            if (rData.courseKey) return rData.courseKey;
+            let name = typeof rData.course === 'string' ? rData.course : rData.course?.name;
+            return Object.keys(allAvailableCourses).find(k => k === name || allAvailableCourses[k].name === name) || '';
+        }
+
+        // One player's line for the history: gross, and for 18 holes a handicap-style differential.
+        // Each hole is capped at net double bogey (par + 2 + any strokes they got there) like the USGA does.
+        function historyLine(rData, sDb, g, p, courseKey) {
+            let seq = rData.playMode === '9' ? (rData.startType === 'back' ? [10,11,12,13,14,15,16,17,18] : [1,2,3,4,5,6,7,8,9]) : [...Array(18)].map((_, i) => i + 1);
+            let pars = rData.course?.pars || [];
+            let gross = 0, adjusted = 0, par = 0;
+            for (let h of seq) {
+                let s = parseInt(sDb[g.id]?.[p.id]?.[h]);
+                if (!s || !pars[h - 1]) return null; // only finished rounds count
+                let cap = pars[h - 1] + 2 + (p.strokeHoles || []).filter(x => x === h).length;
+                gross += s; adjusted += Math.min(s, cap); par += pars[h - 1];
+            }
+            let teeSet = p.teeRating ? { name: p.tee, rating: p.teeRating, slope: p.teeSlope } : findTee(courseKey, p.tee || savedPlayers[p.name.trim().toLowerCase()]?.tee);
+            let line = { name: p.name.trim(), holes: seq.length, gross, adjusted, par, tee: teeSet?.name || p.tee || '' };
+            if (teeSet?.rating && teeSet?.slope) {
+                line.rating = teeSet.rating; line.slope = teeSet.slope;
+                if (seq.length === 18) line.diff = Math.round((113 / teeSet.slope) * (adjusted - teeSet.rating) * 10) / 10;
+            }
+            return line;
+        }
+
+        function historyRecord(rData, sDb) {
+            let courseKey = courseKeyFor(rData);
+            let players = {};
+            (rData.groups || []).forEach(g => g.players.forEach(p => {
+                if (p.isGhost || !p.name || !p.name.trim()) return;
+                let line = historyLine(rData, sDb, g, p, courseKey);
+                if (line) players[p.name.trim().toLowerCase()] = line;
+            }));
+            if (!Object.keys(players).length) return null;
+            let course = typeof rData.course === 'string' ? rData.course : rData.course?.name;
+            return { date: rData.date || '', courseKey, course: course || 'Course', holes: rData.playMode === '9' ? 9 : 18, players };
+        }
+
+        function recordRoundHistory(id, rData, sDb) {
+            let rec = historyRecord(rData, sDb);
+            if (!rec) return 0;
+            roundHistory[id] = rec;
+            localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
+            historyRef.set({ rounds: { [id]: rec } }, { merge: true }).catch(err => console.error('Saving history failed', err));
+            return 1;
+        }
+
+        // Rounds archived on this phone before history existed
+        function importArchivedRounds() {
+            let archive = []; try { archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; } catch(e) {}
+            let added = 0;
+            archive.forEach(arc => {
+                let rData = arc.roundData || { course: arc.course, groups: arc.groups || [] };
+                if (typeof rData.course === 'string') rData = { ...rData, course: allAvailableCourses[rData.course] || { name: rData.course } };
+                let id = String(rData.roundId || ('arc-' + (arc.date || '') + '-' + (rData.course?.name || '')).replace(/[^\w-]/g, ''));
+                if (roundHistory[id]) return;
+                added += recordRoundHistory(id, rData, arc.scoresDb || {});
+            });
+            alert(added ? `Added ${added} past round${added > 1 ? 's' : ''} to the history.` : 'No new finished rounds found on this phone.');
+            renderPlayersList();
+        }
+
+        // Every finished round for one player, newest first
+        function playerRounds(key) {
+            return Object.entries(roundHistory).filter(([, r]) => r.players?.[key])
+                .map(([id, r]) => ({ id, date: r.date, course: r.course, holes: r.holes, ...r.players[key] }))
+                .sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0) || String(b.id).localeCompare(String(a.id)));
+        }
+
+        // USGA-style: average the best differentials of the last 20 eighteen-hole rounds (fewer rounds use fewer, with an adjustment)
+        function handicapIndex(rounds) {
+            let diffs = rounds.filter(r => typeof r.diff === 'number').slice(0, 20).map(r => r.diff);
+            const table = { 3: [1, -2], 4: [1, -1], 5: [1, 0], 6: [2, -1], 7: [2, 0], 8: [2, 0], 9: [3, 0], 10: [3, 0], 11: [3, 0], 12: [4, 0], 13: [4, 0], 14: [4, 0], 15: [5, 0], 16: [5, 0], 17: [6, 0], 18: [6, 0], 19: [7, 0], 20: [8, 0] };
+            let rule = table[diffs.length];
+            if (!rule) return null;
+            let best = diffs.sort((a, b) => a - b).slice(0, rule[0]);
+            return Math.round((best.reduce((s, d) => s + d, 0) / best.length + rule[1]) * 10) / 10;
+        }
+
+        function playerStats(key) {
+            let rounds = playerRounds(key);
+            let full = rounds.filter(r => r.holes === 18);
+            let avg = full.length ? Math.round(full.reduce((s, r) => s + r.gross, 0) / full.length * 10) / 10 : null;
+            return { rounds, count: rounds.length, index: handicapIndex(rounds), avg, best: full.length ? Math.min(...full.map(r => r.gross)) : null };
+        }
+
+        const fmtIndex = i => i === null ? '—' : (i < 0 ? '+' + Math.abs(i).toFixed(1) : i.toFixed(1));
+
+        function renderPlayerStats(key) {
+            let box = document.getElementById('pl-stats');
+            if (!key) { box.innerHTML = ''; return; }
+            let st = playerStats(key);
+            if (!st.count) { box.innerHTML = '<p class="clean-sub" style="text-align:center;">No finished rounds yet.</p>'; return; }
+            let toPar = r => { let d = r.gross - r.par; return d === 0 ? 'E' : (d > 0 ? '+' + d : d); };
+            let list = st.rounds.slice(0, 20).map(r => `<div class="hist-row">
+                    <span>${formatRoundDate(r.date)}<br><span class="payout-note">${r.course.replace(/\s*\(.*\)$/, '')}${r.tee ? ` · <span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : ''}${r.holes === 9 ? ' · 9 holes' : ''}</span></span>
+                    <span class="hist-score"><b>${r.gross}</b> <span class="payout-note">${toPar(r)}</span></span>
+                    <span class="hist-diff">${typeof r.diff === 'number' ? r.diff.toFixed(1) : '—'}</span>
+                </div>`).join('');
+            box.innerHTML = `<div class="stat-tiles">
+                    <div><b>${fmtIndex(st.index)}</b><span>Index</span></div>
+                    <div><b>${st.avg ?? '—'}</b><span>Avg 18</span></div>
+                    <div><b>${st.best ?? '—'}</b><span>Best</span></div>
+                    <div><b>${st.count}</b><span>Rounds</span></div>
+                </div>
+                ${st.index === null ? '<p class="dash-footnote" style="text-align:center;">Index shows after 3 rounds of 18 with tee ratings.</p>' : ''}
+                <div class="hist-head"><span>Round</span><span>Score</span><span>Diff</span></div>
+                <div class="hist-list">${list}</div>`;
+        }
+
+        // ===== Pick a team from the saved players =====
+        let pickerTeam = 1;
+        function openRosterPicker(g) {
+            saveRosterCache();
+            pickerTeam = g;
+            document.getElementById('rp-title').textContent = `Team ${g}`;
+            document.getElementById('rp-search').value = '';
+            renderRosterPicker();
+            document.getElementById('roster-picker').classList.add('active');
+        }
+        function closeRosterPicker() { document.getElementById('roster-picker').classList.remove('active'); }
+        // Where each name sits on the roster: { "mike smith": "2-3" }
+        function rosterSlots() {
+            const gCount = parseInt(document.getElementById('group-count').value), pCount = parseInt(document.getElementById('players-per-group').value);
+            let at = {};
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let n = (tempRosterCache[`g${g}-p${p}-name`] || '').trim().toLowerCase();
+                if (n && !tempRosterCache[`g${g}-p${p}-ghost`]) at[n] = `${g}-${p}`;
+            }
+            return at;
+        }
+        function renderRosterPicker() {
+            let q = document.getElementById('rp-search').value.trim().toLowerCase();
+            let at = rosterSlots();
+            let rows = Object.entries(savedPlayers).map(([key, sp]) => ({ key, ...playerInfo(sp), name: sp.name }))
+                .filter(r => !q || r.name.toLowerCase().includes(q) || r.nick.toLowerCase().includes(q))
+                .sort((a, b) => (a.last || a.first).localeCompare(b.last || b.first) || a.first.localeCompare(b.first));
+            document.getElementById('rp-list').innerHTML = rows.map(r => {
+                let slot = at[r.key], [g, p] = slot ? slot.split('-').map(Number) : [];
+                let mine = g === pickerTeam, other = slot && !mine;
+                let i = handicapIndex(playerRounds(r.key));
+                let note = other ? `Team ${g}` : [i !== null ? fmtIndex(i) : '', defaultTeeFor(r.name)].filter(Boolean).join(' · ');
+                return `<button type="button" class="rp-row${mine ? ' on' : ''}" ${other ? 'disabled' : ''} onclick="pickRosterPlayer('${r.key.replace(/'/g, "\\'")}')">
+                    <span class="rp-num">${mine ? p : ''}</span><span class="rp-name">${r.first} ${r.last}</span><span class="rp-note">${note}</span></button>`;
+            }).join('') || '<p class="clean-sub">No saved players match.</p>';
+        }
+        function pickRosterPlayer(key) {
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            let g = pickerTeam, slot = rosterSlots()[key];
+            if (slot) { // tapped again: take them off this team
+                let p = slot.split('-')[1];
+                ['name', 'strokes'].forEach(f => { let el = document.getElementById(`g${g}-p${p}-${f}`); if (el) el.value = ''; });
+                let tee = document.getElementById(`g${g}-p${p}-tee`); if (tee) tee.value = '';
+            } else {
+                let p = 1;
+                while (p <= pCount && (document.getElementById(`g${g}-p${p}-name`).value.trim() || document.getElementById(`g${g}-p${p}-name`).getAttribute('data-ghost'))) p++;
+                if (p > pCount) { alert(`Team ${g} is full. Tap a player to take them off first.`); return; }
+                let el = document.getElementById(`g${g}-p${p}-name`);
+                el.value = savedPlayers[key].name;
+                applySavedPlayer(el);
+            }
+            saveRosterCache();
+            renderRosterPicker();
+        }
+
+        // ===== Balance teams =====
+        // Each player's strength is their course handicap from these tees (index × slope ÷ 113 + rating − par),
+        // or just the index when the tees have no rating. Teams are dealt out snake-style, then players are
+        // swapped while it brings the team totals closer together. Strokes are left alone.
+        function balanceTeams() {
+            saveRosterCache();
+            const gCount = parseInt(document.getElementById('group-count').value);
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            let courseKey = document.getElementById('course-selector').value;
+            let par = (allAvailableCourses[courseKey]?.pars || []).reduce((a, b) => a + b, 0) || 72;
+            let players = [];
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let k = `g${g}-p${p}`;
+                if (tempRosterCache[`${k}-ghost`]) { alert('Remove the blind draw (ghost) first, balance the teams, then add it back.'); return; }
+                let name = (tempRosterCache[`${k}-name`] || '').trim();
+                if (!name) continue;
+                let index = handicapIndex(playerRounds(name.toLowerCase()));
+                let tee = findTee(courseKey, tempRosterCache[`${k}-tee`]);
+                let ch = index === null ? null : (tee?.rating && tee?.slope ? index * tee.slope / 113 + (tee.rating - par) : index);
+                players.push({ name, index, ch, tee: tempRosterCache[`${k}-tee`] || '', strokes: tempRosterCache[`${k}-strokes`] || '' });
+            }
+            let rated = players.filter(p => p.ch !== null);
+            if (rated.length < 2) { alert('Not enough players have an index yet. An index shows after 3 finished 18-hole rounds.'); return; }
+            if (players.length > gCount * pCount) return;
+            let avg = rated.reduce((s, p) => s + p.ch, 0) / rated.length;
+            players.forEach(p => p.v = p.ch ?? avg); // no index yet: counted as the group's average
+            // snake deal, strongest (lowest) first
+            let teams = Array.from({ length: gCount }, () => []);
+            players.slice().sort((a, b) => a.v - b.v).forEach((pl, i) => {
+                let round = Math.floor(i / gCount), pos = i % gCount;
+                let order = round % 2 ? gCount - 1 - pos : pos;
+                let t = order; while (teams[t].length >= pCount) t = (t + 1) % gCount;
+                teams[t].push(pl);
+            });
+            let total = t => t.reduce((s, p) => s + p.v, 0);
+            let spread = () => { let tots = teams.map(total); return Math.max(...tots) - Math.min(...tots); };
+            for (let improved = true, n = 0; improved && n < 200; n++) {
+                improved = false;
+                for (let a = 0; a < gCount; a++) for (let b = a + 1; b < gCount; b++)
+                    for (let i = 0; i < teams[a].length; i++) for (let j = 0; j < teams[b].length; j++) {
+                        let before = spread();
+                        [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
+                        if (spread() < before - 0.05) improved = true;
+                        else [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
+                    }
+            }
+            teams.forEach(t => t.sort((a, b) => a.v - b.v)); // lowest handicap is captain
+            let fmt = v => fmtIndex(Math.round(v * 10) / 10); // better than scratch shows as +
+            let missing = players.filter(p => p.ch === null).map(p => p.name.split(' ')[0]);
+            let msg = teams.map((t, i) => `Team ${i + 1} (total ${fmt(total(t))}): ${t.map(p => `${p.name.split(' ')[0]} ${p.ch === null ? '?' : fmt(p.ch)}`).join(', ')}`).join('\n')
+                + (missing.length ? `\n\nNo index yet, counted as average: ${missing.join(', ')}` : '')
+                + '\n\nNumbers are course handicaps from each player\'s tees. Use these teams?';
+            if (!confirm(msg)) return;
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let pl = teams[g - 1][p - 1], k = `g${g}-p${p}`;
+                tempRosterCache[`${k}-name`] = pl ? pl.name : '';
+                tempRosterCache[`${k}-tee`] = pl ? pl.tee : '';
+                tempRosterCache[`${k}-strokes`] = pl ? pl.strokes : '';
+                tempRosterCache[`${k}-ghost`] = '';
+            }
+            OM_SEATS.forEach(id => { tempRosterCache[id] = ''; }); // Our Match sides start over from the new teams
+            localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
+            goToStep2();
         }
 
         // ===== Our Match setup =====
@@ -4244,6 +4571,7 @@ function hideCartHoleHeader() {
             }
 
             saveToArchive(); 
+            recordRoundHistory(String(roundData.roundId || Date.now()), { ...roundData }, scoresDb);
             // The results text reads activeView*, which is only set if the standings page was opened first
             activeViewRoundData = JSON.parse(JSON.stringify({ ...roundData, matchPresses }));
             activeViewScoresDb = JSON.parse(JSON.stringify(scoresDb));
