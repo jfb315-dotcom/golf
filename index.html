@@ -3089,6 +3089,17 @@ function hideCartHoleHeader() {
             return { players, skins, perSkinCents, skinsPotCents, skinsRefunded, bets, betPotCents, totalBets, teamPotCents: betPotCents * totalBets, teamWinCents, teamEntryCents: rData.betAmount * totalBets * 100 };
         }
 
+        // Skins grouped by player, most skins first: holes won and the cash they collect
+        function skinsByPlayer(pay) {
+            let by = {};
+            pay.skins.forEach(sk => { (by[sk.key] = by[sk.key] || { key: sk.key, name: sk.name, holes: [] }).holes.push(sk.hole); });
+            // Same per-player amounts as "Pay out from the pot", so the two sections always agree
+            return Object.values(by).map(w => {
+                let p = pay.players.find(x => x.key === w.key);
+                return { ...w, color: p ? p.color : 'inherit', cents: p ? p.skinsCents : Math.round(w.holes.length * pay.perSkinCents) };
+            }).sort((a, b) => b.holes.length - a.holes.length || a.holes[0] - b.holes[0]);
+        }
+
         // Skins are always collected in cash up front, so player-to-player settling covers team bets only
         function teamBetSettlements(pay) {
             return calculateSettlements(pay.players.map(p => ({ name: p.name, netCents: p.teamCents - pay.teamEntryCents })));
@@ -3482,13 +3493,12 @@ function hideCartHoleHeader() {
                 html += `</div>`;
             });
 
-            // Skins by hole
+            // Skins, one line per player: their holes and what they collect
             html += `<div class="payout-header">Skins · ${formatCents(pay.skinsPotCents)} cash pot</div>`;
             if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won${rData.skinsAmount > 0 ? ', so nobody pays the skins buy-in' : ''}</span></div>`;
             else html += `<div class="payout-sub">${pay.skins.length} won × ${formatCents(pay.perSkinCents)}</div>`;
-            pay.skins.forEach(sk => {
-                let who = pay.players.find(p => p.key === sk.key);
-                html += `<div class="payout-row"><span>Hole ${sk.hole} <span class="payout-note">par ${sk.par}</span></span><span><b style="color:${who ? who.color : 'inherit'};">${sk.name.split(' ')[0]}</b> ${sk.gross} · ${formatCents(pay.perSkinCents)}</span></div>`;
+            skinsByPlayer(pay).forEach(w => {
+                html += `<div class="payout-row skins-player"><span><b style="color:${w.color};">${firstName(w.name)}</b> <span class="payout-note">${w.holes.length === 1 ? 'hole' : 'holes'} ${w.holes.join(', ')}</span></span><span class="payout-amount"><span class="payout-note">${w.holes.length} × ${formatCents(pay.perSkinCents)} =</span> ${formatCents(w.cents)}</span></div>`;
             });
 
             // Everyone paid in: what to hand each player from the pot
@@ -3547,7 +3557,7 @@ function hideCartHoleHeader() {
 
             if (pay.skins.length > 0) {
                 st += `\nSkins (${pay.skins.length} won × ${formatCents(pay.perSkinCents)})\n`;
-                pay.skins.forEach(sk => { st += `Hole ${sk.hole}: ${first(sk.name)} ${sk.gross}\n`; });
+                skinsByPlayer(pay).forEach(w => { st += `${first(w.name)}: ${w.holes.length === 1 ? 'hole' : 'holes'} ${w.holes.join(', ')} = ${formatCents(w.cents)}\n`; });
             } else if (rData.skinsAmount > 0) {
                 st += `\nSkins: none won, buy-in refunded\n`;
             }
