@@ -6,9 +6,12 @@
 //   VAPID_PUBLIC_KEY   the public key (also in index.html)
 //   VAPID_PRIVATE_KEY  the private key, added as a Secret
 //   VAPID_SUBJECT      mailto: plus your email, e.g. mailto:you@example.com
+// Timer (Worker → Settings → Trigger Events → Cron): */5 * * * *  — checks for carts with no scores in 20 minutes
 
 const SUBS_DOC = 'https://firestore.googleapis.com/v1/projects/golf-327be/databases/(default)/documents/tournaments/push_subs';
+const ROUND_DOC = 'https://firestore.googleapis.com/v1/projects/golf-327be/databases/(default)/documents/tournaments/active_round';
 const ALLOWED_ORIGIN = 'https://jfb315-dotcom.github.io';
+const BEHIND_MINUTES = 20;
 
 export default {
     async fetch(request, env) {
@@ -26,20 +29,69 @@ export default {
         const payload = { title: text(msg.title).slice(0, 80), body: text(msg.body), view: text(msg.view).slice(0, 20), tag: text(msg.tag).slice(0, 60) };
         if (!payload.title) return new Response('Missing title', { status: 400, headers: cors });
 
-        const subs = await loadSubscriptions();
-        let sent = 0, gone = [];
-        await Promise.all(Object.entries(subs).map(async ([id, sub]) => {
-            if (id === msg.from) return; // not back to the phone that sent it
-            try {
-                const res = await sendPush(sub, JSON.stringify({ ...payload, url: sub.url || '' }), env);
-                if (res.status === 404 || res.status === 410) gone.push(id); // phone turned alerts off or reinstalled
-                else if (res.ok) sent++;
-            } catch (e) { /* one bad subscription shouldn't stop the rest */ }
-        }));
-        if (gone.length) await removeSubscriptions(gone);
-        return new Response(JSON.stringify({ sent, removed: gone.length }), { headers: { ...cors, 'Content-Type': 'application/json' } });
+        // cart: only phones on that cart's link; self: the sending phone gets it too
+        const cart = text(msg.cart).slice(0, 10);
+        const result = await deliver(payload, env, (id, sub) => (msg.self || id !== msg.from) && (!cart || sub.cart === cart));
+        return new Response(JSON.stringify(result), { headers: { ...cors, 'Content-Type': 'application/json' } });
+    },
+
+    // Every few minutes: tell a cart if it hasn't entered a score in a while
+    async scheduled(event, env, ctx) {
+        ctx.waitUntil(checkCartsBehind(env));
     },
 };
+
+async function deliver(payload, env, wanted) {
+    const subs = await loadSubscriptions();
+    const tokens = {}; // one signed token per push service, shared by every phone on it
+    let sent = 0, gone = [];
+    await Promise.all(Object.entries(subs).filter(([id, sub]) => wanted(id, sub)).map(async ([id, sub]) => {
+        try {
+            const res = await sendPush(sub, JSON.stringify({ ...payload, url: sub.url || '' }), env, tokens);
+            if (res.status === 404 || res.status === 410) gone.push(id); // phone turned alerts off or reinstalled
+            else if (res.ok) sent++;
+        } catch (e) { /* one bad subscription shouldn't stop the rest */ }
+    }));
+    if (gone.length) await removeSubscriptions(gone);
+    return { sent, removed: gone.length };
+}
+
+// ---------- No scores in 20 minutes (to that cart only) ----------
+
+async function checkCartsBehind(env) {
+    const res = await fetch(ROUND_DOC);
+    if (!res.ok) return;
+    const doc = await res.json();
+    const round = plain({ mapValue: { fields: doc.fields || {} } });
+    if (!round.roundData || round.isArchived) return;
+    if (round.roundData.alerts && round.roundData.alerts.behind === false) return;
+    const activity = round.cartActivity || {}, warned = round.behindAlerted || {};
+    const now = Date.now();
+    for (const [cart, a] of Object.entries(activity)) {
+        if (!a || a.done || !a.at) continue;                      // finished, or hasn't started
+        if (now - a.at < BEHIND_MINUTES * 60 * 1000) continue;    // scored recently
+        if (now - a.at > 6 * 60 * 60 * 1000) continue;            // round long over; don't nag
+        if (warned[cart] === a.at) continue;                      // already told them about this gap
+        const mins = Math.round((now - a.at) / 60000);
+        await deliver({ title: `⏰ Cart ${cart}: no scores in ${mins} minutes`, body: 'Tap to catch up on your scores', view: 'scoring', tag: `behind-${cart}` }, env, (id, sub) => sub.cart === cart);
+        await fetch(`${ROUND_DOC}?updateMask.fieldPaths=${encodeURIComponent('behindAlerted.`' + cart + '`')}`, {
+            method: 'PATCH', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ fields: { behindAlerted: { mapValue: { fields: { [cart]: { integerValue: String(a.at) } } } } } }),
+        });
+    }
+}
+
+// Firestore REST values to plain JavaScript
+function plain(v) {
+    if (!v || typeof v !== 'object') return v;
+    if ('mapValue' in v) { const o = {}; for (const [k, x] of Object.entries(v.mapValue.fields || {})) o[k] = plain(x); return o; }
+    if ('arrayValue' in v) return (v.arrayValue.values || []).map(plain);
+    if ('integerValue' in v) return Number(v.integerValue);
+    if ('doubleValue' in v) return v.doubleValue;
+    if ('booleanValue' in v) return v.booleanValue;
+    if ('stringValue' in v) return v.stringValue;
+    return null;
+}
 
 // ---------- Subscriptions, stored by the app in Firestore at tournaments/push_subs ----------
 
@@ -52,7 +104,7 @@ async function loadSubscriptions() {
     for (const [id, v] of Object.entries(fields)) {
         const f = v.mapValue?.fields || {};
         const get = k => f[k]?.stringValue || '';
-        if (get('endpoint') && get('p256dh') && get('auth')) out[id] = { endpoint: get('endpoint'), p256dh: get('p256dh'), auth: get('auth'), url: get('url') };
+        if (get('endpoint') && get('p256dh') && get('auth')) out[id] = { endpoint: get('endpoint'), p256dh: get('p256dh'), auth: get('auth'), url: get('url'), cart: get('cart') };
     }
     return out;
 }
@@ -110,12 +162,14 @@ async function vapidToken(endpoint, env) {
     return `${unsigned}.${bytesToB64url(sig)}`;
 }
 
-async function sendPush(sub, text, env) {
+async function sendPush(sub, text, env, tokens = {}) {
     const body = await encryptPayload(sub, text);
+    const origin = new URL(sub.endpoint).origin;
+    tokens[origin] = tokens[origin] || vapidToken(sub.endpoint, env);
     return fetch(sub.endpoint, {
         method: 'POST',
         headers: {
-            'Authorization': `vapid t=${await vapidToken(sub.endpoint, env)}, k=${env.VAPID_PUBLIC_KEY}`,
+            'Authorization': `vapid t=${await tokens[origin]}, k=${env.VAPID_PUBLIC_KEY}`,
             'Content-Encoding': 'aes128gcm',
             'Content-Type': 'application/octet-stream',
             'TTL': '3600',

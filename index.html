@@ -331,6 +331,7 @@
         .om-birdie-line b { display: inline-block; min-width: 52px; letter-spacing: 0.04em; }
         .om-birdie-line.muted { color: var(--text-muted); }
         .om-subtotal { font-weight: 700; }
+        .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
         .alerts-btn { display: block; width: 100%; margin: 10px 0 0; min-height: 48px; border: 1px solid var(--border-color); border-radius: 24px; background: transparent; color: var(--text-main); font-size: 15px; font-weight: 700; cursor: pointer; }
         .alerts-btn.on { border-color: transparent; background: var(--fill); color: var(--text-muted); font-weight: 600; }
         .dash-actions .alerts-btn { margin-bottom: 10px; }
@@ -454,11 +455,27 @@
 
         <div id="alerts-setup" style="display:none;">
             <div class="field-label">Phone alerts</div>
+            <div class="alerts-group">To everyone</div>
             <div class="format-container">
-                <div class="format-row"><label class="format-label" for="alert-birdies">Birdies &amp; eagles</label><input type="checkbox" class="switch" id="alert-birdies" checked></div>
-                <div class="format-row"><label class="format-label" for="alert-presses">Our Match presses</label><input type="checkbox" class="switch" id="alert-presses" checked></div>
-                <div class="format-row"><label class="format-label" for="alert-cartDone">A cart finishes</label><input type="checkbox" class="switch" id="alert-cartDone" checked></div>
-                <div class="format-row"><label class="format-label" for="alert-final">Final results</label><input type="checkbox" class="switch" id="alert-final" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-birdies">Birdies &amp; eagles 🐦</label><input type="checkbox" class="switch" id="alert-birdies" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-doubles">Double bogey or worse 😩</label><input type="checkbox" class="switch" id="alert-doubles" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-skins">Skin won 💰</label><input type="checkbox" class="switch" id="alert-skins" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-leadChange">Lead change 📈</label><input type="checkbox" class="switch" id="alert-leadChange" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-turn">At the turn 🔄</label><input type="checkbox" class="switch" id="alert-turn" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-scoreChanged">Score changed ✏️</label><input type="checkbox" class="switch" id="alert-scoreChanged" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-cartDone">A cart finishes 🏁</label><input type="checkbox" class="switch" id="alert-cartDone" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-allDone">All carts finished ✅</label><input type="checkbox" class="switch" id="alert-allDone" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-final">Final results 🏆</label><input type="checkbox" class="switch" id="alert-final" checked></div>
+            </div>
+            <div class="alerts-group">Our Match</div>
+            <div class="format-container">
+                <div class="format-row"><label class="format-label" for="alert-presses">Presses ⤴</label><input type="checkbox" class="switch" id="alert-presses" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-matchOver">Match over: who's up and how much</label><input type="checkbox" class="switch" id="alert-matchOver" checked></div>
+            </div>
+            <div class="alerts-group">To that cart only</div>
+            <div class="format-container">
+                <div class="format-row"><label class="format-label" for="alert-missedHole">Missed a hole ⚠️</label><input type="checkbox" class="switch" id="alert-missedHole" checked></div>
+                <div class="format-row"><label class="format-label" for="alert-behind">No scores in 20 minutes ⏰</label><input type="checkbox" class="switch" id="alert-behind" checked></div>
             </div>
         </div>
 
@@ -768,7 +785,7 @@ const db = firebase.firestore();
 // Phone alerts go through the Cloudflare Worker in cloudflare/alerts-worker.js. Left blank, alerts are off.
 const ALERTS_URL = 'https://jbgolf-alerts.jfb315.workers.dev/';
 const ALERTS_PUBLIC_KEY = 'BJVjffPKtgDolmCvKbTo5jVnxnVh1Da0HylhVjm33N2Ckjoo5hZl0RbNhHF6WlZwDKTV7OdQtbCGJtdeAZeDxik';
-const ALERT_TYPES = ['birdies', 'presses', 'cartDone', 'final'];
+const ALERT_TYPES = ['birdies', 'doubles', 'skins', 'leadChange', 'turn', 'scoreChanged', 'cartDone', 'allDone', 'final', 'presses', 'matchOver', 'missedHole', 'behind'];
 const activeTournamentRef = db.collection("tournaments").doc("active_round");
 const savedPlayersRef = db.collection("tournaments").doc("saved_players");
 
@@ -791,6 +808,7 @@ const curatedColors = ['#00f3ff', 'var(--good)', '#ff007f', '#ccff00', '#ff5e00'
 let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, currentHoles: { admin: 1 }, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
 let scoresDb = {}; 
 let clipboards = {};
+let alertBaseScores = {}; // scores as they were before this phone's latest change
 let showingFinalResults = false; // a cart looking at a finalized round's results
 let matchPresses = {}; // Our Match presses: { front|back|overall: { A|B: hole pressed after } }
 let currentTeamFilter = "ALL"; 
@@ -964,6 +982,7 @@ function toggle9HoleOptions() {
                         roundData = { ...incomingRound, currentHoles: protectedCurrentHoles || incomingRound.currentHoles || { admin: 1 } };
                         
                         scoresDb = data.scoresDb || {};
+                        alertBaseScores = JSON.parse(JSON.stringify(scoresDb));
                         clipboards = data.clipboards || {};
                         matchPresses = data.matchPresses || {};
                         
@@ -2267,8 +2286,16 @@ function closeHoleScoringAndReturn() {
                 fieldsAndValues.push(new firebase.firestore.FieldPath('scoresDb', String(g), String(p), String(hole)), score ? score : firebase.firestore.FieldValue.delete());
             });
 
+            // Last time each cart entered a score (and whether it's done), for the "no scores in 20 minutes" check
+            let now = Date.now();
+            new Set(players.map(([g, p]) => cartOfPlayer(g, p)?.id).filter(id => id != null)).forEach(cid => {
+                fieldsAndValues.push(new firebase.firestore.FieldPath('cartActivity', String(cid)), { at: now, done: cartIsDone(cid, scoresDb) });
+            });
+
             trackCloudWrite(activeTournamentRef.update(...fieldsAndValues));
-            alertBirdies(players, hole);
+            let before = alertBaseScores;
+            alertBaseScores = JSON.parse(JSON.stringify(scoresDb));
+            try { checkScoreAlerts(players, hole, before, scoresDb); } catch (e) { console.log('alert check failed', e); }
             updateOurMatchAlert();
             renderAdminHoleStrip();
         }
@@ -3526,8 +3553,16 @@ function closeHoleScoringAndReturn() {
             return reg ? reg.pushManager.getSubscription() : null;
         }
 
+        function saveAlertSubscription(sub) {
+            let j = sub.toJSON();
+            return pushSubsRef.set({ subs: { [alertsDeviceId()]: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, url: location.href.split('#')[0], cart: lockedTeamId !== null ? String(lockedTeamId) : '', at: Date.now() } } }, { merge: true });
+        }
+
         async function refreshAlertsButtons() {
-            let on = !!ALERTS_URL && window.Notification?.permission === 'granted' && !!(await currentPushSubscription().catch(() => null));
+            let sub = ALERTS_URL && window.Notification?.permission === 'granted' ? await currentPushSubscription().catch(() => null) : null;
+            let on = !!sub;
+            // Keep this phone's cart up to date (the same phone may be on a different cart next round)
+            if (sub && !refreshAlertsButtons.saved) { refreshAlertsButtons.saved = true; saveAlertSubscription(sub).catch(() => {}); }
             document.querySelectorAll('.alerts-btn').forEach(btn => {
                 btn.style.display = ALERTS_URL ? '' : 'none';
                 btn.classList.toggle('on', on);
@@ -3560,8 +3595,7 @@ function closeHoleScoringAndReturn() {
                 let reg = await navigator.serviceWorker.ready;
                 let key = Uint8Array.from(atob(ALERTS_PUBLIC_KEY.replace(/-/g, '+').replace(/_/g, '/')), c => c.charCodeAt(0));
                 let sub = existing || await reg.pushManager.subscribe({ userVisibleOnly: true, applicationServerKey: key });
-                let j = sub.toJSON();
-                await pushSubsRef.set({ subs: { [id]: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, url: location.href.split('#')[0], at: Date.now() } } }, { merge: true });
+                await saveAlertSubscription(sub);
             } catch (err) {
                 console.log('Alerts setup failed', err);
                 alert("Couldn't turn on alerts. Check your signal and try again.");
@@ -3579,34 +3613,160 @@ function closeHoleScoringAndReturn() {
             return true;
         }
 
-        function sendAlert(type, title, body, view, tag, rData) {
+        // opts.cart sends only to phones on that cart's link; opts.self also sends to this phone
+        function sendAlert(type, title, body, view, tag, rData, opts = {}) {
             rData = rData || roundData;
             if (!ALERTS_URL || rData.alerts?.[type] === false) return;
             if (!alertOnce(`${rData.roundId}|${tag}`)) return;
             fetch(ALERTS_URL, {
                 method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ title, body, view, tag, from: alertsDeviceId() })
+                body: JSON.stringify({ title, body, view, tag, from: alertsDeviceId(), cart: opts.cart != null ? String(opts.cart) : '', self: !!opts.self })
             }).catch(() => {});
         }
 
-        // Birdies and better, gross, as they're entered on this phone
-        function alertBirdies(players, hole) {
-            let par = roundData.course.pars[hole - 1];
-            players.forEach(([g, p]) => {
-                let score = scoresDb[g]?.[p]?.[hole];
-                let player = roundData.groups.find(x => x.id == g)?.players.find(x => x.id == p);
-                if (!score || !player || player.isGhost || score > par - 1) return;
-                let name = player.name.split(' ')[0];
-                let under = par - score;
-                let title = score === 1 ? `⛳ ${name} HOLE IN ONE on ${hole}!` : under >= 3 ? `🦅 ${name} albatross on ${hole}!` : under === 2 ? `🦅 ${name} eagle on ${hole}` : `🐦 ${name} birdie on ${hole}`;
-                let where = isOurMatchOnly(roundData) ? 'Our Match' : `Team ${g}`;
-                sendAlert('birdies', title, `${score} on a par ${par} · ${where}`, 'standings', `bird-${g}-${p}-${hole}-${score}`);
+        function cartOfPlayer(g, p) { return roundData.carts.find(c => c.players.some(cp => cp.g == g && cp.p == p)); }
+        function realPlayersOf(cart) {
+            return (cart?.players || []).map(cp => ({ g: cp.g, p: cp.p, player: roundData.groups.find(x => x.id === cp.g)?.players.find(x => x.id === cp.p) })).filter(x => x.player && !x.player.isGhost);
+        }
+        function allRealPlayers() { return roundData.groups.flatMap(g => g.players.filter(p => !p.isGhost).map(p => ({ g: g.id, p: p.id, player: p }))); }
+        function holeDoneBy(list, sDb, h) { return list.length > 0 && list.every(x => sDb[x.g]?.[x.p]?.[h]); }
+        function cartIsDone(cid, sDb) { let list = realPlayersOf(roundData.carts.find(c => c.id == cid)); return getHoleSequence().every(h => holeDoneBy(list, sDb, h)); }
+        function firstName(x) { return x.split(' ')[0]; }
+
+        // Team bet leaders over the whole round (one team, or several when tied)
+        function teamLeaders(sDb) {
+            if (!roundData.formats.length || isOurMatchOnly(roundData)) return {};
+            // Only holes every team has finished, so a group teeing off later isn't counted as behind
+            let everyone = allRealPlayers(), done = {};
+            getHoleSequence().filter(h => holeDoneBy(everyone, sDb, h)).forEach(h => everyone.forEach(x => { ((done[x.g] = done[x.g] || {})[x.p] = done[x.g][x.p] || {})[h] = sDb[x.g][x.p][h]; }));
+            let out = {};
+            let bets = calculatePayouts(roundData, done).bets;
+            roundData.formats.forEach(f => {
+                let mine = bets.filter(b => b.format === f);
+                let overall = mine.find(b => b.label === 'Total') || mine[mine.length - 1];
+                if (overall) out[f] = { winners: overall.winners, net: overall.net };
             });
+            return out;
+        }
+
+        // Everything a score change on this phone can set off. Each alert is sent once, by the phone that caused it.
+        function checkScoreAlerts(players, hole, before, after) {
+            let par = roundData.course.pars[hole - 1];
+            let seq = getHoleSequence();
+            let everyone = allRealPlayers();
+            let teamOrMatch = g => isOurMatchOnly(roundData) ? 'Our Match' : `Team ${g}`;
+
+            players.forEach(([g, p]) => {
+                let player = roundData.groups.find(x => x.id == g)?.players.find(x => x.id == p);
+                if (!player || player.isGhost) return;
+                let name = firstName(player.name);
+                let score = after[g]?.[p]?.[hole], old = before[g]?.[p]?.[hole];
+                if (!score) return;
+
+                // Birdies and better, gross
+                if (score <= par - 1) {
+                    let under = par - score;
+                    let title = score === 1 ? `⛳ ${name} HOLE IN ONE on ${hole}!` : under >= 3 ? `🦅 ${name} albatross on ${hole}!` : under === 2 ? `🦅 ${name} eagle on ${hole}` : `🐦 ${name} birdie on ${hole}`;
+                    sendAlert('birdies', title, `${score} on a par ${par} · ${teamOrMatch(g)}`, 'standings', `bird-${g}-${p}-${hole}-${score}`);
+                }
+                // Double bogey or worse
+                if (score >= par + 2) {
+                    let over = score - par;
+                    let title = score === 8 ? `⛄ ${name} made a snowman on ${hole}` : over === 2 ? `😩 ${name} double bogey on ${hole}` : over === 3 ? `😵 ${name} triple bogey on ${hole}` : `💀 ${name} made a ${score} on ${hole}`;
+                    sendAlert('doubles', title, `${score} on a par ${par} · ${teamOrMatch(g)}`, 'standings', `dbl-${g}-${p}-${hole}-${score}`);
+                }
+                // A score fixed after the player had moved on to a later hole
+                let later = seq.slice(seq.indexOf(hole) + 1);
+                if (old && old !== score && later.some(h => after[g]?.[p]?.[h])) {
+                    let who = lockedTeamId !== null ? `Cart ${lockedTeamId}` : 'Admin';
+                    sendAlert('scoreChanged', `✏️ ${who} changed ${name}'s ${old} to a ${score} on ${hole}`, 'Standings are updated', 'standings', `chg-${g}-${p}-${hole}-${old}-${score}-${Date.now()}`);
+                }
+                // Missed hole: an earlier hole on this cart is still blank (to that cart only)
+                let cart = cartOfPlayer(g, p);
+                if (cart) {
+                    let mates = realPlayersOf(cart);
+                    let missing = seq.slice(0, seq.indexOf(hole)).find(h => mates.some(x => !after[x.g]?.[x.p]?.[h]));
+                    if (missing) {
+                        let who = mates.filter(x => !after[x.g]?.[x.p]?.[missing]).map(x => firstName(x.player.name)).join(', ');
+                        sendAlert('missedHole', `⚠️ Cart ${cart.id}: hole ${missing} is missing a score`, `${who} · tap to fix it`, `hole-${missing}`, `miss-${cart.id}-${missing}`, null, { cart: cart.id, self: true });
+                    }
+                }
+            });
+
+            // Skin: once everyone has played the hole, an outright low gross under par wins it
+            if (roundData.skinsAmount && holeDoneBy(everyone, after, hole) && !holeDoneBy(everyone, before, hole)) {
+                let scores = everyone.map(x => ({ ...x, s: after[x.g][x.p][hole] }));
+                let low = Math.min(...scores.map(x => x.s));
+                let won = scores.filter(x => x.s === low);
+                if (low < par && won.length === 1) sendAlert('skins', `💰 ${firstName(won[0].player.name)} wins the skin on ${hole}`, `${low} on a par ${par} · Team ${won[0].g}`, 'standings', `skin-${hole}`);
+            }
+
+            // Lead change in each team game
+            let was = teamLeaders(before), now = teamLeaders(after);
+            Object.entries(now).forEach(([f, lead]) => {
+                if (lead.winners.length !== 1) return;
+                let prev = was[f]?.winners || [];
+                if (prev.length === 1 && prev[0] === lead.winners[0]) return;
+                if (prev.length === 0) return; // first scores of the day, nobody to take it from
+                let team = roundData.groups.find(x => x.id === lead.winners[0]);
+                sendAlert('leadChange', `📈 Team ${team.id} (${firstName(team.captain)}) takes the lead in ${f}-Ball`, `${formatNetToPar(lead.net)} overall`, 'standings', `lead-${f}-${team.id}-${Date.now()}`);
+            });
+
+            // At the turn: everyone through the first nine (18-hole rounds)
+            if (seq.length === 18) {
+                let nine = seq.slice(0, 9);
+                let thru = sDb => nine.every(h => holeDoneBy(everyone, sDb, h));
+                if (thru(after) && !thru(before)) {
+                    let body;
+                    if (isOurMatchOnly(roundData)) {
+                        let m = calculateOurMatch(roundData, after, matchPresses);
+                        let n = m?.nines[0];
+                        body = n ? `${m.names[0]} ${formatMatchMoney(n.ballMoney + n.birdieMoney + (m.nassau[n.key]?.money || 0))} on the front, per person` : 'Front nine done';
+                    } else {
+                        let bets = calculatePayouts(roundData, after).bets;
+                        body = roundData.formats.map(f => {
+                            let b = bets.find(x => x.format === f);
+                            return b && b.winners.length ? `${f}-Ball ${b.winners.length > 1 ? 'tied' : 'Team ' + b.winners[0]} ${formatNetToPar(b.net)}` : null;
+                        }).filter(Boolean).join(' · ') || 'Front nine done';
+                    }
+                    sendAlert('turn', `🔄 Everyone's through ${nine[8]}`, body, 'standings', 'turn');
+                }
+            }
+
+            // All carts finished
+            let allDone = sDb => seq.every(h => holeDoneBy(everyone, sDb, h));
+            if (allDone(after) && !allDone(before)) {
+                sendAlert('allDone', '✅ All carts finished', isOurMatchOnly(roundData) ? 'Match is complete' : 'Final standings are in · waiting on the admin to finalize', 'standings', 'alldone');
+            }
+
+            // Our Match over: who's up and how much
+            if (roundData.ourMatch) {
+                let mb = calculateOurMatch(roundData, before, matchPresses), ma = calculateOurMatch(roundData, after, matchPresses);
+                if (ma?.finished && !mb?.finished) {
+                    let t = ma.totalMoney;
+                    let title = t === 0 ? '🏁 Our Match is over: all square' : `🏁 Our Match: ${t > 0 ? ma.names[0] : ma.names[1]} +$${Math.abs(t).toLocaleString('en-US')} each`;
+                    sendAlert('matchOver', title, matchSettleLine(ma, t), 'our-match', 'matchover');
+                }
+            }
         }
 
         // Tapping an alert opens the standings (or the Our Match section)
         function openAlertView(view) {
             if (!hasLoadedRound || !roundData.groups?.length) return;
+            let hole = parseInt((view || '').replace('hole-', ''));
+            if (view === 'scoring' && !showingFinalResults) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('step-3').classList.add('active');
+                renderScoreEntry();
+                return;
+            }
+            if (/^hole-\d+$/.test(view || '') && !showingFinalResults) {
+                document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+                document.getElementById('step-3').classList.add('active');
+                if (currentTeamFilter !== "ALL" || lockedTeamId !== null) openHoleForScoring(hole);
+                else goToHole(hole);
+                return;
+            }
             viewDashboard();
             if (view === 'our-match') setTimeout(() => document.getElementById('our-match')?.scrollIntoView({ block: 'start' }), 50);
         }
