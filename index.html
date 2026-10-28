@@ -1786,8 +1786,7 @@ function processStep2() {
                         if(cNames.length > 0) st += `Cart ${c} · ${formatFriendlyTime(tempRosterCache[`cart${c}-time`] || '08:00')}: ${cNames.join(', ')}\n`;
                     }
                 }
-                st += `\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
-
+                // No PRO TIP here: there's no link yet (it goes with the cart links)
                 document.getElementById('share-modal-title').innerText = "Share Pre-Round Info";
                 document.getElementById('share-text-content').value = st;
                 document.getElementById('share-modal').classList.add('active');
