@@ -28,7 +28,7 @@
         .toast-ace { background: #000; border: 4px solid #fff; color: #fff; text-shadow: 0 0 10px #fff, 0 0 20px #ff00ff, 0 0 30px #00ffff; box-shadow: 0 10px 40px rgba(0,0,0,0.9), 0 0 30px #00ffff; animation: flash-ace 0.5s infinite; }
         @keyframes flash-ace { 0% { border-color: #ff00ff; } 50% { border-color: #00ffff; } 100% { border-color: #ff00ff; } }
         
-        .hole-detail { position: relative; min-height: 210px; border: 2px solid var(--border-color); border: 2px solid color-mix(in srgb, var(--accent-gold) 45%, transparent); border-radius: 20px; padding: 4px 8px 6px; background: color-mix(in srgb, var(--accent-gold) 4%, transparent); overflow: hidden; }
+        .hole-detail { position: relative; min-height: 210px; border: 2px solid var(--border-color); border: 2px solid color-mix(in srgb, var(--accent-gold) 45%, transparent); border-radius: 20px; padding: 4px 8px 6px; background: color-mix(in srgb, var(--accent-gold) 4%, transparent); overflow: clip; }
         .modal-content.pin-content { max-width: 340px; text-align: center; border-top: none; border-radius: 20px; padding: 24px 20px; }
         .pin-title { font-size: 18px; margin: 0 0 18px; color: var(--text-main); }
         .pin-dots { display: flex; justify-content: center; gap: 16px; }
@@ -104,7 +104,10 @@
             border-radius: 9px !important; 
             transition: all 0.2s ease !important; 
         }
-        .pill.pill-msg { flex: 0 0 auto !important; padding: 8px 12px !important; font-size: 18px !important; line-height: 1 !important; border-left: 1px solid var(--border-color) !important; border-radius: 0 9px 9px 0 !important; }
+        .pill-nav { overflow-x: auto; scrollbar-width: none; }
+        .pill-nav::-webkit-scrollbar { display: none; }
+        .pill { white-space: nowrap; min-width: max-content; padding-left: 7px !important; padding-right: 7px !important; font-size: 13px !important; }
+        .pill.pill-msg { position: sticky; right: 0; background: var(--bg-card) !important; flex: 0 0 auto !important; padding: 8px 12px !important; font-size: 18px !important; line-height: 1 !important; border-left: 1px solid var(--border-color) !important; border-radius: 0 9px 9px 0 !important; }
         .pill.active { 
             background: var(--accent-gold) !important; 
             color: var(--on-accent) !important; 
@@ -118,6 +121,12 @@
         .hole-nav h2 { margin: 0; color: var(--accent-gold); font-size: 40px; line-height: 1; font-weight: 900; }
 
         /* Score entry: rows with a score circle, filled in from the on-screen keypad */
+        /* Admin tab: every team at once, so each team gets its own box instead of one big one */
+        #step-3.admin-view .hole-detail { border: none; background: none; padding: 0; min-height: 0; overflow: visible; }
+        #step-3.admin-view .hole-watermark { display: none; }
+        #step-3.admin-view .hole-detail .team-card { border: 1px solid var(--border-color); border-left: 4px solid var(--tc, var(--accent-gold)); border-radius: 14px; padding: 6px 6px 4px; margin-bottom: 8px; background: var(--fill-soft); }
+        #step-3.admin-view .team-label { padding: 2px 10px; }
+        #step-3.admin-view .score-row { min-height: 42px; }
         .hole-detail .team-card { background: transparent; box-shadow: none; border-left: none; padding: 0; margin-bottom: 8px; overflow: visible; }
         .team-label { font-size: 12px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; padding: 0 16px 2px; position: relative; z-index: 1; }
         .score-row { display: flex; align-items: center; gap: 12px; min-height: 46px; margin: 0 0 2px; padding: 0 8px 0 16px; border-radius: 12px; cursor: pointer; position: relative; z-index: 1; color: var(--text-main); font-size: 16px; text-transform: none; font-weight: normal; scroll-margin-top: 200px; scroll-margin-bottom: 150px; }
@@ -2224,7 +2233,7 @@ function closeHoleScoringAndReturn() {
 
             if (currentTeamFilter === "ALL") {
                 roundData.groups.forEach(group => {
-                    html += `<div class="team-card"><div class="team-label" style="color: ${teamColor(group)};">Team ${group.id} · Capt ${group.captain.split(' ')[0]}</div>`;
+                    html += `<div class="team-card" style="--tc: ${teamColor(group)};"><div class="team-label" style="color: ${teamColor(group)};">Team ${group.id} · Capt ${group.captain.split(' ')[0]}</div>`;
                     group.players.forEach(player => { html += renderScoreRow(group, player, hole, par, ''); });
                     html += `</div>`;
                 });
@@ -2277,6 +2286,17 @@ function closeHoleScoringAndReturn() {
             activeScoreInputId = el.id;
             document.querySelectorAll('.score-row.active').forEach(r => r.classList.remove('active'));
             el.closest('.score-row')?.classList.add('active');
+        }
+
+        // Keep the selected player in the open space between the header and the keypad, not jammed against the keypad
+        function keepScoreRowInView(row) {
+            if (!row) return;
+            let r = row.getBoundingClientRect();
+            let top = document.querySelector('#step-3 .sticky-top')?.getBoundingClientRect().bottom || 0;
+            let keys = document.querySelector('.score-keypad')?.getBoundingClientRect().top || window.innerHeight;
+            if (r.top >= top + 12 && r.bottom <= keys - 70) return; // already comfortable, don't move the page
+            let target = top + (keys - top) * 0.4 - r.height / 2;
+            window.scrollBy({ top: r.top - target, behavior: 'smooth' });
         }
 
         function activateFirstOpenScore() {
@@ -2474,7 +2494,7 @@ function closeHoleScoringAndReturn() {
                 
                 if(idx > -1 && idx < inputs.length - 1) { 
                     setActiveScoreInput(inputs[idx + 1]);
-                    inputs[idx + 1].closest('.score-row').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+                    keepScoreRowInView(inputs[idx + 1].closest('.score-row'));
                 } else if (idx === inputs.length - 1) {
                     let seq = getHoleSequence();
                     if (hole === seq[seq.length - 1]) {
