@@ -161,7 +161,7 @@
         .strip-hole.done { background: var(--fill-strong); border-color: transparent; color: var(--text-main); }
         .strip-hole.current { background: var(--accent-gold); border-color: transparent; color: var(--on-accent); }
         .band-right { display: inline-flex; align-items: center; gap: 10px; }
-        .band-bell { border: none; background: none; padding: 0; margin: 0; font-size: 15px; line-height: 1; cursor: pointer; }
+        .band-bell { border: 1px solid rgba(255,255,255,0.25); border-radius: 12px; background: rgba(255,255,255,0.08); color: var(--band-text); padding: 3px 9px; margin: 0; font-size: 12px; font-weight: 700; letter-spacing: 0.02em; text-transform: none; line-height: 1.2; cursor: pointer; }
         #step-3.cart-hole-view .alerts-banner:has(.ab-chip.on) { display: none !important; }
         /* A cart's hole: only 2-4 players, so use the room */
         /* sized to the screen height, so four players still fit above the keypad on a short phone */
@@ -2207,7 +2207,7 @@ function renderCartHoleHeader(hole, par) {
         return `<button type="button" class="strip-hole${cls}" onclick="openHoleForScoring(${h})" aria-label="Hole ${h}"${h === hole ? ' aria-current="true"' : ''}>${h}</button>`;
     }).join('');
     header.innerHTML = `<div class="cart-band">
-            <div class="cart-band-top"><span>Cart ${currentTeamFilter}</span><span class="band-right">${alertsAreOn ? '<button type="button" class="band-bell" onclick="turnOffAlerts()" aria-label="Alerts are on">🔔</button>' : ''}<span id="band-sync"></span></span></div>
+            <div class="cart-band-top"><span>Cart ${currentTeamFilter}</span><span class="band-right">${alertsAreOn ? '<button type="button" class="band-bell" onclick="turnOffAlerts()">🔔 Alerts on</button>' : ''}<span id="band-sync"></span></span></div>
             <div class="cart-band-main"><span class="cart-band-hole">Hole ${hole}</span><span class="cart-band-par">Par ${par}</span></div>
         </div>
         <div class="hole-strip">${strip}</div>`;
