@@ -46,3 +46,30 @@ self.addEventListener('fetch', event => {
         return saved || fromNetwork;
     })());
 });
+
+// Phone alerts: show the notification, and open (or bring back) the app when it's tapped
+self.addEventListener('push', event => {
+    let d = {};
+    try { d = event.data ? event.data.json() : {}; } catch (e) { d = { body: event.data ? event.data.text() : '' }; }
+    event.waitUntil(self.registration.showNotification(d.title || 'JB Golf', {
+        body: d.body || '',
+        icon: 'logo.png',
+        badge: 'logo.png',
+        tag: d.tag || undefined,
+        data: { url: d.url || self.registration.scope, view: d.view || '' }
+    }));
+});
+
+self.addEventListener('notificationclick', event => {
+    event.notification.close();
+    let { url, view } = event.notification.data || {};
+    event.waitUntil((async () => {
+        let open = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+        if (open.length) {
+            await open[0].focus();
+            open[0].postMessage({ type: 'jbgolf-view', view });
+            return;
+        }
+        await self.clients.openWindow((url || self.registration.scope) + (view ? `#view=${view}` : ''));
+    })());
+});
