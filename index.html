@@ -169,7 +169,16 @@
         #step-3.cart-hole-view .hole-detail { min-height: clamp(200px, 30vh, 250px); padding-top: 6px; }
         #step-3.cart-hole-view .hole-watermark .wm-num { font-size: 170px; }
         #step-3.cart-hole-view .hole-watermark .wm-hole, #step-3.cart-hole-view .hole-watermark .wm-par { font-size: 32px; }
-        #step-3.cart-hole-view #sync-status { display: none; } /* shown inside the band instead */
+        #step-3.cart-hole-view #sync-status { display: none; }
+        .hole-top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 6px; }
+        .hole-top-row .back-link { margin: 0; }
+        .hole-top-row .alerts-banner { margin: 0; }
+        /* on a cart's hole the small tag sits on the back-link line; the big card stays full width above */
+        #step-3.cart-hole-view > .alerts-banner:has(.ab-chip) { display: none !important; }
+        .hole-top-row .alerts-banner:has(.ab-big) { display: none !important; }
+        .key-nav { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 8px; }
+        .score-keypad .key-nav button { height: 36px; flex: 1; border: 1px solid var(--border-color); border-radius: 18px; background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; }
+        .score-keypad .key-nav button:disabled { opacity: 0.3; } /* shown inside the band instead */
 
         /* Cart hole list */
         .hole-list-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; margin: 0; padding: 0 12px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--text-main); text-align: left; cursor: pointer; }
@@ -2186,7 +2195,8 @@ function openHoleForScoring(holeNum) {
     setHoleHeader(holeNum, par);
     renderCartHoleHeader(holeNum, par);
 
-    let html = `<button type="button" class="back-link" onclick="showCartHoleList()">‹ All holes / scores</button>`;
+    // Back link and the Alerts on tag share one line
+    let html = `<div class="hole-top-row"><button type="button" class="back-link" onclick="showCartHoleList()">‹ All holes / scores</button><div class="alerts-banner inline"${alertsBannerHtml ? '' : ' style="display:none;"'}>${alertsBannerHtml}</div></div>`;
     html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
@@ -2281,8 +2291,15 @@ function hideCartHoleHeader() {
             let keys = '';
             // Scores top out at 8 (double par on a par 4), so the keypad stops there; the par key is filled in
             for (let n = 1; n <= 8; n++) keys += `<button type="button"${n === par ? ' class="par-key"' : ''} onclick="pressScoreKey('${n}')">${n}</button>`;
+            // Carts get Prev / Next under the keys (the admin has arrows by the hole number)
+            let nav = '';
+            if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
+                let seq = getHoleSequence(), i = seq.indexOf(roundData.currentHole);
+                let prev = seq[i - 1], next = seq[i + 1];
+                nav = `<div class="key-nav"><button type="button" onclick="changeHole(-1)"${prev ? '' : ' disabled'}>‹ ${prev ? 'Hole ' + prev : ''}</button><button type="button" onclick="changeHole(1)"${next ? '' : ' disabled'}>${next ? 'Hole ' + next : ''} ›</button></div>`;
+            }
             return `<div class="score-keypad">${keys}
-                <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>
+                <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>${nav}
             </div>`;
         }
 
@@ -3601,6 +3618,7 @@ function hideCartHoleHeader() {
         // PHONE ALERTS (web push through the Cloudflare Worker)
         // ==========================================
         const pushSubsRef = db.collection("tournaments").doc("push_subs");
+        let alertsBannerHtml = ''; // what the alerts tag/card shows right now, for screens drawn later
         let pendingAlertView = (location.hash.match(/view=([\w-]+)/) || [])[1] || null;
 
         function alertsDeviceId() {
@@ -3644,6 +3662,7 @@ function hideCartHoleHeader() {
                     <button type="button" class="ab-btn" onclick="toggleAlerts()">${needsHomeScreen ? 'Show me how' : 'Turn on alerts'}</button>
                     <button type="button" class="ab-later" onclick="alertsLater()">Not now</button>
                 </div>`;
+            alertsBannerHtml = html;
             document.querySelectorAll('.alerts-banner').forEach(el => { el.innerHTML = html; el.style.display = html ? '' : 'none'; });
         }
 
