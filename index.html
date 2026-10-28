@@ -406,6 +406,17 @@
         .om-b-win { font-weight: 800; text-decoration: underline; }
         .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
         .om-press-alert .text-link { color: #fff; padding: 0 0 0 6px; text-decoration: underline; }
+        .stat-tiles { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 4px 0 12px; }
+        .stat-tiles div { background: var(--bg-table); border-radius: 10px; padding: 10px 4px; text-align: center; }
+        .stat-tiles b { display: block; font-size: 22px; color: var(--text-main); }
+        .stat-tiles span { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); }
+        .hist-head, .hist-row { display: grid; grid-template-columns: 1fr 64px 44px; gap: 8px; align-items: center; }
+        .hist-head { font-size: 11px; text-transform: uppercase; letter-spacing: .04em; color: var(--text-muted); padding: 0 2px 4px; }
+        .hist-head span:not(:first-child), .hist-score, .hist-diff { text-align: right; }
+        .hist-list { max-height: 220px; overflow-y: auto; margin-bottom: 14px; }
+        .hist-row { padding: 8px 2px; border-top: 1px solid var(--border-color, rgba(128,128,128,.25)); font-size: 14px; color: var(--text-main); }
+        .idx-chip { margin-right: 8px; font-weight: 700; color: var(--text-main); }
+        .players-import { display: block; margin: 14px auto 0; }
         .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
         .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
         .archive-info { flex: 1; }
@@ -700,9 +711,11 @@
             <button type="button" class="text-link back-link-top" onclick="switchScreen('step-players', 'step-1')">‹ Setup</button>
         </div>
         <h2 class="clean-title">Players</h2>
-        <p class="clean-sub">Saved for every round. Tap a player to edit. Pick them on the roster by typing their name.</p>
+        <p class="clean-sub">Saved for every round. Tap a player for their stats or to edit. Pick them on the roster by typing their name.</p>
         <div id="players-list" class="list-rows"></div>
         <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
+        <button type="button" class="text-link players-import" onclick="importArchivedRounds()">Add past rounds from this phone's archive</button>
+        <p class="dash-footnote">Index is handicap-style: the best scores of each player's last 20 rounds, adjusted for the tee's rating and slope. It is not an official USGA index.</p>
     </div>
 
     <div id="tees-modal" class="modal-overlay">
@@ -721,6 +734,7 @@
     <div id="player-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 id="player-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Add a player</h2>
+            <div id="pl-stats"></div>
             <div class="clean-grid-2">
                 <div><label class="field-label" for="pl-first">First name</label><input type="text" id="pl-first" autocomplete="off" autocapitalize="words"></div>
                 <div><label class="field-label" for="pl-last">Last name</label><input type="text" id="pl-last" autocomplete="off" autocapitalize="words"></div>
@@ -923,6 +937,7 @@ const ALERTS_PUBLIC_KEY = 'BJVjffPKtgDolmCvKbTo5jVnxnVh1Da0HylhVjm33N2Ckjoo5hZl0
 const ALERT_TYPES = ['birdies', 'doubles', 'skins', 'leadChange', 'turn', 'scoreChanged', 'cartDone', 'allDone', 'final', 'presses', 'matchOver', 'missedHole', 'behind'];
 const activeTournamentRef = db.collection("tournaments").doc("active_round");
 const savedPlayersRef = db.collection("tournaments").doc("saved_players");
+const historyRef = db.collection("tournaments").doc("player_history");
 const courseTeesRef = db.collection("tournaments").doc("course_tees");
 
 db.enablePersistence().catch(err => { 
@@ -1378,6 +1393,7 @@ function toggle9HoleOptions() {
             renderPlayersList();
             loadCourseTees();
             refreshTeeNameList();
+            loadRoundHistory();
             savedPlayersRef.get().then(doc => {
                 if (doc.exists && doc.data().players) {
                     savedPlayers = doc.data().players;
@@ -1498,11 +1514,12 @@ function toggle9HoleOptions() {
         function openPlayersScreen() { renderPlayersList(); switchScreen('step-1', 'step-players'); }
 
         function renderPlayersList() {
+            let idx = key => { let i = handicapIndex(playerRounds(key)); return i === null ? '' : `<b class="idx-chip">${fmtIndex(i)}</b>`; };
             let rows = Object.entries(savedPlayers).map(([key, sp]) => ({ key, ...playerInfo(sp) }))
                 .sort((a, b) => (a.last || a.first).localeCompare(b.last || b.first) || a.first.localeCompare(b.first));
             let html = rows.map(r => `<button type="button" class="list-row player-row" onclick="openPlayerEditor('${r.key.replace(/'/g, "\\'")}')">
                     <span><b>${r.first} ${r.last}</b>${r.nick ? ` <span class="payout-note">"${r.nick}"</span>` : ''}</span>
-                    <span class="row-note">${r.tee ? `<span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : 'No tees set'}</span></button>`).join('');
+                    <span class="row-note">${idx(r.key)}${r.tee ? `<span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : 'No tees set'}</span></button>`).join('');
             document.getElementById('players-list').innerHTML = html || '<p class="clean-sub">No players yet. Add one, or they are added when you build a roster.</p>';
             let c = document.getElementById('players-count'); if (c) c.textContent = rows.length ? `${rows.length}` : '';
         }
@@ -1512,8 +1529,9 @@ function toggle9HoleOptions() {
             editingPlayerKey = key;
             let info = key ? playerInfo(savedPlayers[key]) : { first: '', last: '', nick: '', tee: '' };
             ['first', 'last', 'nick', 'tee'].forEach(f => { document.getElementById('pl-' + f).value = info[f]; });
-            document.getElementById('player-modal-title').textContent = key ? 'Edit player' : 'Add a player';
+            document.getElementById('player-modal-title').textContent = key ? savedPlayers[key].name : 'Add a player';
             document.getElementById('pl-delete').style.display = key ? '' : 'none';
+            renderPlayerStats(key);
             document.getElementById('player-modal').classList.add('active');
         }
 
@@ -1564,6 +1582,134 @@ function toggle9HoleOptions() {
             localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
             renderSavedPlayersList();
             savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error("Saving players failed: ", err));
+        }
+
+        // ==========================================
+        // ROUND HISTORY + STATS (tournaments/player_history: { rounds: { roundId: {...} } })
+        // ==========================================
+        let roundHistory = {};
+
+        function loadRoundHistory() {
+            try { roundHistory = JSON.parse(localStorage.getItem('roundHistory')) || {}; } catch(e) { roundHistory = {}; }
+            historyRef.get().then(doc => {
+                if (doc.exists && doc.data().rounds) {
+                    roundHistory = doc.data().rounds;
+                    localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
+                    if (document.getElementById('step-players')?.classList.contains('active')) renderPlayersList();
+                }
+            }).catch(err => console.log('History offline: ', err));
+        }
+
+        function courseKeyFor(rData) {
+            if (rData.courseKey) return rData.courseKey;
+            let name = typeof rData.course === 'string' ? rData.course : rData.course?.name;
+            return Object.keys(allAvailableCourses).find(k => k === name || allAvailableCourses[k].name === name) || '';
+        }
+
+        // One player's line for the history: gross, and for 18 holes a handicap-style differential.
+        // Each hole is capped at net double bogey (par + 2 + any strokes they got there) like the USGA does.
+        function historyLine(rData, sDb, g, p, courseKey) {
+            let seq = rData.playMode === '9' ? (rData.startType === 'back' ? [10,11,12,13,14,15,16,17,18] : [1,2,3,4,5,6,7,8,9]) : [...Array(18)].map((_, i) => i + 1);
+            let pars = rData.course?.pars || [];
+            let gross = 0, adjusted = 0, par = 0;
+            for (let h of seq) {
+                let s = parseInt(sDb[g.id]?.[p.id]?.[h]);
+                if (!s || !pars[h - 1]) return null; // only finished rounds count
+                let cap = pars[h - 1] + 2 + (p.strokeHoles || []).filter(x => x === h).length;
+                gross += s; adjusted += Math.min(s, cap); par += pars[h - 1];
+            }
+            let teeSet = p.teeRating ? { name: p.tee, rating: p.teeRating, slope: p.teeSlope } : findTee(courseKey, p.tee || savedPlayers[p.name.trim().toLowerCase()]?.tee);
+            let line = { name: p.name.trim(), holes: seq.length, gross, adjusted, par, tee: teeSet?.name || p.tee || '' };
+            if (teeSet?.rating && teeSet?.slope) {
+                line.rating = teeSet.rating; line.slope = teeSet.slope;
+                if (seq.length === 18) line.diff = Math.round((113 / teeSet.slope) * (adjusted - teeSet.rating) * 10) / 10;
+            }
+            return line;
+        }
+
+        function historyRecord(rData, sDb) {
+            let courseKey = courseKeyFor(rData);
+            let players = {};
+            (rData.groups || []).forEach(g => g.players.forEach(p => {
+                if (p.isGhost || !p.name || !p.name.trim()) return;
+                let line = historyLine(rData, sDb, g, p, courseKey);
+                if (line) players[p.name.trim().toLowerCase()] = line;
+            }));
+            if (!Object.keys(players).length) return null;
+            let course = typeof rData.course === 'string' ? rData.course : rData.course?.name;
+            return { date: rData.date || '', courseKey, course: course || 'Course', holes: rData.playMode === '9' ? 9 : 18, players };
+        }
+
+        function recordRoundHistory(id, rData, sDb) {
+            let rec = historyRecord(rData, sDb);
+            if (!rec) return 0;
+            roundHistory[id] = rec;
+            localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
+            historyRef.set({ rounds: { [id]: rec } }, { merge: true }).catch(err => console.error('Saving history failed', err));
+            return 1;
+        }
+
+        // Rounds archived on this phone before history existed
+        function importArchivedRounds() {
+            let archive = []; try { archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; } catch(e) {}
+            let added = 0;
+            archive.forEach(arc => {
+                let rData = arc.roundData || { course: arc.course, groups: arc.groups || [] };
+                if (typeof rData.course === 'string') rData = { ...rData, course: allAvailableCourses[rData.course] || { name: rData.course } };
+                let id = String(rData.roundId || ('arc-' + (arc.date || '') + '-' + (rData.course?.name || '')).replace(/[^\w-]/g, ''));
+                if (roundHistory[id]) return;
+                added += recordRoundHistory(id, rData, arc.scoresDb || {});
+            });
+            alert(added ? `Added ${added} past round${added > 1 ? 's' : ''} to the history.` : 'No new finished rounds found on this phone.');
+            renderPlayersList();
+        }
+
+        // Every finished round for one player, newest first
+        function playerRounds(key) {
+            return Object.entries(roundHistory).filter(([, r]) => r.players?.[key])
+                .map(([id, r]) => ({ id, date: r.date, course: r.course, holes: r.holes, ...r.players[key] }))
+                .sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0) || String(b.id).localeCompare(String(a.id)));
+        }
+
+        // USGA-style: average the best differentials of the last 20 eighteen-hole rounds (fewer rounds use fewer, with an adjustment)
+        function handicapIndex(rounds) {
+            let diffs = rounds.filter(r => typeof r.diff === 'number').slice(0, 20).map(r => r.diff);
+            const table = { 3: [1, -2], 4: [1, -1], 5: [1, 0], 6: [2, -1], 7: [2, 0], 8: [2, 0], 9: [3, 0], 10: [3, 0], 11: [3, 0], 12: [4, 0], 13: [4, 0], 14: [4, 0], 15: [5, 0], 16: [5, 0], 17: [6, 0], 18: [6, 0], 19: [7, 0], 20: [8, 0] };
+            let rule = table[diffs.length];
+            if (!rule) return null;
+            let best = diffs.sort((a, b) => a - b).slice(0, rule[0]);
+            return Math.round((best.reduce((s, d) => s + d, 0) / best.length + rule[1]) * 10) / 10;
+        }
+
+        function playerStats(key) {
+            let rounds = playerRounds(key);
+            let full = rounds.filter(r => r.holes === 18);
+            let avg = full.length ? Math.round(full.reduce((s, r) => s + r.gross, 0) / full.length * 10) / 10 : null;
+            return { rounds, count: rounds.length, index: handicapIndex(rounds), avg, best: full.length ? Math.min(...full.map(r => r.gross)) : null };
+        }
+
+        const fmtIndex = i => i === null ? '—' : (i < 0 ? '+' + Math.abs(i).toFixed(1) : i.toFixed(1));
+
+        function renderPlayerStats(key) {
+            let box = document.getElementById('pl-stats');
+            if (!key) { box.innerHTML = ''; return; }
+            let st = playerStats(key);
+            if (!st.count) { box.innerHTML = '<p class="clean-sub" style="text-align:center;">No finished rounds yet.</p>'; return; }
+            let toPar = r => { let d = r.gross - r.par; return d === 0 ? 'E' : (d > 0 ? '+' + d : d); };
+            let list = st.rounds.slice(0, 20).map(r => `<div class="hist-row">
+                    <span>${formatRoundDate(r.date)}<br><span class="payout-note">${r.course.replace(/\s*\(.*\)$/, '')}${r.tee ? ` · <span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : ''}${r.holes === 9 ? ' · 9 holes' : ''}</span></span>
+                    <span class="hist-score"><b>${r.gross}</b> <span class="payout-note">${toPar(r)}</span></span>
+                    <span class="hist-diff">${typeof r.diff === 'number' ? r.diff.toFixed(1) : '—'}</span>
+                </div>`).join('');
+            box.innerHTML = `<div class="stat-tiles">
+                    <div><b>${fmtIndex(st.index)}</b><span>Index</span></div>
+                    <div><b>${st.avg ?? '—'}</b><span>Avg 18</span></div>
+                    <div><b>${st.best ?? '—'}</b><span>Best</span></div>
+                    <div><b>${st.count}</b><span>Rounds</span></div>
+                </div>
+                ${st.index === null ? '<p class="dash-footnote" style="text-align:center;">Index shows after 3 rounds of 18 with tee ratings.</p>' : ''}
+                <div class="hist-head"><span>Round</span><span>Score</span><span>Diff</span></div>
+                <div class="hist-list">${list}</div>`;
         }
 
         // ===== Our Match setup =====
@@ -4244,6 +4390,7 @@ function hideCartHoleHeader() {
             }
 
             saveToArchive(); 
+            recordRoundHistory(String(roundData.roundId || Date.now()), { ...roundData }, scoresDb);
             // The results text reads activeView*, which is only set if the standings page was opened first
             activeViewRoundData = JSON.parse(JSON.stringify({ ...roundData, matchPresses }));
             activeViewScoresDb = JSON.parse(JSON.stringify(scoresDb));
