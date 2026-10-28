@@ -290,7 +290,7 @@
         .om-side-name { width: 52px; flex-shrink: 0; font-size: 13px; font-weight: bold; color: var(--text-muted); }
         .roster-num { width: 22px; flex-shrink: 0; font-size: 18px; font-weight: 800; color: var(--text-muted); }
         .clean input.roster-name-input { flex-grow: 1; min-width: 0; height: 44px; padding: 0; background: none; border-radius: 0; font-size: 18px; font-weight: 600; }
-        .clean input.roster-stroke-input { width: 88px; flex-shrink: 0; height: 36px; padding: 0 8px; border-radius: 18px; font-size: 14px; font-weight: 600; text-align: center; }
+        .clean input.roster-stroke-input { width: 68px; flex-shrink: 0; height: 36px; padding: 0 8px; border-radius: 18px; font-size: 14px; font-weight: 600; text-align: center; }
         .back-link { background: none; border: none; color: var(--accent-gold); font-size: 16px; font-weight: 600; padding: 8px 0; margin: 0 0 8px; cursor: pointer; }
         
         .team-card { background: var(--bg-table); padding: 15px; border-radius: 8px; margin-bottom: 15px; border-left: 5px solid #4a6e50; position: relative; overflow: hidden; z-index: 10; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
@@ -364,6 +364,25 @@
         .om-subtotal { font-weight: 700; }
         .alerts-details { margin-top: 18px; }
         .alerts-details summary b { font-size: 14px; font-weight: 600; color: var(--text-muted); }
+        .row-note { margin-left: auto; margin-right: 6px; color: var(--text-muted); font-size: 14px; font-weight: 600; display: inline-flex; align-items: center; gap: 6px; }
+        .player-row b { font-weight: 700; }
+        .players-add { display: block; width: 100%; margin-top: 18px; }
+        .tee-dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; border: 1px solid rgba(128,128,128,0.6); margin-right: 5px; vertical-align: middle; flex-shrink: 0; }
+        .tee-tag { font-size: 12px; font-weight: 600; color: var(--text-muted); white-space: nowrap; }
+        .tee-tag .tee-dot { width: 8px; height: 8px; margin-right: 3px; }
+        #player-modal input[type="text"] { width: 100%; box-sizing: border-box; margin-bottom: 10px; }
+        .course-links { display: flex; justify-content: space-between; gap: 12px; }
+        .roster-tee-select { width: 108px; flex-shrink: 0; margin: 0; padding: 8px 4px; border-radius: 10px; border: 1px solid var(--border-color); background: var(--fill-soft); color: var(--text-main); font-size: 13px; }
+        .tee-edit-head, .tee-edit-row { display: grid; grid-template-columns: minmax(0, 1.5fr) minmax(0, 1.05fr) minmax(0, 0.95fr) minmax(0, 0.85fr) 20px; gap: 4px; align-items: center; }
+        .tee-edit-head { font-size: 11px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-muted); padding: 0 2px 4px; }
+        .tee-edit-row { margin-bottom: 8px; }
+        .tee-edit-row input { width: 100%; min-width: 0; box-sizing: border-box; margin: 0; padding: 8px 4px; font-size: 14px; text-align: center; -moz-appearance: textfield; appearance: textfield; }
+        .tee-edit-row input.te-name { text-align: left; padding-left: 6px; }
+        .tee-edit-row input::-webkit-outer-spin-button, .tee-edit-row input::-webkit-inner-spin-button { -webkit-appearance: none; margin: 0; }
+        .te-del { border: none; background: none; color: var(--text-muted); font-size: 16px; cursor: pointer; padding: 0; }
+        .te-est { grid-column: 1 / -1; font-size: 12px; color: var(--accent-gold); margin-top: -4px; }
+        .alerts-all { display: flex; gap: 18px; padding: 2px 4px 0; }
+        .alerts-all .text-link { padding: 6px 0; }
         .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
         .alerts-banner { margin: 12px 0 4px; }
         .ab-big { padding: 16px 18px 14px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
@@ -417,7 +436,7 @@
 
         <div class="field-label">Course</div>
         <div class="select-wrap"><select id="course-selector" aria-label="Course"></select></div>
-        <button type="button" class="text-link" onclick="switchScreen('step-1', 'step-add-course')">+ Add a course</button>
+        <div class="course-links"><button type="button" class="text-link" onclick="switchScreen('step-1', 'step-add-course')">+ Add a course</button><button type="button" class="text-link" onclick="openTeesEditor()">Tees &amp; ratings</button></div>
 
         <div class="clean-grid-2">
             <div>
@@ -494,6 +513,7 @@
 
         <details id="alerts-setup" class="dash-details alerts-details" style="display:none;">
             <summary><span>Phone alerts</span><b id="alerts-count"></b></summary>
+            <div class="alerts-all"><button type="button" class="text-link" onclick="setAllAlerts(true)">All on</button><button type="button" class="text-link" onclick="setAllAlerts(false)">All off</button></div>
             <div class="alerts-group">To everyone</div>
             <div class="format-container">
                 <div class="format-row"><label class="format-label" for="alert-birdies">Birdies &amp; eagles 🐦</label><input type="checkbox" class="switch" id="alert-birdies" checked></div>
@@ -519,6 +539,7 @@
         </details>
 
         <div class="list-rows">
+            <button type="button" class="list-row" onclick="openPlayersScreen()">Players <span class="row-note" id="players-count"></span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" id="btn-archive" class="list-row" onclick="viewArchiveList()">Archived rounds <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <label class="list-row" for="app-theme-selector">Color theme
                 <select id="app-theme-selector" onchange="changeTheme()">
@@ -672,6 +693,47 @@
         <p style="font-size: 14px; color: var(--text-muted);">Send these links so each cart driver can enter their group's scores.</p>
         <div id="share-buttons-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"></div>
         <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
+    </div>
+
+    <div id="step-players" class="screen clean">
+        <div class="top-row">
+            <button type="button" class="text-link back-link-top" onclick="switchScreen('step-players', 'step-1')">‹ Setup</button>
+        </div>
+        <h2 class="clean-title">Players</h2>
+        <p class="clean-sub">Saved for every round. Tap a player to edit. Pick them on the roster by typing their name.</p>
+        <div id="players-list" class="list-rows"></div>
+        <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
+    </div>
+
+    <div id="tees-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Tees &amp; ratings</h2>
+            <p class="clean-sub" style="text-align:center;" id="tees-course-name"></p>
+            <div class="tee-edit-head"><span>Tee</span><span>Yards</span><span>Rating</span><span>Slope</span><span></span></div>
+            <div id="tees-rows"></div>
+            <button type="button" class="text-link" onclick="addTeeRow()">+ Add a tee</button>
+            <p class="dash-footnote">Men's rating and slope from the scorecard. Used to compare scores from different tees.</p>
+            <button class="btn-primary" onclick="saveTeesEditor()">Save</button>
+            <button class="btn-secondary" onclick="document.getElementById('tees-modal').classList.remove('active')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="player-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="player-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Add a player</h2>
+            <div class="clean-grid-2">
+                <div><label class="field-label" for="pl-first">First name</label><input type="text" id="pl-first" autocomplete="off" autocapitalize="words"></div>
+                <div><label class="field-label" for="pl-last">Last name</label><input type="text" id="pl-last" autocomplete="off" autocapitalize="words"></div>
+            </div>
+            <label class="field-label" for="pl-nick">Nickname <span class="payout-note">optional, shown on the scoring screen</span></label>
+            <input type="text" id="pl-nick" autocomplete="off" autocapitalize="words" placeholder="e.g. Bubba">
+            <label class="field-label" for="pl-tee">Usual tees</label>
+            <input type="text" id="pl-tee" list="tee-names" autocomplete="off" autocapitalize="words" placeholder="e.g. Blue">
+            <datalist id="tee-names"><option value="Black"><option value="Blue"><option value="White"><option value="Gold"><option value="Silver"><option value="Green"><option value="Red"></datalist>
+            <button class="btn-primary" onclick="savePlayerEditor()">Save</button>
+            <button class="btn-secondary" id="pl-delete" onclick="deletePlayerFromEditor()">Delete player</button>
+            <button class="btn-secondary" onclick="document.getElementById('player-modal').classList.remove('active')">Cancel</button>
+        </div>
     </div>
 
     <div id="step-8" class="screen card">
@@ -861,6 +923,7 @@ const ALERTS_PUBLIC_KEY = 'BJVjffPKtgDolmCvKbTo5jVnxnVh1Da0HylhVjm33N2Ckjoo5hZl0
 const ALERT_TYPES = ['birdies', 'doubles', 'skins', 'leadChange', 'turn', 'scoreChanged', 'cartDone', 'allDone', 'final', 'presses', 'matchOver', 'missedHole', 'behind'];
 const activeTournamentRef = db.collection("tournaments").doc("active_round");
 const savedPlayersRef = db.collection("tournaments").doc("saved_players");
+const courseTeesRef = db.collection("tournaments").doc("course_tees");
 
 db.enablePersistence().catch(err => { 
   console.log("Offline skipped:", err.code); 
@@ -876,6 +939,20 @@ const courseDatabase = {
     "ballyhack": { name: "Ballyhack Golf Club (Roanoke, VA)", pars: [4, 5, 3, 4, 4, 4, 3, 4, 5, 5, 4, 4, 3, 4, 5, 4, 3, 4] },
     "virginian": { name: "The Virginian Golf Club (Bristol, VA)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 4, 3, 5, 3, 4, 4, 5] }
 };
+// Tee sets per course: name, yards, course rating, slope. From public listings (GolfLink / GolfPass / GolfNow);
+// sources disagree a little, so the admin can correct them in Setup > Tees & ratings. est = estimated, not published.
+const builtInTees = {
+    cleveland_cc: [ { name: 'Gold', yards: 6659, rating: 72.5, slope: 139 }, { name: 'Blue', yards: null, rating: 70.4, slope: 133 }, { name: 'White', yards: null, rating: 67.3, slope: 118 } ],
+    chatata_valley: [ { name: 'Gold', yards: 7089, rating: 74.1, slope: 122 }, { name: 'Blue', yards: 6619, rating: 71.6, slope: 126 }, { name: 'White', yards: 6250, rating: 70.1, slope: 124 }, { name: 'Green', yards: null, rating: 67.8, slope: 118 } ],
+    council_fire: [ { name: 'Black', yards: 6999, rating: 73.8, slope: 137 }, { name: 'Blue', yards: 6595, rating: 72.0, slope: 132 }, { name: 'Orange', yards: 6307, rating: 70.9, slope: 128 }, { name: 'White', yards: 6112, rating: 69.8, slope: 125 }, { name: 'Green', yards: 5725, rating: 68.0, slope: 121 } ],
+    chattanooga_cc: [ { name: 'Black', yards: 6685, rating: 73.6, slope: 133 }, { name: 'Blue', yards: 6427, rating: 72.3, slope: 130 }, { name: 'White', yards: null, rating: 70.6, slope: 127 } ],
+    tennessee_national: [ { name: 'Black', yards: 7393, rating: 75.8, slope: 140 }, { name: 'Orange', yards: 6936, rating: 73.5, slope: 136 }, { name: 'White', yards: 6572, rating: 71.7, slope: 133 }, { name: 'White/Green', yards: 6235, rating: 69.9, slope: 128, est: true }, { name: 'Green', yards: 6059, rating: 69.0, slope: 126 } ],
+    ballyhack: [ { name: 'Big Lick', yards: 7294, rating: 76.1, slope: 155 }, { name: 'Ballyhack', yards: 6753, rating: 73.5, slope: 152 }, { name: 'Blue Ridge', yards: 6187, rating: 71.0, slope: 146 }, { name: 'Star', yards: 5637, rating: 68.7, slope: 139 } ],
+    virginian: [ { name: 'Black', yards: 7110, rating: 74.4, slope: 130 }, { name: 'Blue', yards: null, rating: 72.3, slope: 128 }, { name: 'White', yards: null, rating: 69.7, slope: 122 } ]
+};
+let teeOverrides = {}; // the admin's corrections, shared through Firestore (tournaments/course_tees)
+function courseTees(courseKey) { return teeOverrides[courseKey] || builtInTees[courseKey] || []; }
+function findTee(courseKey, name) { let n = (name || '').trim().toLowerCase(); return courseTees(courseKey).find(t => t.name.toLowerCase() === n) || null; }
 const curatedColors = ['#00f3ff', 'var(--good)', '#ff007f', '#ccff00', '#ff5e00', '#bf00ff'];
 
 let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, currentHoles: { admin: 1 }, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
@@ -1267,6 +1344,7 @@ function toggle9HoleOptions() {
                     html += `<div class="roster-player-block">
                         <span class="roster-num">${p}</span>
                         <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}" value="${savedName}" ${isGhostProp} list="saved-players-list" autocomplete="off" onchange="applySavedPlayer(this); saveRosterCache()">
+                        ${savedGhost ? '' : rosterTeeSelect(g, p)}
                         <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="Strokes" aria-label="Strokes" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()">
                     </div>`;
                 }
@@ -1297,11 +1375,15 @@ function toggle9HoleOptions() {
         function loadSavedPlayers() {
             try { savedPlayers = JSON.parse(localStorage.getItem('savedPlayers')) || {}; } catch(e) { savedPlayers = {}; }
             renderSavedPlayersList();
+            renderPlayersList();
+            loadCourseTees();
+            refreshTeeNameList();
             savedPlayersRef.get().then(doc => {
                 if (doc.exists && doc.data().players) {
                     savedPlayers = doc.data().players;
                     localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
                     renderSavedPlayersList();
+                    if (document.getElementById('players-list')) renderPlayersList();
                 }
             }).catch(err => console.log("Saved players offline: ", err));
         }
@@ -1319,11 +1401,149 @@ function toggle9HoleOptions() {
 
         // Picking a saved name fills in that player's usual strokes for the selected course
         function applySavedPlayer(nameEl) {
+            let teeEl = document.getElementById(nameEl.id.replace('-name', '-tee'));
+            if (teeEl) { let d = defaultTeeFor(nameEl.value); if (d && [...teeEl.options].some(o => o.value === d)) teeEl.value = d; }
             let saved = savedPlayers[nameEl.value.trim().toLowerCase()];
             let strokesEl = document.getElementById(nameEl.id.replace('-name', '-strokes'));
             if (!saved || !strokesEl || strokesEl.value.trim() !== '') return;
             let courseKey = document.getElementById('course-selector').value;
             if (saved.strokes && saved.strokes[courseKey]) strokesEl.value = saved.strokes[courseKey];
+        }
+
+        // ===== Players database (first/last, nickname, usual tees) =====
+        function splitName(name) { let w = name.trim().split(/\s+/); return { first: w[0] || '', last: w.slice(1).join(' ') }; }
+        function playerInfo(sp) { let parts = splitName(sp.name || ''); return { first: sp.first ?? parts.first, last: sp.last ?? parts.last, nick: sp.nick || '', tee: sp.tee || '' }; }
+        const TEE_COLORS = { black: '#111111', blue: '#2f6fd6', white: '#f2f2f2', gold: '#d4a52a', yellow: '#e6c229', silver: '#a9b0b8', green: '#2e9e4f', red: '#d33a2f', orange: '#ff8200', combo: '#8a7fd1' };
+        function teeColor(tee) {
+            let t = (tee || '').trim().toLowerCase();
+            if (TEE_COLORS[t]) return TEE_COLORS[t];
+            let parts = t.split(/[\/&+-]/).map(x => TEE_COLORS[x.trim()]).filter(Boolean); // combo tees: first colour
+            return parts[0] || '#888888';
+        }
+        function teeTag(tee) { return tee ? ` <span class="tee-tag"><span class="tee-dot" style="background:${teeColor(tee)};"></span>${tee}</span>` : ''; }
+        // Scoring screen: nickname, else first name (plus last initial when two players share a first name)
+        function scoringName(player) {
+            if (player.nick) return player.nick;
+            let { first, last } = splitName(player.name);
+            let same = roundData.groups.flatMap(g => g.players).filter(p => p !== player && !p.isGhost && splitName(p.name).first.toLowerCase() === first.toLowerCase());
+            return same.length && last ? `${first} ${last[0]}.` : first;
+        }
+
+        // A player's usual tees, matched to this course's tee names (so "white" finds "White")
+        function defaultTeeFor(name) {
+            let usual = savedPlayers[(name || '').trim().toLowerCase()]?.tee || '';
+            let t = findTee(document.getElementById('course-selector')?.value || roundData.courseKey, usual);
+            return t ? t.name : usual;
+        }
+        function rosterTeeSelect(g, p) {
+            let tees = courseTees(document.getElementById('course-selector').value);
+            if (!tees.length) return '';
+            let current = tempRosterCache[`g${g}-p${p}-tee`] || defaultTeeFor(tempRosterCache[`g${g}-p${p}-name`]);
+            let opts = `<option value="">Tees</option>` + tees.map(t => `<option value="${t.name}"${t.name === current ? ' selected' : ''}>${t.name}</option>`).join('');
+            return `<select class="roster-tee-select" id="g${g}-p${p}-tee" aria-label="Tees" onchange="saveRosterCache()">${opts}</select>`;
+        }
+
+        // ===== Tees & ratings for the selected course =====
+        function loadCourseTees() {
+            try { teeOverrides = JSON.parse(localStorage.getItem('courseTees')) || {}; } catch (e) { teeOverrides = {}; }
+            courseTeesRef.get().then(doc => {
+                if (doc.exists && doc.data().courses) { teeOverrides = doc.data().courses; localStorage.setItem('courseTees', JSON.stringify(teeOverrides)); }
+            }).catch(() => {});
+        }
+        function openTeesEditor() {
+            let key = document.getElementById('course-selector').value;
+            document.getElementById('tees-course-name').textContent = allAvailableCourses[key]?.name || 'Course';
+            renderTeeRows(courseTees(key));
+            document.getElementById('tees-modal').classList.add('active');
+        }
+        function renderTeeRows(tees) {
+            document.getElementById('tees-rows').innerHTML = tees.map((t, i) => `<div class="tee-edit-row" data-est="${t.est ? 1 : ''}">
+                    <input type="text" class="te-name" value="${t.name}" aria-label="Tee name" placeholder="Name">
+                    <input type="number" class="te-yards" value="${t.yards ?? ''}" aria-label="Yards" placeholder="Yards" inputmode="numeric">
+                    <input type="number" class="te-rating" value="${t.rating ?? ''}" aria-label="Course rating" placeholder="Rating" step="0.1" inputmode="decimal">
+                    <input type="number" class="te-slope" value="${t.slope ?? ''}" aria-label="Slope" placeholder="Slope" inputmode="numeric">
+                    <button type="button" class="te-del" onclick="this.parentElement.remove()" aria-label="Remove tee">✕</button>
+                    ${t.est ? '<span class="te-est">estimate · check the scorecard</span>' : ''}
+                </div>`).join('');
+        }
+        function addTeeRow() {
+            let rows = readTeeRows(); rows.push({ name: '', yards: null, rating: null, slope: null }); renderTeeRows(rows);
+        }
+        function readTeeRows() {
+            return [...document.querySelectorAll('#tees-rows .tee-edit-row')].map(r => {
+                let num = c => { let v = r.querySelector(c).value; return v === '' ? null : Number(v); };
+                return { name: r.querySelector('.te-name').value.trim(), yards: num('.te-yards'), rating: num('.te-rating'), slope: num('.te-slope'), ...(r.dataset.est ? { est: true } : {}) };
+            });
+        }
+        function saveTeesEditor() {
+            let key = document.getElementById('course-selector').value;
+            let tees = readTeeRows().filter(t => t.name);
+            let orig = courseTees(key);
+            // A changed estimate is now the admin's number
+            tees.forEach(t => { let o = orig.find(x => x.name === t.name); if (t.est && o && (o.rating !== t.rating || o.slope !== t.slope)) delete t.est; });
+            teeOverrides[key] = tees;
+            localStorage.setItem('courseTees', JSON.stringify(teeOverrides));
+            courseTeesRef.set({ courses: { [key]: tees } }, { merge: true }).catch(err => console.error('Saving tees failed', err));
+            document.getElementById('tees-modal').classList.remove('active');
+            refreshTeeNameList();
+        }
+        // Tee names from every course, for the Players screen's "Usual tees"
+        function refreshTeeNameList() {
+            let names = new Set(['Black', 'Blue', 'White', 'Gold', 'Green', 'Red']);
+            Object.keys({ ...builtInTees, ...teeOverrides }).forEach(k => courseTees(k).forEach(t => names.add(t.name)));
+            let dl = document.getElementById('tee-names');
+            if (dl) dl.innerHTML = [...names].sort().map(n => `<option value="${n}">`).join('');
+        }
+
+        function openPlayersScreen() { renderPlayersList(); switchScreen('step-1', 'step-players'); }
+
+        function renderPlayersList() {
+            let rows = Object.entries(savedPlayers).map(([key, sp]) => ({ key, ...playerInfo(sp) }))
+                .sort((a, b) => (a.last || a.first).localeCompare(b.last || b.first) || a.first.localeCompare(b.first));
+            let html = rows.map(r => `<button type="button" class="list-row player-row" onclick="openPlayerEditor('${r.key.replace(/'/g, "\\'")}')">
+                    <span><b>${r.first} ${r.last}</b>${r.nick ? ` <span class="payout-note">"${r.nick}"</span>` : ''}</span>
+                    <span class="row-note">${r.tee ? `<span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : 'No tees set'}</span></button>`).join('');
+            document.getElementById('players-list').innerHTML = html || '<p class="clean-sub">No players yet. Add one, or they are added when you build a roster.</p>';
+            let c = document.getElementById('players-count'); if (c) c.textContent = rows.length ? `${rows.length}` : '';
+        }
+
+        let editingPlayerKey = null;
+        function openPlayerEditor(key = null) {
+            editingPlayerKey = key;
+            let info = key ? playerInfo(savedPlayers[key]) : { first: '', last: '', nick: '', tee: '' };
+            ['first', 'last', 'nick', 'tee'].forEach(f => { document.getElementById('pl-' + f).value = info[f]; });
+            document.getElementById('player-modal-title').textContent = key ? 'Edit player' : 'Add a player';
+            document.getElementById('pl-delete').style.display = key ? '' : 'none';
+            document.getElementById('player-modal').classList.add('active');
+        }
+
+        function savePlayerEditor() {
+            let v = f => document.getElementById('pl-' + f).value.trim().replace(/\s+/g, ' ');
+            let first = v('first'), last = v('last');
+            if (!first) { alert('Add at least a first name.'); return; }
+            let name = `${first}${last ? ' ' + last : ''}`, key = name.toLowerCase();
+            if (key !== editingPlayerKey && savedPlayers[key]) { alert(`${name} is already in your players.`); return; }
+            let rec = { ...(editingPlayerKey ? savedPlayers[editingPlayerKey] : {}), name, first, last, nick: v('nick'), tee: v('tee') };
+            if (!rec.strokes) rec.strokes = {};
+            if (editingPlayerKey && editingPlayerKey !== key) {
+                delete savedPlayers[editingPlayerKey];
+                savedPlayersRef.update(new firebase.firestore.FieldPath('players', editingPlayerKey), firebase.firestore.FieldValue.delete()).catch(() => {});
+            }
+            savedPlayers[key] = rec;
+            localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
+            savedPlayersRef.set({ players: { [key]: rec } }, { merge: true }).catch(err => console.error('Saving player failed', err));
+            document.getElementById('player-modal').classList.remove('active');
+            renderPlayersList(); renderSavedPlayersList();
+        }
+
+        function deletePlayerFromEditor() {
+            let key = editingPlayerKey;
+            if (!key || !confirm(`Delete ${savedPlayers[key]?.name} from your players?`)) return;
+            delete savedPlayers[key];
+            localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
+            savedPlayersRef.update(new firebase.firestore.FieldPath('players', key), firebase.firestore.FieldValue.delete()).catch(() => {});
+            document.getElementById('player-modal').classList.remove('active');
+            renderPlayersList(); renderSavedPlayersList();
         }
 
         function rememberRosterPlayers(gCount, pCount) {
@@ -1334,8 +1554,10 @@ function toggle9HoleOptions() {
                     let name = (tempRosterCache[`g${g}-p${p}-name`] || '').trim();
                     if (!name || tempRosterCache[`g${g}-p${p}-ghost`]) continue;
                     let key = name.toLowerCase();
+                    let parts = splitName(name);
                     updates[key] = { name: name, strokes: { [courseKey]: (tempRosterCache[`g${g}-p${p}-strokes`] || '').trim() } };
-                    savedPlayers[key] = { name: name, strokes: { ...(savedPlayers[key]?.strokes || {}), [courseKey]: updates[key].strokes[courseKey] } };
+                    if (!savedPlayers[key]) Object.assign(updates[key], parts, { nick: '', tee: '' }); // new: start a database entry
+                    savedPlayers[key] = { ...parts, nick: '', tee: '', ...(savedPlayers[key] || {}), name: name, strokes: { ...(savedPlayers[key]?.strokes || {}), [courseKey]: updates[key].strokes[courseKey] } };
                 }
             }
             if (Object.keys(updates).length === 0) return;
@@ -1412,6 +1634,8 @@ function toggle9HoleOptions() {
                         tempRosterCache[`g${g}-p${p}-ghost`] = el.getAttribute('data-ghost') || ""; 
                     }
                     if(str) { tempRosterCache[`g${g}-p${p}-strokes`] = str.value; }
+                    let teeEl = document.getElementById(`g${g}-p${p}-tee`);
+                    if(teeEl) { tempRosterCache[`g${g}-p${p}-tee`] = teeEl.value; }
                 }
             }
             tempRosterCache['isScrambled'] = document.getElementById('is-scrambled').value;
@@ -1580,7 +1804,10 @@ function processStep2() {
                         let pts = ghost.split('-'); 
                         teamPlayers.push({ id: validPlayerId, name: name, isGhost: true, sourceG: parseInt(pts[0]), sourceP: parseInt(pts[1]) }); 
                     } else { 
-                        teamPlayers.push({ id: validPlayerId, name: name, strokeHoles: strokes }); 
+                        let sp = savedPlayers[name.trim().toLowerCase()];
+                        let teeName = tempRosterCache[`g${g}-p${p}-tee`] || defaultTeeFor(name);
+                        let teeSet = findTee(roundData.courseKey, teeName);
+                        teamPlayers.push({ id: validPlayerId, name: name, strokeHoles: strokes, tee: teeSet ? teeSet.name : teeName, teeRating: teeSet?.rating ?? null, teeSlope: teeSet?.slope ?? null, nick: sp?.nick || '' }); 
                     }
                     if (!scoresDb[g][validPlayerId]) scoresDb[g][validPlayerId] = {}; 
                     slotToId[`${g}-${p}`] = validPlayerId;
@@ -1713,6 +1940,7 @@ function processStep2() {
                     let key = `g${g.id}-p${i + 1}`;
                     tempRosterCache[`${key}-name`] = p.name;
                     tempRosterCache[`${key}-strokes`] = (p.strokeHoles || []).join(', ');
+                    tempRosterCache[`${key}-tee`] = p.tee || '';
                     tempRosterCache[`${key}-ghost`] = p.isGhost ? `${p.sourceG}-${p.sourceP}` : '';
                 });
             });
@@ -2295,7 +2523,7 @@ function hideCartHoleHeader() {
             if (currentScore && currentScore < par) circleClass += ' under';
             let inputId = `score-input-${group.id}-${player.id}`;
             return `<label class="score-row${player.isGhost ? ' ghost' : ''}" for="${inputId}">
-                <span class="player-name">${player.name}${tagHTML}${dots}</span>
+                <span class="player-name">${scoringName(player)}${teeTag(player.tee)}${tagHTML}${dots}</span>
                 <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
                 <input type="tel" readonly inputmode="none" class="${circleClass}" id="${inputId}" value="${currentScore}" ${hasReadonlyLock ? 'disabled' : ''} onfocus="setActiveScoreInput(this)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
             </label>`;
@@ -2896,7 +3124,7 @@ function hideCartHoleHeader() {
                 fullHTML += parRow + `</tr>`;
 
                 g.players.forEach(p => {
-                    let playerRow = `<tr><td class="name-col"><b>${p.name.split(' ')[0]}</b></td>`;
+                    let playerRow = `<tr><td class="name-col">${p.tee ? `<span class="tee-dot" style="background:${teeColor(p.tee)};" title="${p.tee} tees"></span>` : ''}<b>${p.nick || p.name.split(' ')[0]}</b></td>`;
                     let totalScore = 0; let playedAll = true;
 
                     orderedSegments.forEach(seg => {
@@ -3650,7 +3878,25 @@ function hideCartHoleHeader() {
             let el = document.getElementById('alerts-count');
             if (el) el.textContent = `${on} of ${ALERT_TYPES.length} on`;
         }
-        document.getElementById('alerts-setup').addEventListener('change', updateAlertsCount);
+        // Your alert choices carry over to the next round
+        function saveAlertPrefs() {
+            let prefs = {};
+            ALERT_TYPES.forEach(t => { prefs[t] = !!document.getElementById(`alert-${t}`)?.checked; });
+            try { localStorage.setItem('jbGolfAlertPrefs', JSON.stringify(prefs)); } catch (e) {}
+        }
+        function applyAlertPrefs() {
+            let prefs = {};
+            try { prefs = JSON.parse(localStorage.getItem('jbGolfAlertPrefs')) || {}; } catch (e) {}
+            ALERT_TYPES.forEach(t => { let el = document.getElementById(`alert-${t}`); if (el) el.checked = prefs[t] !== false; });
+            updateAlertsCount();
+        }
+        function setAllAlerts(on) {
+            ALERT_TYPES.forEach(t => { let el = document.getElementById(`alert-${t}`); if (el) el.checked = on; });
+            saveAlertPrefs();
+            updateAlertsCount();
+        }
+        document.getElementById('alerts-setup').addEventListener('change', () => { saveAlertPrefs(); updateAlertsCount(); });
+        applyAlertPrefs();
 
         function alertsDeviceId() {
             let id = null;
@@ -4013,8 +4259,7 @@ function hideCartHoleHeader() {
             document.getElementById('bet-amount').value = 20;
             document.getElementById('skins-amount').value = 10;
             document.getElementById('om-only').checked = false;
-            ALERT_TYPES.forEach(t => { document.getElementById(`alert-${t}`).checked = true; });
-            updateAlertsCount();
+            applyAlertPrefs();
             document.getElementById('hole-format').value = '18';
             document.getElementById('fmt-1').checked = false;
             document.getElementById('fmt-2').checked = true;
