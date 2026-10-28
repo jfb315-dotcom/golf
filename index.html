@@ -273,6 +273,14 @@
         .top-row { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
         .clean input.date-chip { width: auto; height: 40px; min-height: 0; padding: 0 14px; margin: 0; border: none; border-radius: 20px; background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 600; }
         .roster-team { margin-top: 24px; }
+        .roster-add-saved { display: block; margin: 6px 0 0 4px; font-size: 15px; }
+        .rp-list { max-height: 52vh; overflow-y: auto; margin: 10px 0 14px; }
+        .rp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 6px; background: none; border: none; border-bottom: 1px solid var(--line); color: var(--text-main); font-size: 16px; text-align: left; cursor: pointer; }
+        .rp-row:disabled { opacity: .45; cursor: default; }
+        .rp-num { flex: 0 0 28px; height: 28px; border-radius: 50%; border: 2px solid var(--line); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; }
+        .rp-row.on .rp-num { background: var(--accent-gold); border-color: var(--accent-gold); color: var(--on-accent); }
+        .rp-name { flex: 1; }
+        .rp-note { font-size: 13px; color: var(--text-muted); white-space: nowrap; }
         .roster-team-head { display: flex; align-items: center; justify-content: space-between; padding: 0 4px 6px; }
         .roster-team-name { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; }
         .tee-chip { display: inline-flex; align-items: center; gap: 4px; height: 32px; margin: 0; padding: 0 4px 0 12px; border-radius: 16px; background: var(--fill); color: var(--text-muted); font-size: 14px; font-weight: 600; text-transform: none; }
@@ -717,6 +725,16 @@
         <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
         <button type="button" class="text-link players-import" onclick="importArchivedRounds()">Add past rounds from this phone's archive</button>
         <p class="dash-footnote">Index is handicap-style: the best scores of each player's last 20 rounds, adjusted for the tee's rating and slope. It is not an official USGA index.</p>
+    </div>
+
+    <div id="roster-picker" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="rp-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Team 1</h2>
+            <p class="clean-sub" style="text-align:center;">Tap players in order, captain first. Tap again to take them off.</p>
+            <input type="text" id="rp-search" placeholder="Search players" autocomplete="off" enterkeyhint="search" oninput="renderRosterPicker()" style="margin-top: 6px;">
+            <div id="rp-list" class="rp-list"></div>
+            <button class="btn-primary" onclick="closeRosterPicker()">Done</button>
+        </div>
     </div>
 
     <div id="tees-modal" class="modal-overlay">
@@ -1365,7 +1383,7 @@ function toggle9HoleOptions() {
                         <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="Strokes" aria-label="Strokes" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()">
                     </div>`;
                 }
-                html += `</div>`;
+                html += `<button type="button" class="text-link roster-add-saved" onclick="openRosterPicker(${g})">+ Add from saved players</button></div>`;
             }
             document.getElementById('roster-container').innerHTML = html;
             
@@ -1753,6 +1771,61 @@ function toggle9HoleOptions() {
                 ${st.index === null ? '<p class="dash-footnote" style="text-align:center;">Index shows after 3 rounds of 18 with tee ratings.</p>' : ''}
                 <div class="hist-head"><span>Round</span><span>Score</span><span>Diff</span></div>
                 <div class="hist-list">${list}</div>`;
+        }
+
+        // ===== Pick a team from the saved players =====
+        let pickerTeam = 1;
+        function openRosterPicker(g) {
+            saveRosterCache();
+            pickerTeam = g;
+            document.getElementById('rp-title').textContent = `Team ${g}`;
+            document.getElementById('rp-search').value = '';
+            renderRosterPicker();
+            document.getElementById('roster-picker').classList.add('active');
+        }
+        function closeRosterPicker() { document.getElementById('roster-picker').classList.remove('active'); }
+        // Where each name sits on the roster: { "mike smith": "2-3" }
+        function rosterSlots() {
+            const gCount = parseInt(document.getElementById('group-count').value), pCount = parseInt(document.getElementById('players-per-group').value);
+            let at = {};
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let n = (tempRosterCache[`g${g}-p${p}-name`] || '').trim().toLowerCase();
+                if (n && !tempRosterCache[`g${g}-p${p}-ghost`]) at[n] = `${g}-${p}`;
+            }
+            return at;
+        }
+        function renderRosterPicker() {
+            let q = document.getElementById('rp-search').value.trim().toLowerCase();
+            let at = rosterSlots();
+            let rows = Object.entries(savedPlayers).map(([key, sp]) => ({ key, ...playerInfo(sp), name: sp.name }))
+                .filter(r => !q || r.name.toLowerCase().includes(q) || r.nick.toLowerCase().includes(q))
+                .sort((a, b) => (a.last || a.first).localeCompare(b.last || b.first) || a.first.localeCompare(b.first));
+            document.getElementById('rp-list').innerHTML = rows.map(r => {
+                let slot = at[r.key], [g, p] = slot ? slot.split('-').map(Number) : [];
+                let mine = g === pickerTeam, other = slot && !mine;
+                let i = handicapIndex(playerRounds(r.key));
+                let note = other ? `Team ${g}` : [i !== null ? fmtIndex(i) : '', defaultTeeFor(r.name)].filter(Boolean).join(' · ');
+                return `<button type="button" class="rp-row${mine ? ' on' : ''}" ${other ? 'disabled' : ''} onclick="pickRosterPlayer('${r.key.replace(/'/g, "\\'")}')">
+                    <span class="rp-num">${mine ? p : ''}</span><span class="rp-name">${r.first} ${r.last}</span><span class="rp-note">${note}</span></button>`;
+            }).join('') || '<p class="clean-sub">No saved players match.</p>';
+        }
+        function pickRosterPlayer(key) {
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            let g = pickerTeam, slot = rosterSlots()[key];
+            if (slot) { // tapped again: take them off this team
+                let p = slot.split('-')[1];
+                ['name', 'strokes'].forEach(f => { let el = document.getElementById(`g${g}-p${p}-${f}`); if (el) el.value = ''; });
+                let tee = document.getElementById(`g${g}-p${p}-tee`); if (tee) tee.value = '';
+            } else {
+                let p = 1;
+                while (p <= pCount && (document.getElementById(`g${g}-p${p}-name`).value.trim() || document.getElementById(`g${g}-p${p}-name`).getAttribute('data-ghost'))) p++;
+                if (p > pCount) { alert(`Team ${g} is full. Tap a player to take them off first.`); return; }
+                let el = document.getElementById(`g${g}-p${p}-name`);
+                el.value = savedPlayers[key].name;
+                applySavedPlayer(el);
+            }
+            saveRosterCache();
+            renderRosterPicker();
         }
 
         // ===== Balance teams =====
