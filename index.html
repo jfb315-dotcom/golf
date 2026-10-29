@@ -5356,7 +5356,8 @@ function hideCartHoleHeader() {
                 const magicLink = shareUrl('cart.html', `cart=${c.id}&r=${roundData.roundId || ''}`);
                 // Course, date and tee time so everyone knows where and when
                 let details = [formatRoundDate(roundData.date), roundData.course?.name, c.time ? `Tee ${formatFriendlyTime(c.time)}` : ''].filter(Boolean).join(' · ');
-                cartShareMessages.push(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
+                // Players with the app on their Home Screen just open it and pick their cart; the link (last, for its picture) is for everyone else
+                cartShareMessages.push(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n📱 Have JB Golf on your Home Screen? Just open it and tap Cart ${c.id}.\nDon't have the app? Tap the link, then tap Share at the bottom of your browser › Add to Home Screen to get alerts.\n${magicLink}`);
                 html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="shareCartLink(${cartShareMessages.length - 1})">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
             });
             document.getElementById('share-buttons-container').innerHTML = html; 
