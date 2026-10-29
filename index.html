@@ -840,6 +840,7 @@
             <p>From <b>Home</b>, tap <b>Sign-up link</b>. Type your message, like <i>"Golf Thursday?"</i>, pick the date, tee time and course, then <b>Next: send it</b>.</p>
             <p><b>Send to your group chat</b> opens Share. Pick Messages and your golf group text. Everyone gets your message plus a link with the <b>"Are you in?"</b> picture.</p>
             <p>Tapping the link shows <b>every player with In / Out buttons</b>. Each person taps their own. They can also mark a buddy (it asks first and shows who did it). New people can add their name.</p>
+            <p>With alerts on for your phone, you get a notification each time someone answers (<i>"✅ Eddie is in · 7 in, 1 out"</i>). Tap it to open Who's playing. Turn it off under Alerts › Sign-up answers.</p>
             <p>Plans change? On <b>Who's playing</b>: <b>Text everyone who's in</b>, <b>Start over</b> (clears answers) or <b>Cancel round</b> (the link then says it's cancelled).</p>
         </details>
 
@@ -917,6 +918,10 @@
                 <div class="format-row"><label class="format-label" for="alert-missedHole">Missed a hole ⚠️</label><input type="checkbox" class="switch" id="alert-missedHole" checked></div>
                 <div class="format-row"><label class="format-label" for="alert-behind">No scores in 20 minutes ⏰</label><input type="checkbox" class="switch" id="alert-behind" checked></div>
             </div>
+        </div>
+        <div class="alerts-group">To you only</div>
+        <div class="format-container">
+            <div class="format-row"><label class="format-label" for="alert-signups">Sign-up answers (who's in or out) 🙋</label><input type="checkbox" class="switch" id="alert-signups" checked onchange="saveSignupAlertPref()"></div>
         </div>
         <p class="dash-footnote">Your picks carry over to the next round. Everyone turns alerts on for their own phone from their cart link.</p>
     </div>
@@ -1397,6 +1402,11 @@ function toggle9HoleOptions() {
             const isSpectator = urlParams.get('spectator') === 'true';
             if (urlParams.get('signup')) { openSignupPage(); return; } // the sign-up link only shows the sign-up page
             if (urlParams.get('round')) { openSharedRound(urlParams.get('round')); return; } // a shared results page
+            if (pendingAlertView === 'whos' && !teamParam && !isSpectator) { // tapped a sign-up alert
+                pendingAlertView = null;
+                history.replaceState(null, '', location.pathname + location.search);
+                setTimeout(() => { whosBack = 'step-home'; openWhosPlaying(); }, 300);
+            }
 
             if (teamParam) { 
                 lockedTeamId = parseInt(teamParam); 
@@ -2171,7 +2181,7 @@ function toggle9HoleOptions() {
         function createSignup() {
             let date = document.getElementById('su-date-in').value || todayISO();
             let key = document.getElementById('course-selector').value;
-            let data = { date, time: document.getElementById('su-time-in').value, note: document.getElementById('su-note-in').value.trim() || `Golf ${weekdayOf(date)}?`,
+            let data = { date, time: document.getElementById('su-time-in').value, note: document.getElementById('su-note-in').value.trim() || `Golf ${weekdayOf(date)}?`, notify: signupAlertsOn(),
                 course: allAvailableCourses[key]?.name || '', courseKey: key, theme: localStorage.getItem('savedTheme') || 'coastal' };
             // Same date: keep everyone's answers. New date: start over.
             let sameDay = signup && signup.date === date;
@@ -2266,6 +2276,7 @@ function toggle9HoleOptions() {
                 if (note.trim()) r.note = note.trim().slice(0, 80);
             }
             signupRef.set({ responses: { [key]: r } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
+            if (signup.responses?.[key]?.status !== status || r.by) alertSignupAnswer(key, r);
         }
         function addSignupNew() {
             let name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
@@ -2275,6 +2286,7 @@ function toggle9HoleOptions() {
             if (phone) r.phone = phone;
             if (!localStorage.getItem('signupName')) localStorage.setItem('signupName', key);
             signupRef.set({ responses: { [key]: r } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
+            alertSignupAnswer(key, r);
             document.getElementById('su-new').style.display = 'none';
             document.getElementById('su-other').value = ''; document.getElementById('su-phone').value = '';
         }
@@ -2318,7 +2330,7 @@ function toggle9HoleOptions() {
         }
         let whosBack = 'step-1';
         let alertsBack = 'step-home';
-        function openAlertsScreen(back) { alertsBack = back; updateAlertsCount(); showScreen('step-alerts'); }
+        function openAlertsScreen(back) { alertsBack = back; document.getElementById('alert-signups').checked = signupAlertsOn(); updateAlertsCount(); showScreen('step-alerts'); }
         function backToHome() { if (sessionStorage.getItem('isEditingMidRound') === 'true') cancelMidRoundEdit(); else showScreen('step-home'); }
         function showHome() { showScreen('step-home'); }
         function goLiveScoring() { renderPillNav(); renderScoreEntry(); showScreen('step-3'); }
@@ -5254,9 +5266,32 @@ function hideCartHoleHeader() {
             return reg ? reg.pushManager.getSubscription() : null;
         }
 
+        // Which alerts this phone gets: a cart number, 'admin' for the organizer's phone (sign-up answers), or '' (spectators)
+        function alertsCartTag() {
+            let q = new URLSearchParams(location.search);
+            if (lockedTeamId !== null) return String(lockedTeamId);
+            return q.get('spectator') || q.get('signup') || q.get('round') ? '' : 'admin';
+        }
+        function signupAlertsOn() { try { return localStorage.getItem('jbGolfSignupAlerts') !== 'off'; } catch (e) { return true; } }
+        function saveSignupAlertPref() {
+            let on = document.getElementById('alert-signups').checked;
+            try { localStorage.setItem('jbGolfSignupAlerts', on ? 'on' : 'off'); } catch (e) {}
+            if (signupIsCurrent()) { signup.notify = on; signupRef.set({ notify: on }, { merge: true }).catch(() => {}); }
+        }
+        // From the sign-up page: tell the organizer's phone who just answered
+        function alertSignupAnswer(key, r) {
+            if (!ALERTS_URL || !signup || signup.notify === false) return;
+            let resp = { ...(signup.responses || {}), [key]: r };
+            let ins = Object.values(resp).filter(x => x.status === 'in').length, outs = Object.values(resp).filter(x => x.status === 'out').length;
+            let first = n => (n || '').split(' ')[0];
+            let title = r.by ? `${r.status === 'in' ? '✅' : '❌'} ${first(r.by)} marked ${first(r.name)} ${r.status}` : `${r.status === 'in' ? '✅' : '❌'} ${first(r.name)} is ${r.status}`;
+            let body = `${r.note ? `"${r.note}" · ` : ''}${signup.note || formatRoundDate(signup.date)} · ${ins} in, ${outs} out`;
+            fetch(ALERTS_URL, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title, body, view: 'whos', tag: `su-${key}`, from: alertsDeviceId(), cart: 'admin' }) }).catch(() => {});
+        }
         function saveAlertSubscription(sub) {
             let j = sub.toJSON();
-            return pushSubsRef.set({ subs: { [alertsDeviceId()]: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, url: location.href.split('#')[0], cart: lockedTeamId !== null ? String(lockedTeamId) : '', at: Date.now() } } }, { merge: true });
+            return pushSubsRef.set({ subs: { [alertsDeviceId()]: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, url: location.href.split('#')[0], cart: alertsCartTag(), at: Date.now() } } }, { merge: true });
         }
 
         async function refreshAlertsButtons() {
@@ -5504,6 +5539,7 @@ function hideCartHoleHeader() {
 
         // Tapping an alert opens the standings (or the Our Match section)
         function openAlertView(view) {
+            if (view === 'whos') { whosBack = 'step-home'; openWhosPlaying(); return; }
             if (!hasLoadedRound || !roundData.groups?.length) return;
             let hole = parseInt((view || '').replace('hole-', ''));
             if (view === 'scoring' && !showingFinalResults) {
