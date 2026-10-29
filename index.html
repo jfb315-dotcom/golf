@@ -227,11 +227,12 @@
         .dash .top-row { position: sticky; top: 0; z-index: 50; background: var(--bg-dark); }
         .table-wrapper { border-radius: 12px; }
         .name-col { text-align: left !important; white-space: nowrap; position: sticky; left: 0; z-index: 2; background: var(--bg-dark); padding-left: 4px !important; }
-        .board-table { min-width: 0; }
-        .board-table th.group-head { color: var(--text-main); font-size: 13px; border-bottom: none; }
-        .board-table th.sub-head { font-size: 11px; font-weight: 600; }
-        .board-table td { font-size: 16px; font-weight: 700; padding: 12px 6px; }
-        .board-table td.name-col { font-size: 15px; }
+        .board-table { min-width: 0; width: 100%; }
+        .board-table th.group-head { color: var(--text-main); font-size: 13px; border-bottom: none; padding: 6px 2px; }
+        .board-table th.sub-head { font-size: 11px; font-weight: 600; padding: 4px 2px; }
+        .board-table td { font-size: 15px; font-weight: 700; padding: 10px 2px; text-align: center; }
+        .board-table td.name-col { font-size: 15px; line-height: 1.1; padding-right: 6px !important; }
+        .board-capt { display: block; font-size: 11px; font-weight: 600; opacity: .85; max-width: 64px; overflow: hidden; text-overflow: ellipsis; }
         .board-table .seg-start { border-left: 1px solid var(--line); }
         .board-table td.overall { font-weight: 900; }
         .score-table td.name-col { font-weight: 600; }
@@ -4571,6 +4572,12 @@ function hideCartHoleHeader() {
             return holeNet;
         }
 
+      // Short column names so the leaderboard fits a phone: Front 9 → F9, Back 9 → B9, First 4 → F4, Last 5 → L5
+      function shortSegLabel(label) {
+          let l = label.replace(/\s*\(.*\)/, '');
+          let m = /^(Front|Back|First|Last)\s+(\d+)$/i.exec(l);
+          return m ? m[1][0].toUpperCase() + m[2] : l;
+      }
       // part: 'leaderboard' (just the leaderboard table), 'cards' (just the team scorecards), or both with Bets won (default)
       function generateScorecardHTML(rData, sDb, part) {
             let fullHTML = ''; 
@@ -4639,10 +4646,10 @@ function hideCartHoleHeader() {
             // Draw Sub-Headers (e.g., "First 4", "Last 5", "OVERALL")
             rData.formats.forEach(f => {
                 orderedSegments.forEach((seg, idx) => {
-                    summaryHTML += `<th class="sub-head${idx === 0 ? ' seg-start' : ''}">${seg.label.replace(/\s*\(.*\)/, '')}</th>`;
+                    summaryHTML += `<th class="sub-head${idx === 0 ? ' seg-start' : ''}">${shortSegLabel(seg.label)}</th>`;
                 });
                 if (orderedSegments.length > 1) {
-                    summaryHTML += `<th class="sub-head">Total</th>`;
+                    summaryHTML += `<th class="sub-head">Tot</th>`;
                 }
             });
             summaryHTML += `</tr></thead><tbody>`;
@@ -4650,7 +4657,7 @@ function hideCartHoleHeader() {
             // Draw the scores for each team with the Pulsing animations
             rData.groups.forEach(g => {
                 summaryHTML += `<tr>
-                    <td class="name-col" style="color:${teamColor(g)};">T${g.id} · ${g.captain.split(' ')[0]}</td>`;
+                    <td class="name-col" style="color:${teamColor(g)};">T${g.id}<span class="board-capt">${g.captain.split(' ')[0]}</span></td>`;
 
                 rData.formats.forEach(f => {
                     orderedSegments.forEach((seg, idx) => {
