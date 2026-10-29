@@ -428,6 +428,10 @@
         .par-setup-item input { width: 50px !important; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
         
         .payout-header { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 28px 4px 4px; }
+        .om-head { margin: 24px 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--fill); border-left: 4px solid var(--accent-gold); }
+        .om-head b { display: block; font-size: 16px; color: var(--text-main); }
+        .om-head span { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
+        .om-section details.fold { margin-top: 10px; }
         .payout-sub { font-size: 13px; color: var(--text-muted); margin: 12px 4px 0; }
         .payout-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; min-height: 44px; padding: 0 4px; border-bottom: 1px solid var(--line); font-size: 16px; }
         .payout-row.muted { color: var(--text-muted); font-size: 14px; }
@@ -811,7 +815,8 @@
         <div id="dashboard-financial-summary"></div>
         <div id="dashboard-changes"></div>
         <div class="dash-actions">
-            <button type="button" class="bar-primary" onclick="(hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) ? openResultsShareModal() : openOurMatchShareModal()">Share results</button>
+            <button type="button" class="bar-primary" onclick="shareStandingsLink()">Share results link</button>
+            <button type="button" class="text-link" onclick="(hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) ? openResultsShareModal() : openOurMatchShareModal()">Share as text instead</button>
             <div id="admin-finalize-container">
                 <button type="button" class="text-link danger-link" onclick="validateAndFinalize()">Finalize &amp; archive round</button>
             </div>
@@ -3653,6 +3658,19 @@ function processStep2() {
             let dir = location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '');
             return `${dir}${page}?${query}`;
         }
+        // Standings → a link: the final results page once the round is finalized, otherwise the live leaderboard
+        // (with Our Match on it when the round has one)
+        function shareStandingsLink() {
+            let rd = activeViewRoundData || roundData;
+            let final = showingFinalResults || !liveRoundInCloud;
+            let link = final ? shareUrl('results.html', `round=${encodeURIComponent(rd.roundId || '')}`) : shareUrl('live.html', `spectator=true${rd.ourMatch ? '&om=1' : ''}`);
+            let course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
+            let title = `JB Golf · ${final ? 'Final results' : rd.ourMatch && isOurMatchOnly(rd) ? 'Our Match, live' : 'Live leaderboard'} · ${course}`;
+            if (navigator.share) { shareWithPreview(`${title}\n${link}`, title); return; }
+            document.getElementById('share-modal-title').innerText = 'Share results link';
+            document.getElementById('share-text-content').value = `${title}\n${link}`;
+            document.getElementById('share-modal').classList.add('active');
+        }
         function shareSpectatorLink() {
             const spectatorLink = shareUrl('live.html', 'spectator=true');
             let st = `JB Golf · Live leaderboard (watch only)\nTap to follow along. Want birdie & skins alerts? Tap Share at the bottom of your browser › Add to Home Screen.\n${spectatorLink}`;
@@ -4463,10 +4481,10 @@ function hideCartHoleHeader() {
             document.getElementById('dashboard-changes').innerHTML = urlParams.get('spectator') !== 'true' ? generateScoreChangesHTML(roundData) : '';
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
             let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-') : null;
-            document.getElementById('dashboard-scorecards').innerHTML = money ? '' : generateScorecardHTML(scorecardView(roundData), scoresDb);
+            document.getElementById('dashboard-scorecards').innerHTML = money ? '' : (isOurMatchOnly(roundData) ? fold('live-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(roundData), scoresDb)) : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
-            let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults) : '';
+            let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults && urlParams.get('spectator') !== 'true') : '';
             document.getElementById('dashboard-our-match').innerHTML = omHTML && money ? fold('live-om', ourMatchSummaryLine(roundData, scoresDb, matchPresses), omHTML, !showingFinalResults) : omHTML;
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
@@ -5072,7 +5090,9 @@ function hideCartHoleHeader() {
 
         // Our Match is shown to the admin and to carts that have one of its four players; spectators never see it
         function canSeeOurMatch(rData) {
-            if (!rData.ourMatch || new URLSearchParams(window.location.search).get('spectator') === 'true') return false;
+            let q = new URLSearchParams(window.location.search);
+            if (!rData.ourMatch) return false;
+            if (q.get('spectator') === 'true') return q.get('om') === '1'; // a shared link that includes Our Match
             if (lockedTeamId === null) return true;
             let cart = rData.carts.find(c => c.id === lockedTeamId);
             let mine = rData.isScrambled && cart ? cart.players : (rData.groups.find(g => g.id === lockedTeamId)?.players.map(p => ({ g: lockedTeamId, p: p.id })) || []);
@@ -5124,7 +5144,7 @@ function hideCartHoleHeader() {
             }
 
             // Nassau
-            html += `<div class="payout-sub">Nassau · low ball gross, stroke play · $${om.nassauBet} a bet, per person</div>`;
+            html += omHead('Nassau', `low ball gross, stroke play · $${om.nassauBet} a bet, per person`);
             MATCH_BETS.forEach(key => {
                 let n = m.nassau[key];
                 if (!n) return;
@@ -5154,26 +5174,26 @@ function hideCartHoleHeader() {
                 let running = (n, b, h) => b.from != null && m.pos(h) <= m.pos(b.from) ? null
                     : -n.done.filter(x => m.pos(x) <= m.pos(h) && (b.from == null || m.pos(x) > m.pos(b.from))).reduce((a, x) => a + n.lows[x][0] - n.lows[x][1], 0);
                 let cell = (n, h) => n.bets.map(b => running(n, b, h)).filter(v => v !== null).map(formatMatchBet).join(' ');
-                html += `<div class="payout-sub">Nassau hole by hole · low gross · + = ${m.names[0]} up (strokes)</div>`;
-                html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
+                let chart = `<p class="payout-sub" style="margin-top:0;">Low gross each hole · + = ${m.names[0]} up (strokes)</p><table class="om-chart"><thead><tr><th>Hole</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
                 let cols = overall ? 4 : 3;
                 playedNassau.forEach(({ h, key }, i) => {
                     let n = m.nassau[key], [a, b] = n.lows[h];
                     // Clean break at the turn: a header row for each nine
                     if (ninesNassau.length > 1 && (i === 0 || playedNassau[i - 1].key !== key)) {
-                        html += `<tr class="om-nine-break${i === 0 ? ' first' : ''}"><td colspan="${cols}">${key === 'back' ? 'Back 9' : 'Front 9'}</td></tr>`;
+                        chart += `<tr class="om-nine-break${i === 0 ? ' first' : ''}"><td colspan="${cols}">${key === 'back' ? 'Back 9' : 'Front 9'}</td></tr>`;
                     }
                     let low = `<span class="${a < b ? 'om-a' : ''}">${a}</span> v <span class="${b < a ? 'om-b-win' : ''}">${b}</span>`;
-                    html += `<tr><td><b>${h}</b></td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
-                    pressList.filter(pr => pr.after === h).forEach(pr => { html += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
+                    chart += `<tr><td><b>${h}</b></td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
+                    pressList.filter(pr => pr.after === h).forEach(pr => { chart += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
                 });
-                html += `</tbody></table>`;
+                chart += `</tbody></table>`;
+                html += fold('om-nassau-holes', 'Nassau hole by hole', chart);
             }
 
             // First ball / second ball and birdies, one chart per nine
             m.nines.forEach(nine => {
                 let title = nine.key === 'back' ? 'Back 9' : 'Front 9';
-                html += `<div class="payout-sub">${title} · first ball / second ball, net · $${nine.amount} a bet per person · + = ${m.names[0]} up</div>`;
+                html += omHead(`1st & 2nd Ball · ${title}`, `net · $${nine.amount} a bet per person · + = ${m.names[0]} up`);
                 if (nine.rows.length === 0) {
                     html += `<div class="payout-row muted">No holes finished yet</div>`;
                 } else {
@@ -5202,14 +5222,14 @@ function hideCartHoleHeader() {
                 <b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>
             </div>`;
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; first/second-ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
-            if (live) html += `<button type="button" class="text-link" onclick="openOurMatchShareModal()">Share Our Match</button>`;
             return html + `</section>`;
         }
 
         // Who made each birdie and where: "BREN 1, 7, 10 eagle", then the net per side in dollars
         function ourMatchBirdieHoles(log) { return log.map(b => `${b.hole}${b.units === 2 ? ' eagle' : b.units >= 3 ? ' albatross' : ''}`).join(', '); }
+        function omHead(title, sub) { return `<div class="om-head"><b>${title}</b>${sub ? `<span>${sub}</span>` : ''}</div>`; }
         function ourMatchBirdiesHTML(m, nine) {
-            let html = `<div class="om-birdies"><div class="om-birdies-head">Team birdies</div>`;
+            let html = `<div class="om-birdies">${omHead(`Team Birdies · ${nine.key === 'back' ? 'Back 9' : 'Front 9'}`, `every gross birdie by any of the four · $${nine.amount} each (eagle counts 2)`)}`;
             m.sides.forEach((side, si) => side.forEach((x, pi) => {
                 let log = nine.birdieLog[si][pi];
                 if (log.length) html += `<div class="om-birdie-line ${si === 0 ? 'om-a' : 'om-b'}"><b>${x.player.name.split(' ')[0].slice(0, 4).toUpperCase()}</b> ${ourMatchBirdieHoles(log)}</div>`;
@@ -5413,7 +5433,7 @@ function hideCartHoleHeader() {
             let pay = calculatePayouts(rData, sDb);
             if (pay.players.length === 0) return { top: '<p>No data.</p>', more: '' };
             let top = purseHTML(pay) + generateScorecardHTML(scorecardView(rData), sDb, 'leaderboard') + teamBetsWonHTML(rData, pay) + skinsHTML(rData, pay);
-            let more = fold(prefix + 'cards', 'Scorecards', generateScorecardHTML(scorecardView(rData), sDb, 'cards'))
+            let more = fold(prefix + 'cards', 'Team Scorecards', generateScorecardHTML(scorecardView(rData), sDb, 'cards'))
                 + fold(prefix + 'math', 'Who pays who &amp; all the math', settleUpHTML(rData, sDb, pay, presses) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
             return { top, more };
         }
@@ -6151,7 +6171,7 @@ function hideCartHoleHeader() {
             try { 
                 let presses = activeViewRoundData.matchPresses || {};
                 let money = hasTournamentMoney(activeViewRoundData) ? standingsSections(activeViewRoundData, activeViewScoresDb, presses, 'arc-') : null;
-                document.getElementById('archived-card-container').innerHTML = money ? '' : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb);
+                document.getElementById('archived-card-container').innerHTML = money ? '' : (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
                 document.getElementById('archived-payout-summary-container').innerHTML = money ? money.top : '';
                 let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, presses, false) : '';
                 document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(activeViewRoundData, activeViewScoresDb, presses), omHTML) : omHTML;
