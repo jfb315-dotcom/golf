@@ -472,6 +472,8 @@
         
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.85); z-index: 1000; align-items: center; justify-content: center; padding: 20px; }
         .modal-overlay.active { display: flex; }
+        .modal-overlay, .modal-content { overscroll-behavior: contain; }
+        body.modal-open { position: fixed; left: 0; right: 0; overflow: hidden; }
         .modal-content { background: var(--bg-card); border-top: 4px solid var(--accent-gold); border-radius: 8px; padding: 20px; width: 100%; max-width: 500px; max-height: 90vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.8); }
 
         .clipboard-banner { background: #ff4500; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; border-radius: 4px; margin-bottom: 15px; }
@@ -2099,6 +2101,27 @@ function toggle9HoleOptions() {
             localStorage.setItem('signupName', key);
             signupRef.set({ responses: { [key]: { name, status, at: Date.now() } } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
         }
+
+        // While a popup is open the page behind it stays put (iPhone otherwise scrolls it under your finger)
+        (function lockScrollUnderPopups() {
+            let lockedAt = null, lockedScreen = null;
+            let update = () => {
+                let open = !!document.querySelector('.modal-overlay.active');
+                if (open && lockedAt === null) {
+                    lockedAt = window.scrollY;
+                    lockedScreen = document.querySelector('.screen.active')?.id;
+                    document.body.style.top = `-${lockedAt}px`;
+                    document.body.classList.add('modal-open');
+                } else if (!open && lockedAt !== null) {
+                    document.body.classList.remove('modal-open');
+                    document.body.style.top = '';
+                    // Same page: back where you were. A new page opened meanwhile: its top.
+                    window.scrollTo(0, document.querySelector('.screen.active')?.id === lockedScreen ? lockedAt : 0);
+                    lockedAt = null;
+                }
+            };
+            new MutationObserver(update).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+        })();
 
         // ===== Home (the admin's starting page) =====
         function showScreen(id) {
