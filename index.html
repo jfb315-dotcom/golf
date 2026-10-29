@@ -5215,7 +5215,7 @@ function hideCartHoleHeader() {
 
             // Nassau hole by hole: low gross each side, then every Nassau bet's running score (+ = side 1 up)
             let ninesNassau = ['front', 'back'].filter(k => m.nassau[k]);
-            let overall = m.nassau.overall;
+            let overall = m.nassau.overall, nassauFold = '';
             let playedNassau = ninesNassau.flatMap(k => m.nassau[k].done.map(h => ({ h, key: k }))).sort((x, y) => m.pos(x.h) - m.pos(y.h));
             if (playedNassau.length) {
                 let running = (n, b, h) => b.from != null && m.pos(h) <= m.pos(b.from) ? null
@@ -5234,7 +5234,7 @@ function hideCartHoleHeader() {
                     pressList.filter(pr => pr.after === h).forEach(pr => { chart += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · starts hole ${pr.start}</td></tr>`; });
                 });
                 chart += `</tbody></table>`;
-                html += fold('om-nassau-holes', 'See Nassau hole by hole', chart);
+                nassauFold = fold('om-nassau-holes', 'See Nassau hole by hole', chart); // goes at the bottom, above the rules
             }
 
             // First ball / second ball and birdies, one chart per nine
@@ -5269,7 +5269,7 @@ function hideCartHoleHeader() {
                 <b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>
             </div>`;
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; 1st ball goes to 2nd ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
-            return html + `</section>`;
+            return html + nassauFold + `</section>`;
         }
 
         // Who made each birdie and where: "BREN 1, 7, 10 eagle", then the net per side in dollars
