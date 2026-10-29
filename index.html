@@ -787,6 +787,8 @@
         <div id="players-list" class="list-rows"></div>
         <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
         <button type="button" class="text-link players-import contacts-btn" style="display:none;" onclick="importContacts()">📇 Add players from contacts</button>
+        <button type="button" class="text-link players-import" onclick="document.getElementById('vcf-file').click()">📇 Add phone numbers from a contacts file</button>
+        <input type="file" id="vcf-file" accept=".vcf,text/vcard,text/x-vcard,text/directory" multiple style="display:none;" onchange="importVcf(this.files); this.value = ''">
         <button type="button" class="text-link players-import" onclick="importArchivedRounds()">Add past rounds from this phone's archive</button>
         <p class="dash-footnote">Index is handicap-style: the best scores of each player's last 20 rounds, adjusted for the tee's rating and slope. It is not an official USGA index.</p>
     </div>
@@ -2302,6 +2304,33 @@ function toggle9HoleOptions() {
                 if (n && !document.getElementById('pl-first').value) { let x = splitName(n); document.getElementById('pl-first').value = x.first; document.getElementById('pl-last').value = x.last; }
             } catch (e) {}
         }
+        // A contacts file (.vcf) exported from the phone's Contacts: fill in numbers for players we already have
+        async function importVcf(files) {
+            let text = '';
+            for (let f of files || []) text += '\n' + await f.text();
+            let cards = text.replace(/\r\n?/g, '\n').replace(/\n[ \t]/g, '').split(/BEGIN:VCARD/i).slice(1);
+            let added = 0, had = 0, unknown = 0, updates = {};
+            cards.forEach(card => {
+                let lines = card.split('\n');
+                let get = re => lines.find(l => re.test(l));
+                let fn = (get(/^FN[;:]/i) || '').replace(/^[^:]*:/, '').trim();
+                let n = (get(/^N[;:]/i) || '').replace(/^[^:]*:/, '').split(';');
+                let name = fn || [n[1], n[0]].filter(Boolean).join(' ');
+                let tels = lines.filter(l => /^(item\d+\.)?TEL/i.test(l));
+                let tel = (tels.find(l => /CELL|IPHONE|MOBILE/i.test(l)) || tels[0] || '').replace(/^[^:]*:/, '').trim();
+                if (!name || !tel) return;
+                let key = canonicalKey(name.toLowerCase().replace(/\s+/g, ' '));
+                if (!savedPlayers[key] && n[0] && n[1]) key = canonicalKey(`${n[1]} ${n[0]}`.toLowerCase().trim());
+                if (!savedPlayers[key]) { unknown++; return; }
+                if (savedPlayers[key].phone) { had++; return; }
+                savedPlayers[key].phone = tel; updates[key] = { phone: tel }; added++;
+            });
+            if (added) {
+                localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
+                savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error('Saving numbers failed', err));
+            }
+            alert(cards.length ? `Added numbers for ${added} player${added === 1 ? '' : 's'}.${had ? ` ${had} already had one.` : ''}${unknown ? ` ${unknown} contact${unknown === 1 ? '' : 's'} didn't match a player (add them in Players first).` : ''}` : 'No contacts found in that file.');
+        }
         async function importContacts() {
             let list = [];
             try { list = await navigator.contacts.select(['name', 'tel'], { multiple: true }); } catch (e) { return; }
@@ -3212,7 +3241,8 @@ function processStep2() {
         function shareSpectatorLink() {
             const spectatorLink = shareUrl('live.html', 'spectator=true');
             let st = `JB Golf · Live leaderboard\n${spectatorLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
-            
+            if (navigator.share) { shareWithPreview(st, 'JB Golf · Live leaderboard'); return; }
+
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
             document.getElementById('share-text-content').value = st;
             document.getElementById('share-modal').classList.add('active');
@@ -4990,7 +5020,7 @@ function hideCartHoleHeader() {
         function copyAndCloseShare() {
             let textArea = document.getElementById('share-text-content');
             if(navigator.share) { 
-                navigator.share({ title: 'Tournament Info', text: textArea.value }).catch(err => console.log(err)); 
+                shareWithPreview(textArea.value);
             } else { 
                 textArea.select(); 
                 document.execCommand('copy'); 
@@ -4999,10 +5029,28 @@ function hideCartHoleHeader() {
             }
             closeShareModal();
         }
+        // Messages shows a link's picture card when the link is shared as a link, not buried in the text,
+        // so the app's own link goes in the share sheet's url and the rest stays as the message
+        function shareWithPreview(text, title = 'JB Golf') {
+            let m = text.match(/https?:\/\/\S*(?:cart|live|join|results)\.html\?\S+|https?:\/\/\S+/);
+            let data = { title, text };
+            if (m) data = { title, text: text.replace(m[0], '').replace(/\n{3,}/g, '\n\n').trim(), url: m[0] };
+            return navigator.share(data).catch(err => console.log(err));
+        }
+        function shareCartLink(i) {
+            let msg = cartShareMessages[i];
+            if (navigator.share) shareWithPreview(msg, 'JB Golf · Cart scorecard');
+            else {
+                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+                window.location.href = isIOS ? `sms:&body=${encodeURIComponent(msg)}` : `sms:?body=${encodeURIComponent(msg)}`;
+            }
+        }
+        let cartShareMessages = [];
         function closeShareModal() { document.getElementById('share-modal').classList.remove('active'); }
 
         function openShareMenu() {
             let html = '';
+            cartShareMessages = [];
             roundData.carts.forEach(c => {
                 let cartCaptain = "Player";
                 if(c.players && c.players.length > 0) {
@@ -5017,10 +5065,8 @@ function hideCartHoleHeader() {
                 const magicLink = shareUrl('cart.html', `cart=${c.id}`);
                 // Course, date and tee time so everyone knows where and when
                 let details = [formatRoundDate(roundData.date), roundData.course?.name, c.time ? `Tee ${formatFriendlyTime(c.time)}` : ''].filter(Boolean).join(' · ');
-                const message = encodeURIComponent(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
-                const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-                const smsLink = isIOS ? `sms:&body=${message}` : `sms:?body=${message}`;
-                html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="window.location.href='${smsLink}'">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
+                cartShareMessages.push(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
+                html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="shareCartLink(${cartShareMessages.length - 1})">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
             });
             document.getElementById('share-buttons-container').innerHTML = html; 
             switchScreen('step-3', 'step-7');
