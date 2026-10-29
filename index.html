@@ -669,11 +669,11 @@
                     <div class="money-field"><span>$</span><input type="number" id="om-nassau" min="0" value="50" inputmode="numeric" aria-label="Nassau dollars per bet" onfocus="this.select()" onclick="this.select()"></div>
                 </div>
                 <div>
-                    <div class="field-label">1st/2nd ball front, per person</div>
-                    <div class="money-field"><span>$</span><input type="number" id="om-ball" min="0" value="25" inputmode="numeric" aria-label="First and second ball dollars per bet on the front nine" onfocus="this.select()" onclick="this.select()"></div>
+                    <div class="field-label">1st ball goes to 2nd ball, front 9, per person</div>
+                    <div class="money-field"><span>$</span><input type="number" id="om-ball" min="0" value="25" inputmode="numeric" aria-label="1st ball goes to 2nd ball dollars per bet on the front nine" onfocus="this.select()" onclick="this.select()"></div>
                 </div>
             </div>
-            <p class="clean-sub" style="margin: 8px 4px 0;">All amounts are per person. Back nine is double. Each team birdie pays that nine's 1st/2nd ball amount (eagle = 2).</p>
+            <p class="clean-sub" style="margin: 8px 4px 0;">All amounts are per person. Back nine is double. Each team birdie pays that nine's 1st ball goes to 2nd ball amount (eagle = 2).</p>
             <div class="format-row"><label class="format-label" for="om-only">Only Our Match <span class="payout-note">no tournament purse</span></label><input type="checkbox" class="switch" id="om-only" aria-label="Only Our Match, no tournament purse" onchange="toggleOurMatchOnly()"></div>
         </div>
 
@@ -5240,7 +5240,7 @@ function hideCartHoleHeader() {
             // First ball / second ball and birdies, one chart per nine
             m.nines.forEach(nine => {
                 let title = nine.key === 'back' ? 'Back 9' : 'Front 9';
-                html += omHead(`1st & 2nd Ball · ${title}`, `net · $${nine.amount} a bet per person · + = ${m.names[0]} up`);
+                html += omHead(`1st ball goes to 2nd ball · ${title}`, `net · $${nine.amount} a bet per person · + = ${m.names[0]} up`);
                 if (nine.rows.length === 0) {
                     html += `<div class="payout-row muted">No holes finished yet</div>`;
                 } else {
@@ -5256,7 +5256,7 @@ function hideCartHoleHeader() {
                 let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
                 html += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
                 html += ourMatchBirdiesHTML(m, nine);
-                html += `<div class="payout-row om-subtotal"><span>${title} 1st/2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
+                html += `<div class="payout-row om-subtotal"><span>${title} 1st ball goes to 2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
             });
 
             // Money summary: one line per game, then the total and who pays who
@@ -5264,11 +5264,11 @@ function hideCartHoleHeader() {
             let sumRow = (label, v, cls = '') => `<div class="om-sum-row ${cls}"><span>${label}</span><b>${formatMatchMoney(v)}</b></div>`;
             html += `<div class="om-total">
                 <div class="om-sum-head"><span>${m.finished ? 'Final' : 'So far'} · per person</span><span>+ = ${m.names[0]}</span></div>
-                ${sumRow('Nassau', nassauTotal)}${sumRow('1st / 2nd ball', ballTotal)}${sumRow('Team birdies', birdieTotal)}
+                ${sumRow('Nassau', nassauTotal)}${sumRow('1st ball goes to 2nd ball', ballTotal)}${sumRow('Team birdies', birdieTotal)}
                 ${sumRow('Total', m.totalMoney, 'grand')}
                 <b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>
             </div>`;
-            html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; first/second-ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
+            html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; 1st ball goes to 2nd ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             return html + `</section>`;
         }
 
@@ -5334,7 +5334,7 @@ function hideCartHoleHeader() {
                 n.bets.forEach(b => { st += `${labels[key]} ${b.label === 'Main' ? '' : b.label + ' '}: ${nassauText(m, b.diff)}${n.finished ? '' : ` (thru ${n.lastDone ?? '–'})`}\n`; });
             });
             m.nines.forEach(nine => {
-                st += `\n${nine.key === 'back' ? 'Back' : 'Front'} 9 ($${nine.amount})\n`;
+                st += `\n${nine.key === 'back' ? 'Back' : 'Front'} 9 · 1st ball goes to 2nd ball ($${nine.amount})\n`;
                 st += `Bets: ${nine.bets.map(formatMatchBet).join(' ')} → ${formatMatchMoney(nine.ballMoney)}\n`;
                 st += `Team birdies ${nine.birdies[0]}–${nine.birdies[1]} → ${formatMatchMoney(nine.birdieMoney)}\n`;
                 m.sides.forEach((side, si) => side.forEach((x, pi) => { let log = nine.birdieLog[si][pi]; if (log.length) st += `  ${x.player.name.split(' ')[0].slice(0, 4).toUpperCase()} ${ourMatchBirdieHoles(log)}\n`; }));
