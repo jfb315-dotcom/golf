@@ -347,6 +347,10 @@
         .help summary span { display: block; font-size: 13px; font-weight: 500; color: var(--accent-gold); margin-top: 2px; }
         .help p { font-size: 15px; line-height: 1.45; color: var(--text-main); margin: 0 0 12px; }
         .text-numbers { margin: 4px 0 10px; }
+        .text-quick { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; margin: 4px 0; }
+        .text-quick .text-link { margin: 0; font-size: 14px; }
+        .text-pick { max-height: 38vh; overflow-y: auto; border-top: 1px solid var(--line); }
+        .text-pick .rp-row { min-height: 44px; }
         .text-numbers summary { cursor: pointer; color: var(--accent-gold); font-weight: 600; font-size: 14px; text-align: center; padding: 6px 0; }
         .su-tools { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: -2px 0 8px; }
         .su-tools .text-link { margin: 0; font-size: 14px; }
@@ -973,10 +977,11 @@
             <button class="btn-primary" onclick="sendToGroupChat()">Send to your group chat</button>
             <p class="dash-footnote" style="text-align:center; margin-top: 0;">Opens Share: pick Messages, then your golf group text.</p>
             <details class="text-numbers">
-                <summary>Or start a new text using saved numbers</summary>
-                <div class="segmented" id="text-who"><button type="button" data-who="in" onclick="setTextWho('in')">Everyone who's in</button><button type="button" data-who="all" onclick="setTextWho('all')">All players</button></div>
+                <summary>Or pick who gets it (new text)</summary>
+                <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
+                <div id="text-pick" class="text-pick"></div>
                 <p class="clean-sub" id="text-to"></p>
-                <button class="btn-secondary" onclick="sendGroupText()">Open Messages with these numbers</button>
+                <button class="btn-secondary" onclick="sendGroupText()">Open Messages with these</button>
             </details>
             <button class="btn-secondary" onclick="document.getElementById('text-modal').classList.remove('active')">Cancel</button>
         </div>
@@ -2411,24 +2416,54 @@ function toggle9HoleOptions() {
             textWho = who;
             textDefault = body || (signupIsCurrent() ? `⛳ JB Golf · ${formatRoundDate(signup.date)}${signup.course ? ' · ' + signup.course : ''}${signup.time ? ' · Tee ' + formatFriendlyTime(signup.time) : ''}\n` : '⛳ JB Golf\n');
             document.getElementById('text-body').value = textDefault;
-            renderGroupText();
+            textExtra = {};
+            setTextWho(who);
+            document.querySelector('#text-modal .text-numbers').open = true;
             document.getElementById('text-modal').classList.add('active');
+            document.querySelectorAll('.contacts-btn').forEach(b => b.style.display = canPickContacts ? '' : 'none');
         }
-        function setTextWho(w) { textWho = w; renderGroupText(); }
+        // Who gets the text: a checklist of players with numbers (plus anyone added from contacts)
+        let textPicked = new Set(), textExtra = {}; // extra: { key: { name, phone } } from contacts
+        function textCandidates() {
+            let names = whosNames(), list = {};
+            Object.keys(names).forEach(k => list[k] = { name: names[k], phone: phoneFor(k) });
+            Object.entries(textExtra).forEach(([k, v]) => list[k] = v);
+            return Object.entries(list).sort((a, b) => !!b[1].phone - !!a[1].phone || sortByLast([a[0], a[1].name], [b[0], b[1].name]));
+        }
+        function setTextWho(w) {
+            textWho = w;
+            let inKeys = Object.entries(signup?.responses || {}).filter(([, r]) => r.status === 'in').map(([k]) => k);
+            textPicked = new Set(textCandidates().filter(([k, v]) => v.phone && (w !== 'in' || inKeys.includes(k))).map(([k]) => k));
+            renderGroupText();
+        }
+        function textPickAll(on) { textPicked = new Set(on ? textCandidates().filter(([, v]) => v.phone).map(([k]) => k) : []); renderGroupText(); }
+        function textPickIn() { setTextWho('in'); }
+        function toggleTextPick(k) { textPicked.has(k) ? textPicked.delete(k) : textPicked.add(k); renderGroupText(); }
+        async function textPickContacts() {
+            try {
+                let list = await navigator.contacts.select(['name', 'tel'], { multiple: true });
+                list.forEach(c => { let name = (c.name?.[0] || '').trim(), phone = formatPhone(c.tel?.[0] || ''); if (!name || !phone) return;
+                    let k = name.toLowerCase(); if (!savedPlayers[k]) textExtra[k] = { name, phone }; textPicked.add(k); });
+                renderGroupText();
+            } catch (e) {}
+        }
         function groupTextList() {
-            let keys = textWho === 'in' ? Object.entries(signup?.responses || {}).filter(([, r]) => r.status === 'in').map(([k]) => k) : Object.keys(savedPlayers);
-            let names = whosNames();
-            return keys.map(k => ({ name: names[k] || savedPlayers[k]?.name || k, phone: phoneFor(k) }));
+            let all = Object.fromEntries(textCandidates());
+            return [...textPicked].filter(k => all[k]).map(k => all[k]);
         }
         function renderGroupText() {
-            document.querySelectorAll('#text-who button').forEach(b => b.setAttribute('aria-pressed', b.dataset.who === textWho));
-            let list = groupTextList(), have = list.filter(x => x.phone), missing = list.filter(x => !x.phone);
-            document.getElementById('text-to').innerHTML = `To ${have.length}: ${have.map(x => x.name.split(' ')[0]).join(', ') || 'nobody yet'}`
-                + (missing.length ? `<br><span class="payout-note">No number for ${missing.map(x => x.name.split(' ')[0]).join(', ')} · add it on their card in Players</span>` : '');
+            let rows = textCandidates();
+            document.getElementById('text-pick-in').style.display = signupIsCurrent() ? '' : 'none';
+            document.getElementById('text-pick').innerHTML = rows.map(([k, v]) => {
+                let on = textPicked.has(k) && v.phone;
+                return `<button type="button" class="rp-row${on ? ' on' : ''}" ${v.phone ? '' : 'disabled'} onclick="toggleTextPick('${k.replace(/'/g, "\\'")}')"><span class="rp-num">${on ? '✓' : ''}</span><span class="rp-name">${v.name}</span><span class="rp-note">${v.phone ? '' : 'no number'}</span></button>`;
+            }).join('');
+            let have = groupTextList().filter(x => x.phone);
+            document.getElementById('text-to').textContent = have.length ? `${have.length} selected` : 'Nobody selected';
         }
         function sendGroupText() {
             let nums = groupTextList().map(x => x.phone.replace(/[^\d+]/g, '')).filter(Boolean);
-            if (!nums.length) { alert('Nobody here has a mobile number yet. Add them on each player\'s card in Players.'); return; }
+            if (!nums.length) { alert('Tap who should get the text (players need a mobile number on their card in Players).'); return; }
             let body = encodeURIComponent(document.getElementById('text-body').value);
             let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
             // iPhone opens a group message with sms:/open?addresses=…; other phones take a comma list
