@@ -4473,11 +4473,14 @@ function hideCartHoleHeader() {
             activeViewScoresDb = scoresDb;
 
 
-            document.getElementById('dashboard-eyebrow').innerText = showingFinalResults ? 'Round complete' : 'Live';
-            document.getElementById('dashboard-title').innerText = showingFinalResults ? "Final results" : ((urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings");
+            // Our Match only: once the last score is in, the match is over even before the round is finalized
+            let matchOver = isOurMatchOnly(roundData) && !!calculateOurMatch(roundData, scoresDb, matchPresses || {})?.finished;
+            let over = showingFinalResults || matchOver;
+            document.getElementById('dashboard-eyebrow').innerText = over ? 'Round complete' : 'Live';
+            document.getElementById('dashboard-title').innerText = over ? "Final results" : ((urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings");
             document.getElementById('dashboard-sub').textContent = roundWhere(roundData);
             // A finished round has nothing left to alert about, so no "Get alerts" card on it
-            document.getElementById('step-dashboard').classList.toggle('round-over', showingFinalResults || !liveRoundInCloud);
+            document.getElementById('step-dashboard').classList.toggle('round-over', over || !liveRoundInCloud);
             
             let orderedSegments = getOrderedSegments(roundData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
