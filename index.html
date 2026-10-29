@@ -83,10 +83,10 @@
         .format-label { display: flex; align-items: center; gap: 12px; font-size: 18px; font-weight: 600; color: var(--text-main); text-transform: none; margin: 0; }
         .birdie-label { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--text-muted); font-weight: normal; text-transform: none; margin: 0; }
         .format-container input { width: 24px; height: 24px; accent-color: var(--accent-gold); margin: 0;}
-        .format-container input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: var(--fill-strong); position: relative; cursor: pointer; transition: background 0.2s; }
-        .format-container input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
-        .format-container input.switch:checked { background: var(--accent-gold); }
-        .format-container input.switch:checked::after { transform: translateX(18px); }
+        .format-container input.switch, .counts-row input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: var(--fill-strong); position: relative; cursor: pointer; transition: background 0.2s; }
+        .format-container input.switch::after, .counts-row input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        .format-container input.switch:checked, .counts-row input.switch:checked { background: var(--accent-gold); }
+        .format-container input.switch:checked::after, .counts-row input.switch:checked::after { transform: translateX(18px); }
         
 
         
@@ -504,6 +504,10 @@
         .alerts-all .text-link { padding: 6px 0; }
         .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
         .alerts-banner { margin: 12px 0 4px; }
+        .counts-row { margin: 18px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--fill-soft); }
+        .counts-row input.switch { flex-shrink: 0; margin: 0 0 0 12px; }
+        .counts-row .format-label { display: flex; flex-direction: column; align-items: flex-start; text-align: left; gap: 2px; text-transform: none; letter-spacing: 0; font-size: 16px; }
+        .not-counted { color: var(--accent-gold); }
         #step-dashboard.round-over .alerts-banner { display: none !important; }
         .ab-big { padding: 16px 18px 14px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
         .ab-title { font-size: 20px; font-weight: 900; line-height: 1.15; }
@@ -914,6 +918,7 @@
         <details class="help"><summary><div>5 · Finish up <span>Finalize</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Finalize</b> locks the round, saves it to <b>Past rounds</b>, adds everyone's score to their stats, and opens the results to share.</p>
             <p>Finalized too early? Open it in <b>Past rounds</b> and tap <b>Reopen</b> (within 24 hours).</p>
+            <p>Want to keep a round but not have it count (a practice round, a rained-out one)? Open it in <b>Past rounds</b> and turn off <b>Count in money &amp; stats</b>. It stays in Past rounds and its results link still works.</p>
             <p>In Past rounds, <b>Share this page</b> sends a link to that round's results with the <b>"Final results"</b> picture.</p>
         </details>
 
@@ -1174,6 +1179,10 @@
             <button type="button" class="bar-primary" onclick="shareArchivedLink()">Share this page</button>
             <button type="button" class="text-link" onclick="shareViewedResults()">Share as text instead</button>
             <button type="button" class="text-link" id="reopen-archived" style="display:none;" onclick="reopenLastRound()">Reopen this round</button>
+        </div>
+        <div class="format-row counts-row" id="archived-counts" style="display:none;">
+            <label class="format-label" for="archived-counts-switch">Count in money &amp; stats<span class="payout-note" id="archived-counts-note"></span></label>
+            <input type="checkbox" class="switch" id="archived-counts-switch" aria-label="Count this round in money and stats" onchange="setRoundCounts(this.checked)">
         </div>
         <button class="btn-secondary" id="archived-back-bottom" onclick="switchScreen('step-9', 'step-8')" style="max-width: 400px; margin: 20px auto; display: block;">← Back to past rounds</button>
     </div>
@@ -2188,6 +2197,7 @@ function toggle9HoleOptions() {
         function recordRoundHistory(id, rData, sDb) {
             let rec = historyRecord(rData, sDb);
             if (!rec) return 0;
+            if (roundHistory[id]?.excluded) rec.excluded = true;
             roundHistory[id] = rec;
             localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
             historyRef.set({ rounds: { [id]: rec } }, { merge: true }).catch(err => console.error('Saving history failed', err));
@@ -2219,7 +2229,7 @@ function toggle9HoleOptions() {
 
         // Every finished round for one player, newest first
         function playerRounds(key) {
-            return Object.entries(roundHistory).filter(([, r]) => linesFor(r.players, key).length)
+            return Object.entries(roundHistory).filter(([, r]) => !r.excluded && linesFor(r.players, key).length)
                 .map(([id, r]) => ({ id, date: r.date, course: r.course, holes: r.holes, ...linesFor(r.players, key)[0] }))
                 .sort((a, b) => (Date.parse(b.date) || 0) - (Date.parse(a.date) || 0) || String(b.id).localeCompare(String(a.id)));
         }
@@ -2826,7 +2836,7 @@ function toggle9HoleOptions() {
             document.querySelectorAll('#money-range button').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === moneyRange));
             let since = moneyRange === 'season' ? (ledger.settledAt || 0) : 0;
             let at = r => r.at || Date.parse(r.date) || 0;
-            let counts = r => r.money && Object.keys(r.money).length && (moneySettled(Object.values(r.money).map(m => Number(m.games))) || Object.values(r.money).some(m => Number(m.om)));
+            let counts = r => !r.excluded && r.money && Object.keys(r.money).length && (moneySettled(Object.values(r.money).map(m => Number(m.games))) || Object.values(r.money).some(m => Number(m.om)));
             let rounds = Object.values(roundHistory).filter(r => counts(r) && at(r) > since).sort((a, b) => at(b) - at(a));
             let totals = {};
             rounds.forEach(r => Object.entries(r.money).forEach(([rawKey, m]) => {
@@ -6115,7 +6125,7 @@ function hideCartHoleHeader() {
                         <input type="checkbox" class="archive-checkbox" value="${i}">
                         <div class="archive-info">
                             <div style="font-weight: bold; font-size: 18px;">${r.course}</div>
-                            <div style="color: var(--text-muted); font-size: 14px;">Played on: ${r.date}</div>
+                            <div style="color: var(--text-muted); font-size: 14px;">Played on: ${r.date}${roundHistory[r.id]?.excluded ? ' · <b class="not-counted">Not counted</b>' : ''}</div>
                         </div>
                         <button class="btn-secondary" style="width:auto; padding: 8px 12px; margin:0; font-size: 12px;" onclick="showArchivedCard(${i})">View</button>
                     </div>`;
@@ -6176,7 +6186,7 @@ function hideCartHoleHeader() {
             archiveRows = [{ id, local: false }];
             viewingArchiveId = id; viewingArchive = arc;
             renderArchivedRound(arc);
-            ['archived-top', 'archived-actions', 'archived-back-bottom'].forEach(x => document.getElementById(x).style.display = 'none');
+            ['archived-top', 'archived-actions', 'archived-counts', 'archived-back-bottom'].forEach(x => document.getElementById(x).style.display = 'none');
             document.getElementById('archived-eyebrow').textContent = 'JB Golf · final results';
             document.querySelectorAll('.screen').forEach(sc => sc.classList.remove('active'));
             document.getElementById('step-9').classList.add('active');
@@ -6199,6 +6209,24 @@ function hideCartHoleHeader() {
             activeTournamentRef.update({ isArchived: false, archivedAt: firebase.firestore.FieldValue.delete() }).catch(err => alert('Could not reopen: ' + err.message));
         }
 
+        // A round can stay in Past rounds but be left out of the season money and everyone's stats
+        function showRoundCounts() {
+            let rec = roundHistory[viewingArchiveId];
+            document.getElementById('archived-counts').style.display = rec ? '' : 'none';
+            if (!rec) return;
+            document.getElementById('archived-counts-switch').checked = !rec.excluded;
+            document.getElementById('archived-counts-note').textContent = rec.excluded ? 'Not counted: kept here, left out of money and stats' : 'Counted in season money and stats';
+        }
+        function setRoundCounts(on) {
+            let id = viewingArchiveId, rec = roundHistory[id];
+            if (!rec) return;
+            if (on) delete rec.excluded; else rec.excluded = true;
+            localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
+            historyRef.update(new firebase.firestore.FieldPath('rounds', id, 'excluded'), on ? firebase.firestore.FieldValue.delete() : true).catch(err => console.error('Saving failed', err));
+            showRoundCounts();
+            renderArchiveList(cloudIndexCache());
+        }
+
         async function showArchivedCard(index) {
             let row = archiveRows[index];
             let arc = localArchive().find(a => archiveId(a) === row.id);
@@ -6208,6 +6236,7 @@ function hideCartHoleHeader() {
             }
             viewingArchiveId = row.id; viewingArchive = arc;
             document.getElementById('reopen-archived').style.display = reopenable && row.id === String(reopenable.roundData.roundId) ? '' : 'none';
+            showRoundCounts();
             if (renderArchivedRound(arc)) switchScreen('step-8', 'step-9');
             else alert("⚠️ This round is from an older version of the app and is missing data for the new layout.");
         }
