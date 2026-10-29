@@ -352,16 +352,20 @@
         .phone-row input { flex: 1; }
         .phone-row .text-link { white-space: nowrap; margin: 0; }
         .help { margin: 10px 0; padding: 0 14px; border-radius: 14px; background: var(--fill-soft); border: 1px solid var(--line); }
-        .help summary { cursor: pointer; list-style: none; padding: 14px 0; font-size: 17px; font-weight: 700; color: var(--text-main); }
+        .help summary { cursor: pointer; list-style: none; display: flex; align-items: center; padding: 14px 0; font-size: 17px; font-weight: 700; color: var(--text-main); }
+        .help summary::after { content: '▾'; font-size: 16px; color: var(--text-muted); transition: transform .15s; }
+        .help[open] summary::after { transform: rotate(180deg); }
+        .help summary > div, .text-numbers summary > span:first-child { flex: 1; }
         .help summary::-webkit-details-marker { display: none; }
-        .help summary span { display: block; font-size: 13px; font-weight: 500; color: var(--accent-gold); margin-top: 2px; }
+        .help summary > div span { display: block; font-size: 13px; font-weight: 500; color: var(--accent-gold); margin-top: 2px; }
         .help p { font-size: 15px; line-height: 1.45; color: var(--text-main); margin: 0 0 12px; }
         .text-numbers { margin: 4px 0 10px; }
         .text-quick { display: flex; flex-wrap: wrap; gap: 4px 16px; justify-content: center; margin: 4px 0; }
         .text-quick .text-link { margin: 0; font-size: 14px; }
         .text-pick { max-height: 38vh; overflow-y: auto; border-top: 1px solid var(--line); }
         .text-pick .rp-row { min-height: 44px; }
-        .text-numbers summary { cursor: pointer; color: var(--accent-gold); font-weight: 600; font-size: 14px; text-align: center; padding: 6px 0; }
+        .text-numbers summary { cursor: pointer; list-style: none; display: flex; align-items: center; color: var(--accent-gold); font-weight: 600; font-size: 14px; padding: 6px 0; }
+        .text-numbers summary::-webkit-details-marker { display: none; }
         .su-tools { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: -2px 0 8px; }
         .su-tools .text-link { margin: 0; font-size: 14px; }
         .su-cancelled { padding: 12px; border-radius: 12px; background: rgba(248,81,73,.15); color: var(--text-main); font-weight: 700; text-align: center; }
@@ -370,8 +374,8 @@
         details.fold > summary::after { content: '▾'; font-size: 16px; transition: transform .15s; }
         details.fold[open] > summary::after { transform: rotate(180deg); }
         details.fold { border-top: 1px solid var(--line); }
-        details.fold .fold-hint { margin: 0 10px 0 auto; padding: 5px 12px; border-radius: 999px; background: var(--accent-gold); color: #111; font-size: 12px; letter-spacing: .02em; text-transform: none; }
-        details.fold[open] .fold-hint { display: none; }
+        .fold-hint { flex-shrink: 0; margin: 0 10px 0 auto; padding: 5px 12px; border-radius: 999px; background: var(--accent-gold); color: #111; font-size: 12px; letter-spacing: .02em; text-transform: none; }
+        details[open] > summary .fold-hint { display: none; }
         .settle-row { font-size: 17px; padding: 8px 0; }
         .roster-add-saved { display: block; margin: 6px 0 0 4px; font-size: 15px; }
         .rp-list { max-height: 52vh; overflow-y: auto; margin: 10px 0 14px; }
@@ -878,7 +882,7 @@
         <h2 class="clean-title">How it works</h2>
         <p class="clean-sub">A typical week, top to bottom. Tap a section to open it.</p>
 
-        <details class="help" open><summary>1 · Ask who's in <span>Sign-up link</span></summary>
+        <details class="help" open><summary><div>1 · Ask who's in <span>Sign-up link</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>From <b>Home</b>, tap <b>Sign-up link</b>. Type your message, like <i>"Golf Thursday?"</i>, pick the date, tee time and course, then <b>Next: send it</b>.</p>
             <p><b>Send to your group chat</b> opens Share. Pick Messages and your golf group text. Everyone gets your message plus a link with the <b>"Are you in?"</b> picture.</p>
             <p>Tapping the link shows <b>every player with In / Out buttons</b>. Each person taps their own. They can also mark a buddy (it asks first and shows who did it). New people can add their name.</p>
@@ -886,44 +890,44 @@
             <p>Plans change? On <b>Who's playing</b>: <b>Text everyone who's in</b>, <b>Start over</b> (clears answers) or <b>Cancel round</b> (the link then says it's cancelled).</p>
         </details>
 
-        <details class="help"><summary>2 · Make the teams <span>Who's playing</span></summary>
+        <details class="help"><summary><div>2 · Make the teams <span>Who's playing</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Who's playing</b> is your own checklist. Everyone who tapped In is already checked. Check or uncheck anyone else.</p>
             <p>Pick <b>players per team</b> and tap <b>Make teams</b>. The teams come out balanced by handicap, with each team's total next to its name.</p>
             <p>On the roster: tap a player's <b>number</b>, then another's, to swap them. <b>Try another</b> deals a different even split. <b>Undo</b> takes back the last change. <b>Clear all</b> starts over.</p>
             <p>The sign-up link is for the group. Who's playing is for you.</p>
         </details>
 
-        <details class="help"><summary>3 · Start the round <span>New round</span></summary>
+        <details class="help"><summary><div>3 · Start the round <span>New round</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>New round</b> sets the course, holes, bets, skins and Our Match. <b>Next: Rosters</b> shows the teams (or use Who's playing), then <b>Start round</b>.</p>
             <p>Tee times start 10 minutes apart. Change one and the rest follow.</p>
             <p>On the scoring screen, <b>Text live links to carts</b> sends each cart its own scorecard link. <b>Share spectator leaderboard</b> is a watch-only link for anyone else.</p>
             <p>Players who saved JB Golf to their Home Screen keep using that icon. Each new round, it asks <i>"Which cart are you in today?"</i> and they tap theirs. A cart link opened in Safari asks once if they have the app, and shows how to add it if not.</p>
         </details>
 
-        <details class="help"><summary>4 · During the round <span>Scoring</span></summary>
+        <details class="help"><summary><div>4 · During the round <span>Scoring</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>Each cart enters its scores on its own phone. You can score any team from your phone too.</p>
             <p><b>Standings</b> shows the leaderboard, skins, money, cart progress with pace of play, and a list of any scores that were changed.</p>
             <p>📣 sends a message to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
         </details>
 
-        <details class="help"><summary>5 · Finish up <span>Finalize</span></summary>
+        <details class="help"><summary><div>5 · Finish up <span>Finalize</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Finalize</b> locks the round, saves it to <b>Past rounds</b>, adds everyone's score to their stats, and opens the results to share.</p>
             <p>Finalized too early? Open it in <b>Past rounds</b> and tap <b>Reopen</b> (within 24 hours).</p>
             <p>In Past rounds, <b>Share this page</b> sends a link to that round's results with the <b>"Final results"</b> picture.</p>
         </details>
 
-        <details class="help"><summary>Players <span>names, numbers, stats</span></summary>
+        <details class="help"><summary><div>Players <span>names, numbers, stats</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>Each player has first and last name, a nickname for the scoring screen, usual tees, a <b>mobile number</b> (green dot when saved) and <b>Usually shoots</b> until they have rounds.</p>
             <p>Tap a player for their <b>index</b>, average, best score and recent rounds. The index is handicap-style: the best of their last 20 rounds, adjusted for the tees. It isn't an official USGA index.</p>
             <p>Add numbers fast: in Contacts make a list of the guys, export it, then <b>Add phone numbers from a contacts file</b>.</p>
         </details>
 
-        <details class="help"><summary>Money <span>season totals</span></summary>
+        <details class="help"><summary><div>Money <span>season totals</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>Every finalized round adds each player's winnings: team bets and skins less their buy-in, plus Our Match. Tap a name to see each round.</p>
             <p><b>Settle up</b> is for when everyone has paid up. The season totals start back at $0, and <b>All time</b> still has every round. Nothing is deleted.</p>
         </details>
 
-        <details class="help"><summary>Alerts <span>phone notifications</span></summary>
+        <details class="help"><summary><div>Alerts <span>phone notifications</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Alerts</b> on Home turns notifications on for your phone and picks what gets sent each round. Each player turns them on from their own cart link (iPhone: add it to the Home Screen first).</p>
         </details>
     </div>
@@ -1070,7 +1074,7 @@
             <button class="btn-primary" onclick="sendToGroupChat()">Send to your group chat</button>
             <p class="dash-footnote" style="text-align:center; margin-top: 0;">Opens Share: pick Messages, then your golf group text.</p>
             <details class="text-numbers">
-                <summary>Or pick who gets it (new text)</summary>
+                <summary><span>Or pick who gets it (new text)</span><span class="fold-hint">Tap to open</span></summary>
                 <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
                 <div id="text-pick" class="text-pick"></div>
                 <p class="clean-sub" id="text-to"></p>
@@ -4489,14 +4493,13 @@ function hideCartHoleHeader() {
                 });
             });
 
-            let finHTML = `<details class="dash-details rules-details">
-                <summary><span>Rules</span></summary>
+            let finHTML = fold('live-rules', 'See the rules', `
                 ${hasTournamentMoney(roundData) ? `<div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
                 <div class="dash-row"><span>Per bet</span><span>$${roundData.betAmount}</span></div>
                 <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>` : `<div class="dash-row"><span>Tournament purse</span><span>None, Our Match only</span></div>`}
                 ${rulesHTML}
                 <p class="dash-footnote">Red dot = player gets a stroke there; scorecards show gross/net. Skins are gross only.</p>
-            </details>`;
+            `);
 
             // Cart progress is an admin tool; carts and spectators don't need it
             let showProgress = urlParams.get('spectator') !== 'true' && lockedTeamId === null && !isOurMatchOnly(roundData);
@@ -4552,8 +4555,7 @@ function hideCartHoleHeader() {
             if (!rows.length) return '';
             let name = x => rData.groups.find(g => g.id == x.g)?.players.find(p => p.id == x.p)?.name.split(' ')[0] || 'Player';
             let clock = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
-            return `<details class="dash-section score-changes"><summary class="dash-section-title">Score changes (${rows.length})</summary>
-                ${rows.map(x => `<div class="dash-row-line change-row"><span>${clock(x.at)} · <b>${x.by}</b> changed ${name(x)}'s ${x.from} to ${x.to || 'blank'} on ${x.hole}</span></div>`).join('')}</details>`;
+            return fold('live-changes', `See score changes (${rows.length})`, rows.map(x => `<div class="dash-row-line change-row"><span>${clock(x.at)} · <b>${x.by}</b> changed ${name(x)}'s ${x.from} to ${x.to || 'blank'} on ${x.hole}</span></div>`).join(''));
         }
 
         function generateCartProgressHTML(rData, sDb) {
@@ -5232,7 +5234,7 @@ function hideCartHoleHeader() {
                     pressList.filter(pr => pr.after === h).forEach(pr => { chart += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · starts hole ${pr.start}</td></tr>`; });
                 });
                 chart += `</tbody></table>`;
-                html += fold('om-nassau-holes', 'Nassau hole by hole', chart);
+                html += fold('om-nassau-holes', 'See Nassau hole by hole', chart);
             }
 
             // First ball / second ball and birdies, one chart per nine
@@ -5463,11 +5465,12 @@ function hideCartHoleHeader() {
         }
         // Collapsible sections that stay open or closed when the page redraws with new scores
         let foldOpen = {};
-        // The scorecards dropdown says what it is and that it opens, so it doesn't get scrolled past
-        const CARDS_FOLD_TITLE = '<span>See Team Scorecards</span><span class="fold-hint">Tap to open</span>';
+        const CARDS_FOLD_TITLE = 'See Team Scorecards';
+        // Every dropdown says what it is and has a "Tap to open" pill, so it doesn't get scrolled past
+        const FOLD_HINT = '<span class="fold-hint">Tap to open</span>';
         function fold(id, summary, body, openByDefault = false) {
             let open = id in foldOpen ? foldOpen[id] : openByDefault;
-            return `<details class="dash-section fold" data-fold="${id}"${open ? ' open' : ''} ontoggle="foldOpen[this.dataset.fold] = this.open"><summary class="dash-section-title">${summary}</summary>${body}</details>`;
+            return `<details class="dash-section fold" data-fold="${id}"${open ? ' open' : ''} ontoggle="foldOpen[this.dataset.fold] = this.open"><summary class="dash-section-title"><span>${summary}</span>${FOLD_HINT}</summary>${body}</details>`;
         }
         function ourMatchSummaryLine(rData, sDb, presses) {
             let m = calculateOurMatch(rData, sDb, presses || {});
@@ -5481,7 +5484,7 @@ function hideCartHoleHeader() {
             if (pay.players.length === 0) return { top: '<p>No data.</p>', more: '' };
             let top = purseHTML(pay) + generateScorecardHTML(scorecardView(rData), sDb, 'leaderboard') + teamBetsWonHTML(rData, pay) + skinsHTML(rData, pay);
             let more = (cardsElsewhere ? '' : fold(prefix + 'cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(rData), sDb, 'cards')))
-                + fold(prefix + 'math', 'Who pays who &amp; all the math', settleUpHTML(rData, sDb, pay, presses) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
+                + fold(prefix + 'math', 'See who pays who &amp; all the math', settleUpHTML(rData, sDb, pay, presses) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
             return { top, more };
         }
 
