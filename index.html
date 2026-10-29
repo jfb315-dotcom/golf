@@ -364,6 +364,12 @@
         .su-tools { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: -2px 0 8px; }
         .su-tools .text-link { margin: 0; font-size: 14px; }
         .su-cancelled { padding: 12px; border-radius: 12px; background: rgba(248,81,73,.15); color: var(--text-main); font-weight: 700; text-align: center; }
+        details.fold > summary { cursor: pointer; list-style: none; display: flex; justify-content: space-between; align-items: center; padding: 14px 0; }
+        details.fold > summary::-webkit-details-marker { display: none; }
+        details.fold > summary::after { content: '▾'; font-size: 16px; transition: transform .15s; }
+        details.fold[open] > summary::after { transform: rotate(180deg); }
+        details.fold { border-top: 1px solid var(--line); }
+        .settle-row { font-size: 17px; padding: 8px 0; }
         .roster-add-saved { display: block; margin: 6px 0 0 4px; font-size: 15px; }
         .rp-list { max-height: 52vh; overflow-y: auto; margin: 10px 0 14px; }
         .rp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 6px; background: none; border: none; border-bottom: 1px solid var(--line); color: var(--text-main); font-size: 16px; text-align: left; cursor: pointer; }
@@ -800,6 +806,7 @@
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts"></div>
         <div id="dashboard-our-match"></div>
+        <div id="dashboard-more"></div>
         <div id="dashboard-financial-summary"></div>
         <div id="dashboard-changes"></div>
         <div class="dash-actions">
@@ -1138,6 +1145,7 @@
         <div id="archived-card-container"></div>
         <div id="archived-payout-summary-container"></div>
         <div id="archived-our-match-container"></div>
+        <div id="archived-more"></div>
         <div class="dash-actions" id="archived-actions">
             <button type="button" class="bar-primary" onclick="shareArchivedLink()">Share this page</button>
             <button type="button" class="text-link" onclick="shareViewedResults()">Share as text instead</button>
@@ -4453,9 +4461,12 @@ function hideCartHoleHeader() {
             document.getElementById('dashboard-cart-progress').innerHTML = showProgress ? generateCartProgressHTML(roundData, scoresDb) : '';
             document.getElementById('dashboard-changes').innerHTML = urlParams.get('spectator') !== 'true' ? generateScoreChangesHTML(roundData) : '';
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
-            document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(scorecardView(roundData), scoresDb); 
-            document.getElementById('dashboard-payouts').innerHTML = hasTournamentMoney(roundData) ? generateFinancialSummaryHTML(roundData, scoresDb) : '';
-            document.getElementById('dashboard-our-match').innerHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults) : '';
+            let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-') : null;
+            document.getElementById('dashboard-scorecards').innerHTML = money ? '' : generateScorecardHTML(scorecardView(roundData), scoresDb);
+            document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
+            document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
+            let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults) : '';
+            document.getElementById('dashboard-our-match').innerHTML = omHTML && money ? fold('live-om', ourMatchSummaryLine(roundData, scoresDb, matchPresses), omHTML, !showingFinalResults) : omHTML;
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
@@ -4560,7 +4571,8 @@ function hideCartHoleHeader() {
             return holeNet;
         }
 
-      function generateScorecardHTML(rData, sDb) {
+      // part: 'leaderboard' (just the leaderboard table), 'cards' (just the team scorecards), or both with Bets won (default)
+      function generateScorecardHTML(rData, sDb, part) {
             let fullHTML = ''; 
             let summaryHTML = ''; // This will hold our new top-level Leaderboard
             let orderedSegments = getOrderedSegments(rData);
@@ -4669,6 +4681,7 @@ function hideCartHoleHeader() {
                 summaryHTML += `</tr>`;
             });
             summaryHTML += `</tbody></table></div><p class="dash-footnote">Highlighted = winning that bet. Dashed = tied.</p></section>`;
+            if (part === 'leaderboard') return rData.formats.length ? summaryHTML : '';
 
             // ======= 2. BUILD THE INDIVIDUAL SCORECARDS =======
             let skinsWon = {};
@@ -4849,7 +4862,7 @@ function hideCartHoleHeader() {
             }
 
             // Return BOTH the Summary Table and the Individual Scorecards!
-            if (rData.formats.length === 0) return fullHTML; // no team games (Our Match only): just the cards
+            if (part === 'cards' || rData.formats.length === 0) return fullHTML; // no team games (Our Match only): just the cards
             return summaryHTML + fullHTML;
         }
 
@@ -5296,19 +5309,57 @@ function hideCartHoleHeader() {
         function isOurMatchOnly(rData) { return !!rData.ourMatch && !hasTournamentMoney(rData); }
         function scorecardView(rData) { return isOurMatchOnly(rData) ? { ...rData, formats: [] } : rData; }
 
-        function generateFinancialSummaryHTML(rData, sDb) {
-            let pay = calculatePayouts(rData, sDb);
-            if (pay.players.length === 0) return "<p>No data.</p>";
-            let g = id => rData.groups.find(x => x.id === id);
-
-            let html = `<div class="payout-header">Purse</div>
+        // ===== Money on the standings page =====
+        // First view: purse, leaderboard, team bets won (with each player's share), skins, Our Match.
+        // Tap to open: the scorecards, and who pays who with all the math behind it.
+        function purseHTML(pay) {
+            return `<section class="dash-section"><div class="payout-header" style="margin-top:0;">Purse</div>
                 <div class="payout-row"><span>Total purse</span><b class="payout-amount">${formatCents(pay.teamPotCents + pay.skinsPotCents)}</b></div>
                 <div class="payout-row"><span>Team bets <span class="payout-note">${pay.totalBets} bets × ${formatCents(pay.betPotCents)}</span></span><span class="payout-amount">${formatCents(pay.teamPotCents)}</span></div>
-                <div class="payout-row"><span>Skins <span class="payout-note">${pay.skinsRefunded ? 'none won, refunded' : `${pay.skins.length} won × ${formatCents(pay.perSkinCents)}`}</span></span><span class="payout-amount">${formatCents(pay.skinsPotCents)}</span></div>`;
-
-            // Team bets: who won each bet, then each team's winnings split among its players
+                <div class="payout-row"><span>Skins <span class="payout-note">${pay.skinsRefunded ? 'none won, refunded' : `${pay.skins.length} won × ${formatCents(pay.perSkinCents)}`}</span></span><span class="payout-amount">${formatCents(pay.skinsPotCents)}</span></div></section>`;
+        }
+        function teamBetsWonHTML(rData, pay) {
+            let html = `<section class="dash-section"><div class="payout-header" style="margin-top:0;">Team bets won · ${formatCents(pay.betPotCents)} each</div>`;
+            rData.groups.forEach(team => {
+                let won = pay.bets.reduce((a, b) => a + (b.winners.includes(team.id) ? 1 / b.winners.length : 0), 0);
+                let members = pay.players.filter(p => p.gid === team.id);
+                html += `<div class="team-payout">
+                    <div class="dash-row-line"><b style="color:${teamColor(team)};">T${team.id} · ${team.captain.split(' ')[0]}</b><b class="payout-amount">${formatCents(pay.teamWinCents[team.id])}</b></div>
+                    <div class="payout-note" style="margin: 2px 0 6px;">Won ${formatBetsWon(won)} of ${pay.totalBets}${won > 0 ? ` × ${formatCents(pay.betPotCents)}, split ${members.length} ways` : ''}</div>`;
+                if (won > 0) members.forEach(p => { html += `<div class="payout-row sub"><span>${p.name.split(' ')[0]}</span><span>${formatCents(p.teamCents)}</span></div>`; });
+                html += `</div>`;
+            });
+            return html + `</section>`;
+        }
+        function skinsHTML(rData, pay) {
+            let html = `<section class="dash-section"><div class="payout-header" style="margin-top:0;">Skins · ${formatCents(pay.skinsPotCents)} cash pot</div>`;
+            if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won${rData.skinsAmount > 0 ? ', so nobody pays the skins buy-in' : ''}</span></div>`;
+            else html += `<div class="payout-sub">${pay.skins.length} won × ${formatCents(pay.perSkinCents)}</div>`;
+            skinsByPlayer(pay).forEach(w => {
+                html += `<div class="payout-row skins-player"><span><b style="color:${w.color};">${firstName(w.name)}</b> <span class="payout-note">${w.holes.length === 1 ? 'hole' : 'holes'} ${w.holes.join(', ')}</span></span><span class="payout-amount"><span class="payout-note">${w.holes.length} × ${formatCents(pay.perSkinCents)} =</span> ${formatCents(w.cents)}</span></div>`;
+            });
+            return html + `</section>`;
+        }
+        // Team bets and Our Match netted into the fewest payments (skins come out of the cash pot)
+        function settleUpHTML(rData, sDb, pay, presses) {
+            let nets = {}, first = n => n.split(' ')[0];
+            pay.players.forEach(p => nets[p.name] = (nets[p.name] || 0) + p.teamCents - pay.teamEntryCents);
+            let m = rData.ourMatch ? calculateOurMatch(rData, sDb, presses || {}) : null;
+            if (m) m.sides.forEach((side, i) => side.forEach(x => nets[x.player.name] = (nets[x.player.name] || 0) + (i === 0 ? 1 : -1) * m.totalMoney * 100));
+            let payments = calculateSettlements(Object.entries(nets).map(([name, netCents]) => ({ name, netCents })));
+            let totals = Object.entries(nets).sort((a, b) => b[1] - a[1]);
+            let skins = skinsByPlayer(pay);
+            return `<div class="payout-header" style="margin-top:4px;">Who pays who${m ? ' · team bets + Our Match' : ' · team bets'}</div>
+                <div class="payout-sub">${payments.length ? `These ${payments.length} payment${payments.length === 1 ? '' : 's'} square everyone (if nobody paid the team entry up front). Whole dollars.` : 'Nobody owes anybody.'}</div>
+                ${payments.map(pm => `<div class="payout-row settle-row"><span><b>${first(pm.from)}</b> pays <b>${first(pm.to)}</b></span><b class="payout-amount">${formatDollars(pm.cents)}</b></div>`).join('')}
+                ${skins.length ? `<div class="payout-sub" style="margin-top:6px;">💰 Skins are paid in cash from the pot: ${skins.map(sk => `${first(sk.name)} ${formatCents(sk.cents)}`).join(' · ')}</div>` : ''}
+                <div class="payout-sub" style="margin-top:10px;">Each player's total${m && !m.finished ? ' so far' : ''}</div>
+                ${totals.map(([n, c]) => `<div class="payout-row sub"><span>${first(n)}</span><span style="color:${c > 0 ? 'var(--good)' : c < 0 ? '#f85149' : 'inherit'}">${c > 0 ? '+' : c < 0 ? '−' : ''}${formatCents(c)}</span></div>`).join('')}`;
+        }
+        function betsGridHTML(rData, pay) {
+            let g = id => rData.groups.find(x => x.id === id);
             let segLabels = [...new Set(pay.bets.map(b => b.label))];
-            html += `<div class="payout-header">Team bets · ${formatCents(pay.betPotCents)} each</div>
+            let html = `<div class="payout-header">Each team bet</div>
                 <div class="table-wrapper"><table class="money-table bets-grid"><thead><tr><th class="name-col"></th>${segLabels.map(l => `<th>${l}</th>`).join('')}</tr></thead><tbody>`;
             rData.formats.forEach(f => {
                 html += `<tr><td class="name-col">${f}-Ball</td>`;
@@ -5321,48 +5372,41 @@ function hideCartHoleHeader() {
                 });
                 html += `</tr>`;
             });
-            html += `</tbody></table></div>`;
-            rData.groups.forEach(team => {
-                let won = pay.bets.reduce((a, b) => a + (b.winners.includes(team.id) ? 1 / b.winners.length : 0), 0);
-                let members = pay.players.filter(p => p.gid === team.id);
-                html += `<div class="team-payout">
-                    <div class="dash-row-line"><b style="color:${teamColor(team)};">Team ${team.id} · ${team.captain.split(' ')[0]}</b><b class="payout-amount">${formatCents(pay.teamWinCents[team.id])}</b></div>
-                    <div class="payout-note" style="margin: 2px 0 6px;">Won ${formatBetsWon(won)} of ${pay.totalBets}${won > 0 ? ` × ${formatCents(pay.betPotCents)} = ${formatCents(pay.teamWinCents[team.id])}` : ''}</div>`;
-                if (won > 0) members.forEach(p => { html += `<div class="payout-row sub"><span>${p.name.split(' ')[0]}</span><span>${formatCents(p.teamCents)}</span></div>`; });
-                html += `</div>`;
-            });
-
-            // Skins, one line per player: their holes and what they collect
-            html += `<div class="payout-header">Skins · ${formatCents(pay.skinsPotCents)} cash pot</div>`;
-            if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won${rData.skinsAmount > 0 ? ', so nobody pays the skins buy-in' : ''}</span></div>`;
-            else html += `<div class="payout-sub">${pay.skins.length} won × ${formatCents(pay.perSkinCents)}</div>`;
-            skinsByPlayer(pay).forEach(w => {
-                html += `<div class="payout-row skins-player"><span><b style="color:${w.color};">${firstName(w.name)}</b> <span class="payout-note">${w.holes.length === 1 ? 'hole' : 'holes'} ${w.holes.join(', ')}</span></span><span class="payout-amount"><span class="payout-note">${w.holes.length} × ${formatCents(pay.perSkinCents)} =</span> ${formatCents(w.cents)}</span></div>`;
-            });
-
-            // Everyone paid in: what to hand each player from the pot
+            return html + `</tbody></table></div>`;
+        }
+        function payOutFromPotHTML(pay) {
             let paidOut = [...pay.players].filter(p => p.wonCents > 0).sort((a, b) => b.wonCents - a.wonCents);
-            if (paidOut.length > 0) {
-                html += `<div class="payout-header">Pay out from the pot</div>
-                    <div class="payout-sub">When everyone has paid ${formatCents(pay.players[0].buyInCents)}</div>`;
-                paidOut.forEach(p => {
-                    let parts = [];
-                    if (p.teamCents) parts.push(`team ${formatCents(p.teamCents)}`);
-                    if (p.skinsCents) parts.push(`skins ${formatCents(p.skinsCents)}`);
-                    html += `<div class="payout-row"><span><b style="color:${p.color};">${p.name.split(' ')[0]}</b> <span class="payout-note">${parts.join(' + ')}</span></span><b class="payout-amount">${formatCents(p.wonCents)}</b></div>`;
-                });
-            }
-
-            // Last: the shortcut that skips everyone paying in first
-            let payments = teamBetSettlements(pay);
-            if (payments.length > 0) {
-                html += `<div class="payout-header">Who pays who · team bets</div>
-                    <div class="payout-sub">If nobody paid the team entry: what each player owes the others. Skins are paid from the cash pot. Whole dollars.</div>`;
-                payments.forEach(pm => {
-                    html += `<div class="payout-row"><span>${pm.from.split(' ')[0]} → ${pm.to.split(' ')[0]}</span><span class="payout-amount">${formatDollars(pm.cents)}</span></div>`;
-                });
-            }
+            if (!paidOut.length) return '';
+            let html = `<div class="payout-header">Or: pay out from the pot</div>
+                <div class="payout-sub">If everyone paid ${formatCents(pay.players[0].buyInCents)} up front (team bets + skins). Our Match is separate.</div>`;
+            paidOut.forEach(p => {
+                let parts = [];
+                if (p.teamCents) parts.push(`team ${formatCents(p.teamCents)}`);
+                if (p.skinsCents) parts.push(`skins ${formatCents(p.skinsCents)}`);
+                html += `<div class="payout-row"><span><b style="color:${p.color};">${p.name.split(' ')[0]}</b> <span class="payout-note">${parts.join(' + ')}</span></span><b class="payout-amount">${formatCents(p.wonCents)}</b></div>`;
+            });
             return html;
+        }
+        // Collapsible sections that stay open or closed when the page redraws with new scores
+        let foldOpen = {};
+        function fold(id, summary, body, openByDefault = false) {
+            let open = id in foldOpen ? foldOpen[id] : openByDefault;
+            return `<details class="dash-section fold" data-fold="${id}"${open ? ' open' : ''} ontoggle="foldOpen[this.dataset.fold] = this.open"><summary class="dash-section-title">${summary}</summary>${body}</details>`;
+        }
+        function ourMatchSummaryLine(rData, sDb, presses) {
+            let m = calculateOurMatch(rData, sDb, presses || {});
+            if (!m) return 'Our Match';
+            let t = m.totalMoney, lead = t > 0 ? m.names[0] : m.names[1];
+            return `Our Match · ${t === 0 ? 'all square' : `${lead} up $${Math.abs(t).toLocaleString('en-US')}`}${m.finished ? '' : ' so far'}`;
+        }
+        // The standings / results page, in order. Returns { top, more } so Our Match can sit between them.
+        function standingsSections(rData, sDb, presses, prefix) {
+            let pay = calculatePayouts(rData, sDb);
+            if (pay.players.length === 0) return { top: '<p>No data.</p>', more: '' };
+            let top = purseHTML(pay) + generateScorecardHTML(scorecardView(rData), sDb, 'leaderboard') + teamBetsWonHTML(rData, pay) + skinsHTML(rData, pay);
+            let more = fold(prefix + 'cards', 'Scorecards', generateScorecardHTML(scorecardView(rData), sDb, 'cards'))
+                + fold(prefix + 'math', 'Who pays who &amp; all the math', settleUpHTML(rData, sDb, pay, presses) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
+            return { top, more };
         }
 
         // ==========================================
@@ -6096,9 +6140,13 @@ function hideCartHoleHeader() {
             if(!activeViewRoundData.nineHoleType) { activeViewRoundData.nineHoleType = 'straight'; }
             
             try { 
-                document.getElementById('archived-card-container').innerHTML = generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb); 
-                document.getElementById('archived-payout-summary-container').innerHTML = hasTournamentMoney(activeViewRoundData) ? generateFinancialSummaryHTML(activeViewRoundData, activeViewScoresDb) : ''; 
-                document.getElementById('archived-our-match-container').innerHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, activeViewRoundData.matchPresses || {}, false) : '';
+                let presses = activeViewRoundData.matchPresses || {};
+                let money = hasTournamentMoney(activeViewRoundData) ? standingsSections(activeViewRoundData, activeViewScoresDb, presses, 'arc-') : null;
+                document.getElementById('archived-card-container').innerHTML = money ? '' : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb);
+                document.getElementById('archived-payout-summary-container').innerHTML = money ? money.top : '';
+                let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, presses, false) : '';
+                document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(activeViewRoundData, activeViewScoresDb, presses), omHTML) : omHTML;
+                document.getElementById('archived-more').innerHTML = money ? money.more : '';
                 document.getElementById('archived-sub').textContent = [activeViewRoundData.course?.name, formatRoundDate(activeViewRoundData.date || arc.date)].filter(Boolean).join(' · ');
                 return true;
             } catch (error) { 
