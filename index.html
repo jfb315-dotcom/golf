@@ -370,6 +370,8 @@
         details.fold > summary::after { content: '▾'; font-size: 16px; transition: transform .15s; }
         details.fold[open] > summary::after { transform: rotate(180deg); }
         details.fold { border-top: 1px solid var(--line); }
+        details.fold .fold-hint { margin: 0 10px 0 auto; padding: 5px 12px; border-radius: 999px; background: var(--accent-gold); color: #111; font-size: 12px; letter-spacing: .02em; text-transform: none; }
+        details.fold[open] .fold-hint { display: none; }
         .settle-row { font-size: 17px; padding: 8px 0; }
         .roster-add-saved { display: block; margin: 6px 0 0 4px; font-size: 15px; }
         .rp-list { max-height: 52vh; overflow-y: auto; margin: 10px 0 14px; }
@@ -4503,7 +4505,7 @@ function hideCartHoleHeader() {
             let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
             // Our Match over: who pays who goes first, with the scorecards folded under it
             let banner = ourMatchFinalBanner(roundData, scoresDb, matchPresses, showingFinalResults);
-            let cardsFold = fold('live-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator && !banner);
+            let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator && !banner);
             document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
@@ -5451,6 +5453,8 @@ function hideCartHoleHeader() {
         }
         // Collapsible sections that stay open or closed when the page redraws with new scores
         let foldOpen = {};
+        // The scorecards dropdown says what it is and that it opens, so it doesn't get scrolled past
+        const CARDS_FOLD_TITLE = '<span>See Team Scorecards</span><span class="fold-hint">Tap to open</span>';
         function fold(id, summary, body, openByDefault = false) {
             let open = id in foldOpen ? foldOpen[id] : openByDefault;
             return `<details class="dash-section fold" data-fold="${id}"${open ? ' open' : ''} ontoggle="foldOpen[this.dataset.fold] = this.open"><summary class="dash-section-title">${summary}</summary>${body}</details>`;
@@ -5466,7 +5470,7 @@ function hideCartHoleHeader() {
             let pay = calculatePayouts(rData, sDb);
             if (pay.players.length === 0) return { top: '<p>No data.</p>', more: '' };
             let top = purseHTML(pay) + generateScorecardHTML(scorecardView(rData), sDb, 'leaderboard') + teamBetsWonHTML(rData, pay) + skinsHTML(rData, pay);
-            let more = (cardsElsewhere ? '' : fold(prefix + 'cards', 'Team Scorecards', generateScorecardHTML(scorecardView(rData), sDb, 'cards')))
+            let more = (cardsElsewhere ? '' : fold(prefix + 'cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(rData), sDb, 'cards')))
                 + fold(prefix + 'math', 'Who pays who &amp; all the math', settleUpHTML(rData, sDb, pay, presses) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
             return { top, more };
         }
@@ -6204,7 +6208,7 @@ function hideCartHoleHeader() {
             try { 
                 let presses = activeViewRoundData.matchPresses || {};
                 let money = hasTournamentMoney(activeViewRoundData) ? standingsSections(activeViewRoundData, activeViewScoresDb, presses, 'arc-') : null;
-                document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(activeViewRoundData, activeViewScoresDb, presses, true) + (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
+                document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(activeViewRoundData, activeViewScoresDb, presses, true) + (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
                 document.getElementById('archived-payout-summary-container').innerHTML = money ? money.top : '';
                 let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, presses, false) : '';
                 document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(activeViewRoundData, activeViewScoresDb, presses), omHTML) : omHTML;
