@@ -5313,8 +5313,10 @@ function hideCartHoleHeader() {
         // First view: purse, leaderboard, team bets won (with each player's share), skins, Our Match.
         // Tap to open: the scorecards, and who pays who with all the math behind it.
         function purseHTML(pay) {
+            let players = pay.players.length, teamEntry = pay.teamEntryCents, skinsEntry = pay.skinsRefunded ? 0 : (pay.players[0]?.buyInCents || 0) - teamEntry;
             return `<section class="dash-section"><div class="payout-header" style="margin-top:0;">Purse</div>
-                <div class="payout-row"><span>Total purse</span><b class="payout-amount">${formatCents(pay.teamPotCents + pay.skinsPotCents)}</b></div>
+                <div class="payout-row"><span>Entry per player <span class="payout-note">team bets ${formatDollars(teamEntry)}${skinsEntry ? ` + skins ${formatDollars(skinsEntry)}` : ''}</span></span><b class="payout-amount">${formatDollars(teamEntry + skinsEntry)}</b></div>
+                <div class="payout-row"><span>Total purse <span class="payout-note">${players} players</span></span><b class="payout-amount">${formatCents(pay.teamPotCents + pay.skinsPotCents)}</b></div>
                 <div class="payout-row"><span>Team bets <span class="payout-note">${pay.totalBets} bets × ${formatCents(pay.betPotCents)}</span></span><span class="payout-amount">${formatCents(pay.teamPotCents)}</span></div>
                 <div class="payout-row"><span>Skins <span class="payout-note">${pay.skinsRefunded ? 'none won, refunded' : `${pay.skins.length} won × ${formatCents(pay.perSkinCents)}`}</span></span><span class="payout-amount">${formatCents(pay.skinsPotCents)}</span></div></section>`;
         }
