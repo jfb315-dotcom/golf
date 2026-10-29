@@ -320,7 +320,14 @@
         .rsvp { margin-left: 8px; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; vertical-align: 2px; }
         .rsvp.in { background: #2e7d32; color: #fff; }
         .rsvp.out { background: var(--fill-strong); color: var(--text-muted); }
-        .su-who { font-size: 17px; color: var(--text-main); margin: 14px 0 0; }
+        .su-who { font-size: 14px; color: var(--text-muted); margin: 14px 0 0; }
+        .su-how { font-size: 15px; color: var(--text-main); margin: 10px 0 4px; }
+        .su-counts { font-size: 14px; color: var(--text-muted); margin-bottom: 8px; }
+        .su-row { display: flex; align-items: center; gap: 8px; padding: 8px 2px; border-bottom: 1px solid var(--line); }
+        .su-row .su-name { flex: 1; color: var(--text-main); font-size: 17px; }
+        .su-row button { width: 64px; margin: 0; padding: 8px 0; border-radius: 20px; border: 1.5px solid var(--line); background: none; color: var(--text-muted); font-size: 15px; font-weight: 700; text-transform: none; }
+        .su-row button.in.on { background: #2e7d32; border-color: #2e7d32; color: #fff; }
+        .su-row button.out.on { background: var(--fill-strong); border-color: var(--fill-strong); color: var(--text-main); }
         .su-who .text-link { display: inline; margin: 0; padding: 0; font-size: 15px; }
         #su-others { margin-top: 6px; }
         #su-others-box .bar-primary { width: 100%; margin-top: 10px; }
@@ -334,6 +341,13 @@
         .phone-row { display: flex; gap: 10px; align-items: center; }
         .phone-row input { flex: 1; }
         .phone-row .text-link { white-space: nowrap; margin: 0; }
+        .help { margin: 10px 0; padding: 0 14px; border-radius: 14px; background: var(--fill-soft); border: 1px solid var(--line); }
+        .help summary { cursor: pointer; list-style: none; padding: 14px 0; font-size: 17px; font-weight: 700; color: var(--text-main); }
+        .help summary::-webkit-details-marker { display: none; }
+        .help summary span { display: block; font-size: 13px; font-weight: 500; color: var(--accent-gold); margin-top: 2px; }
+        .help p { font-size: 15px; line-height: 1.45; color: var(--text-main); margin: 0 0 12px; }
+        .text-numbers { margin: 4px 0 10px; }
+        .text-numbers summary { cursor: pointer; color: var(--accent-gold); font-weight: 600; font-size: 14px; text-align: center; padding: 6px 0; }
         .su-tools { display: flex; flex-wrap: wrap; gap: 4px 16px; margin: -2px 0 8px; }
         .su-tools .text-link { margin: 0; font-size: 14px; }
         .su-cancelled { padding: 12px; border-radius: 12px; background: rgba(248,81,73,.15); color: var(--text-main); font-weight: 700; text-align: center; }
@@ -529,6 +543,7 @@
             <button type="button" class="home-tile" onclick="openMoneyScreen()"><i>💵</i><b>Money</b><span id="tile-money">Season totals</span></button>
             <button type="button" class="home-tile" id="btn-archive" onclick="viewArchiveList()"><i>🗂️</i><b>Past rounds</b><span>Results &amp; sharing</span></button>
             <button type="button" class="home-tile" onclick="openTeesEditor()"><i>⛳</i><b>Courses &amp; tees</b><span>Ratings, slopes, add a course</span></button>
+ <button type="button" class="home-tile wide" onclick="showScreen('step-help')"><i>❓</i><b>How it works</b><span>Quick guide: sign-ups, teams, scoring, money</span></button>
             <button type="button" class="home-tile wide" id="tile-alerts-wrap" onclick="openAlertsScreen('step-home')"><i>🔔</i><b>Alerts</b><span id="tile-alerts">Turn on for this phone, pick what gets sent</span></button>
         </div>
         <div class="list-rows">
@@ -814,6 +829,61 @@
         <p class="dash-footnote">Team bets and skins less each buy-in, plus Our Match. Every finalized round counts.</p>
     </div>
 
+    <div id="step-help" class="screen clean">
+        <div class="top-row">
+            <button type="button" class="text-link back-link-top" onclick="showScreen('step-home')">‹ Home</button>
+        </div>
+        <h2 class="clean-title">How it works</h2>
+        <p class="clean-sub">A typical week, top to bottom. Tap a section to open it.</p>
+
+        <details class="help" open><summary>1 · Ask who's in <span>Sign-up link</span></summary>
+            <p>From <b>Home</b>, tap <b>Sign-up link</b>. Type your message, like <i>"Golf Thursday?"</i>, pick the date, tee time and course, then <b>Next: send it</b>.</p>
+            <p><b>Send to your group chat</b> opens Share. Pick Messages and your golf group text. Everyone gets your message plus a link with the <b>"Are you in?"</b> picture.</p>
+            <p>Tapping the link shows <b>every player with In / Out buttons</b>. Each person taps their own. They can also mark a buddy (it asks first and shows who did it). New people can add their name.</p>
+            <p>Plans change? On <b>Who's playing</b>: <b>Text everyone who's in</b>, <b>Start over</b> (clears answers) or <b>Cancel round</b> (the link then says it's cancelled).</p>
+        </details>
+
+        <details class="help"><summary>2 · Make the teams <span>Who's playing</span></summary>
+            <p><b>Who's playing</b> is your own checklist. Everyone who tapped In is already checked. Check or uncheck anyone else.</p>
+            <p>Pick <b>players per team</b> and tap <b>Make teams</b>. The teams come out balanced by handicap, with each team's total next to its name.</p>
+            <p>On the roster: tap a player's <b>number</b>, then another's, to swap them. <b>Try another</b> deals a different even split. <b>Undo</b> takes back the last change. <b>Clear all</b> starts over.</p>
+            <p>The sign-up link is for the group. Who's playing is for you.</p>
+        </details>
+
+        <details class="help"><summary>3 · Start the round <span>New round</span></summary>
+            <p><b>New round</b> sets the course, holes, bets, skins and Our Match. <b>Next: Rosters</b> shows the teams (or use Who's playing), then <b>Start round</b>.</p>
+            <p>Tee times start 10 minutes apart. Change one and the rest follow.</p>
+            <p>On the scoring screen, <b>Text live links to carts</b> sends each cart its own scorecard link. <b>Share spectator leaderboard</b> is a watch-only link for anyone else.</p>
+        </details>
+
+        <details class="help"><summary>4 · During the round <span>Scoring</span></summary>
+            <p>Each cart enters its scores on its own phone. You can score any team from your phone too.</p>
+            <p><b>Standings</b> shows the leaderboard, skins, money, cart progress with pace of play, and a list of any scores that were changed.</p>
+            <p>📣 sends a message to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
+        </details>
+
+        <details class="help"><summary>5 · Finish up <span>Finalize</span></summary>
+            <p><b>Finalize</b> locks the round, saves it to <b>Past rounds</b>, adds everyone's score to their stats, and opens the results to share.</p>
+            <p>Finalized too early? Open it in <b>Past rounds</b> and tap <b>Reopen</b> (within 24 hours).</p>
+            <p>In Past rounds, <b>Share this page</b> sends a link to that round's results with the <b>"Final results"</b> picture.</p>
+        </details>
+
+        <details class="help"><summary>Players <span>names, numbers, stats</span></summary>
+            <p>Each player has first and last name, a nickname for the scoring screen, usual tees, a <b>mobile number</b> (green dot when saved) and <b>Usually shoots</b> until they have rounds.</p>
+            <p>Tap a player for their <b>index</b>, average, best score and recent rounds. The index is handicap-style: the best of their last 20 rounds, adjusted for the tees. It isn't an official USGA index.</p>
+            <p>Add numbers fast: in Contacts make a list of the guys, export it, then <b>Add phone numbers from a contacts file</b>.</p>
+        </details>
+
+        <details class="help"><summary>Money <span>season totals</span></summary>
+            <p>Every finalized round adds each player's winnings: team bets and skins less their buy-in, plus Our Match. Tap a name to see each round.</p>
+            <p><b>Settle up</b> is for when everyone has paid up. The season totals start back at $0, and <b>All time</b> still has every round. Nothing is deleted.</p>
+        </details>
+
+        <details class="help"><summary>Alerts <span>phone notifications</span></summary>
+            <p><b>Alerts</b> on Home turns notifications on for your phone and picks what gets sent each round. Each player turns them on from their own cart link (iPhone: add it to the Home Screen first).</p>
+        </details>
+    </div>
+
     <div id="step-alerts" class="screen clean">
         <div class="top-row">
             <button type="button" class="text-link back-link-top" onclick="showScreen(alertsBack)">‹ Back</button>
@@ -876,69 +946,55 @@
 
     <div id="signup-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Sign-up link</h2>
-            <p class="clean-sub" style="text-align:center;">Everyone taps the link and picks In or Out. Their answers show up on Who's playing.</p>
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Ask who's in</h2>
+            <p class="clean-sub" style="text-align:center;">Your message goes out with a link. Tapping it shows every player with In / Out buttons. Answers show up on Who's playing.</p>
+            <label class="field-label" for="su-note-in">Message</label>
+            <input type="text" id="su-note-in" placeholder="Golf Thursday?" autocomplete="off">
             <div class="clean-grid-2">
                 <div><label class="field-label" for="su-date-in">Date</label><input type="date" id="su-date-in"></div>
                 <div><label class="field-label" for="su-time-in">First tee time</label><input type="time" id="su-time-in"></div>
             </div>
             <div class="field-label">Course</div>
             <div class="select-wrap"><select id="su-course-in" aria-label="Course" onchange="pickCourseFor('signup')"></select></div>
-            <label class="field-label" for="su-note-in">Note <span class="payout-note">optional</span></label>
-            <input type="text" id="su-note-in" placeholder="e.g. $20 Nassau, skins $10" autocomplete="off">
-            <button class="btn-primary" onclick="createSignup()">Create &amp; share</button>
+            <button class="btn-primary" onclick="createSignup()">Next: send it</button>
             <button class="btn-secondary" onclick="document.getElementById('signup-modal').classList.remove('active')">Cancel</button>
         </div>
     </div>
 
     <div id="text-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Text the group</h2>
-            <div class="segmented" id="text-who"><button type="button" data-who="in" onclick="setTextWho('in')">Everyone who's in</button><button type="button" data-who="all" onclick="setTextWho('all')">All players</button></div>
-            <p class="clean-sub" id="text-to"></p>
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Send to the group</h2>
             <textarea id="text-body" rows="5" style="width: 100%; box-sizing: border-box; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none; margin-bottom: 10px;"></textarea>
-            <button class="btn-primary" onclick="sendGroupText()">Open Messages</button>
-            <button type="button" class="text-link" style="display:block; margin: 6px auto;" onclick="shareTextAnotherWay()">Share another way (copy, other apps)</button>
+            <button class="btn-primary" onclick="sendToGroupChat()">Send to your group chat</button>
+            <p class="dash-footnote" style="text-align:center; margin-top: 0;">Opens Share: pick Messages, then your golf group text.</p>
+            <details class="text-numbers">
+                <summary>Or start a new text using saved numbers</summary>
+                <div class="segmented" id="text-who"><button type="button" data-who="in" onclick="setTextWho('in')">Everyone who's in</button><button type="button" data-who="all" onclick="setTextWho('all')">All players</button></div>
+                <p class="clean-sub" id="text-to"></p>
+                <button class="btn-secondary" onclick="sendGroupText()">Open Messages with these numbers</button>
+            </details>
             <button class="btn-secondary" onclick="document.getElementById('text-modal').classList.remove('active')">Cancel</button>
         </div>
     </div>
 
     <div id="step-signup" class="screen clean">
         <div class="clean-eyebrow">JB Golf</div>
-        <h2 class="clean-title">Are you in?</h2>
+        <h2 class="clean-title" id="su-title">Are you in?</h2>
         <p class="clean-sub" id="su-details"></p>
-        <p class="clean-sub" id="su-note"></p>
         <div class="su-cancelled" id="su-cancelled" style="display:none;"></div>
-        <div id="su-pick">
-            <div class="field-label">Tap your name</div>
+        <div id="su-open">
+            <p class="su-how">Find your name and tap <b>In</b> or <b>Out</b>. You can mark a buddy too.</p>
+            <div class="su-counts" id="su-counts"></div>
             <input type="text" id="su-search" placeholder="Search names" autocomplete="off" enterkeyhint="search" oninput="renderSignupPage()">
-            <div id="su-name-list" class="whos-list"></div>
-            <button type="button" class="text-link" onclick="document.getElementById('su-new').style.display = ''">Not listed? Add your name</button>
+            <div id="su-rows"></div>
+            <button type="button" class="text-link" onclick="document.getElementById('su-new').style.display = ''">Not on the list? Add your name</button>
             <div id="su-new" style="display:none;">
                 <input type="text" id="su-other" placeholder="First and last name" autocomplete="name" autocapitalize="words">
                 <input type="tel" id="su-phone" placeholder="Mobile number (optional)" autocomplete="tel" inputmode="tel" oninput="formatPhoneInput(this)">
-                <button type="button" class="btn-secondary" onclick="pickSignupNew()">That's me</button>
+                <button type="button" class="bar-primary" onclick="addSignupNew()">Add me · I'm in</button>
             </div>
+            <p class="su-who" id="su-who"></p>
         </div>
-        <div id="su-me" style="display:none;">
-            <p class="su-who">You're <b id="su-me-name"></b> · <button type="button" class="text-link" onclick="forgetSignupName()">not you?</button></p>
-            <div class="su-buttons">
-                <button type="button" class="bar-primary" onclick="answerSignup('in')">I'm in</button>
-                <button type="button" class="btn-secondary" onclick="answerSignup('out')">Can't make it</button>
-            </div>
-        </div>
-        <p class="su-status" id="su-status"></p>
-        <div id="su-others" style="display:none;">
-            <button type="button" class="text-link" id="su-others-open" onclick="openSignupOthers()">＋ Put someone else in</button>
-            <div id="su-others-box" style="display:none;">
-                <div class="field-label">Who else is in? <span class="payout-note">tap one or more</span></div>
-                <div id="su-others-list" class="whos-list"></div>
-                <input type="text" id="su-others-note" placeholder="Note, e.g. Eddie said he's in" autocomplete="off">
-                <button type="button" class="bar-primary" onclick="putOthersIn()">Put them in</button>
-                <button type="button" class="text-link" onclick="closeSignupOthers()">Cancel</button>
-            </div>
-        </div>
-        <div id="su-list"></div>
     </div>
 
     <div id="roster-picker" class="modal-overlay">
@@ -2106,6 +2162,8 @@ function toggle9HoleOptions() {
             document.getElementById('su-date-in').value = keep?.date || document.getElementById('round-date').value || todayISO();
             document.getElementById('su-time-in').value = keep?.time || tempRosterCache['g1-time'] || '08:00';
             document.getElementById('su-note-in').value = keep?.note || '';
+            document.getElementById('su-note-in').placeholder = `Golf ${weekdayOf(document.getElementById('su-date-in').value)}?`;
+            document.getElementById('su-date-in').onchange = e => { document.getElementById('su-note-in').placeholder = `Golf ${weekdayOf(e.target.value)}?`; };
             if (keep?.courseKey && allAvailableCourses[keep.courseKey]) document.getElementById('course-selector').value = keep.courseKey;
             fillCourseSelect('su-course-in');
             document.getElementById('signup-modal').classList.add('active');
@@ -2113,7 +2171,7 @@ function toggle9HoleOptions() {
         function createSignup() {
             let date = document.getElementById('su-date-in').value || todayISO();
             let key = document.getElementById('course-selector').value;
-            let data = { date, time: document.getElementById('su-time-in').value, note: document.getElementById('su-note-in').value.trim(),
+            let data = { date, time: document.getElementById('su-time-in').value, note: document.getElementById('su-note-in').value.trim() || `Golf ${weekdayOf(date)}?`,
                 course: allAvailableCourses[key]?.name || '', courseKey: key, theme: localStorage.getItem('savedTheme') || 'coastal' };
             // Same date: keep everyone's answers. New date: start over.
             let sameDay = signup && signup.date === date;
@@ -2127,13 +2185,24 @@ function toggle9HoleOptions() {
             let date = signup.date;
             let link = shareUrl('join.html', 'signup=1');
             let details = [formatRoundDate(date), signup.course, signup.time ? `Tee ${formatFriendlyTime(signup.time)}` : ''].filter(Boolean).join(' · ');
-            // Straight to a group text when we have numbers; "Share another way" is in the popup
-            openGroupText('all', `⛳ JB Golf · ${details}${signup.note ? `\n${signup.note}` : ''}\nAre you in? Tap to answer:\n${link}`);
+            // The message first, then the details, then the link on its own line (so Messages shows its picture)
+            openGroupText('all', `⛳ ${signup.note || 'Golf?'}\n${details}\nTap In or Out 👇\n${link}`);
         }
-        function shareTextAnotherWay() {
+        function weekdayOf(iso) {
+            let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+            return (m ? new Date(+m[1], +m[2] - 1, +m[3]) : new Date()).toLocaleDateString('en-US', { weekday: 'long' });
+        }
+        // The share sheet: the person picks Messages and their existing golf group chat
+        function sendToGroupChat() {
+            let text = document.getElementById('text-body').value;
+            document.getElementById('text-modal').classList.remove('active');
+            if (navigator.share) shareWithPreview(text);
+            else shareTextAnotherWay(text);
+        }
+        function shareTextAnotherWay(text) {
             document.getElementById('text-modal').classList.remove('active');
             document.getElementById('share-modal-title').innerText = 'Share';
-            document.getElementById('share-text-content').value = document.getElementById('text-body').value;
+            document.getElementById('share-text-content').value = typeof text === 'string' ? text : document.getElementById('text-body').value;
             document.getElementById('share-modal').classList.add('active');
         }
 
@@ -2157,81 +2226,59 @@ function toggle9HoleOptions() {
         function renderSignupPage() {
             let show = (id, on) => document.getElementById(id).style.display = on ? '' : 'none';
             if (!signupIsCurrent()) {
+                document.getElementById('su-title').textContent = 'Are you in?';
                 document.getElementById('su-details').textContent = 'No round is open for sign-up right now.';
-                ['su-pick', 'su-me', 'su-others', 'su-cancelled'].forEach(id => show(id, false));
-                document.getElementById('su-list').innerHTML = '';
+                show('su-open', false); show('su-cancelled', false);
                 return;
             }
             let off = !!signup.cancelled;
-            show('su-cancelled', off);
+            show('su-cancelled', off); show('su-open', !off);
             document.getElementById('su-cancelled').textContent = off ? `❌ This round is cancelled${signup.cancelNote ? ' · ' + signup.cancelNote : ''}` : '';
+            document.getElementById('su-title').textContent = signup.note || 'Are you in?';
             document.getElementById('su-details').textContent = [formatRoundDate(signup.date), signup.course, signup.time ? `Tee ${formatFriendlyTime(signup.time)}` : ''].filter(Boolean).join(' · ');
-            document.getElementById('su-note').textContent = signup.note || '';
             let resp = signup.responses || {}, names = signupNames();
-            let me = localStorage.getItem('signupName') || '';
-            if (me && !names[me] && !signupNewName) me = '';
-            let myName = names[me] || signupNewName?.name || '';
-            show('su-pick', !off && !me);
-            show('su-me', !off && !!me);
-            show('su-others', !off && !!me);
-            if (me) document.getElementById('su-me-name').textContent = myName;
-            // Tap your name
             let q = document.getElementById('su-search').value.trim().toLowerCase();
-            document.getElementById('su-name-list').innerHTML = Object.entries(names).filter(([, n]) => !q || n.toLowerCase().includes(q)).sort(sortByLast)
-                .map(([k, n]) => `<button type="button" class="rp-row" onclick="pickSignupName('${k.replace(/'/g, "\\'")}')"><span class="rp-name">${n}</span>${resp[k] ? `<span class="rsvp ${resp[k].status}">${resp[k].status === 'in' ? 'In' : 'Out'}</span>` : ''}</button>`).join('')
-                || '<p class="clean-sub">No names match. Add yours below.</p>';
-            // Everyone's answers
-            let line = r => `${r.name}${r.by ? `<span class="su-by">put in by ${r.by.split(' ')[0]}${r.note ? ` · "${r.note}"` : ''}</span>` : ''}`;
-            let ins = Object.values(resp).filter(r => r.status === 'in').sort((a, b) => a.at - b.at), outs = Object.values(resp).filter(r => r.status === 'out');
-            document.getElementById('su-list').innerHTML = `<div class="field-label">In (${ins.length})</div>${ins.map(r => `<div class="su-line">${line(r)}</div>`).join('') || '<p class="clean-sub" style="margin-top:0;">Nobody yet</p>'}`
-                + (outs.length ? `<div class="field-label">Out (${outs.length})</div><p class="clean-sub" style="margin-top:0;">${outs.map(r => r.name).join(', ')}</p>` : '');
-            let mine = resp[me];
-            document.getElementById('su-status').textContent = off || !me ? '' : mine ? (mine.status === 'in' ? "✅ You're in" : "You're out this time") : '';
-            if (document.getElementById('su-others-box').style.display !== 'none') renderSignupOthers();
+            let ins = Object.values(resp).filter(r => r.status === 'in').length, outs = Object.values(resp).filter(r => r.status === 'out').length;
+            document.getElementById('su-counts').textContent = `${ins} in · ${outs} out`;
+            // Everyone on the list: In players first, then the rest by last name
+            let rank = k => resp[k]?.status === 'in' ? 0 : resp[k]?.status === 'out' ? 2 : 1;
+            document.getElementById('su-rows').innerHTML = Object.entries(names).filter(([, n]) => !q || n.toLowerCase().includes(q))
+                .sort((a, b) => rank(a[0]) - rank(b[0]) || sortByLast(a, b)).map(([k, n]) => {
+                    let r = resp[k], kk = k.replace(/'/g, "\\'");
+                    let by = r?.by ? `<span class="su-by">${r.status === 'in' ? 'put in' : 'marked out'} by ${r.by.split(' ')[0]}${r.note ? ` · "${r.note}"` : ''}</span>` : '';
+                    return `<div class="su-row"><span class="su-name">${n}${by}</span>
+                        <button type="button" class="in${r?.status === 'in' ? ' on' : ''}" onclick="markSignup('${kk}', 'in')">In</button>
+                        <button type="button" class="out${r?.status === 'out' ? ' on' : ''}" onclick="markSignup('${kk}', 'out')">Out</button></div>`;
+                }).join('') || '<p class="clean-sub">No names match. Add yours below.</p>';
+            let me = localStorage.getItem('signupName');
+            document.getElementById('su-who').innerHTML = me && names[me] ? `This phone is ${names[me]} · <button type="button" class="text-link" onclick="forgetSignupName()">not you?</button>` : '';
         }
-        let signupNewName = null; // someone not on the list, until their answer is saved
-        function pickSignupName(k) { localStorage.setItem('signupName', k); signupNewName = null; renderSignupPage(); window.scrollTo(0, 0); }
-        function pickSignupNew() {
-            let name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
-            if (!name) { alert('Type your first and last name.'); return; }
-            signupNewName = { name, phone: formatPhone(document.getElementById('su-phone').value) };
-            localStorage.setItem('signupName', name.toLowerCase());
-            renderSignupPage();
-        }
-        function forgetSignupName() { localStorage.removeItem('signupName'); signupNewName = null; closeSignupOthers(); renderSignupPage(); }
-        function answerSignup(status) {
-            let key = localStorage.getItem('signupName');
-            let name = signupNames()[key] || signupNewName?.name;
-            if (!key || !name) { alert('Tap your name first.'); return; }
-            let r = { name, status, at: Date.now() };
-            if (signupNewName?.phone) r.phone = signupNewName.phone;
+        // The first name marked on a phone is taken as its owner; marking anyone else asks first and records who did it
+        async function markSignup(key, status) {
+            let names = signupNames(), me = localStorage.getItem('signupName');
+            if (!names[me]) me = null;
+            let r = { name: names[key], status, at: Date.now() };
+            if (!me) localStorage.setItem('signupName', key);
+            else if (me !== key) {
+                let note = prompt(`You're marking ${names[key]} ${status === 'in' ? 'IN' : 'OUT'}.\n(This phone is ${names[me]}.)\n\nAdd a note if you like, e.g. "${names[key].split(' ')[0]} said he's in", then tap OK.`, '');
+                if (note === null) return;
+                r.by = names[me];
+                if (note.trim()) r.note = note.trim().slice(0, 80);
+            }
             signupRef.set({ responses: { [key]: r } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
         }
-        // Putting other players in (one person often answers for a buddy)
-        let othersPicked = new Set();
-        function openSignupOthers() { othersPicked = new Set(); document.getElementById('su-others-note').value = ''; document.getElementById('su-others-box').style.display = ''; document.getElementById('su-others-open').style.display = 'none'; renderSignupOthers(); }
-        function closeSignupOthers() { document.getElementById('su-others-box').style.display = 'none'; document.getElementById('su-others-open').style.display = ''; }
-        function renderSignupOthers() {
-            let me = localStorage.getItem('signupName'), resp = signup?.responses || {};
-            document.getElementById('su-others-list').innerHTML = Object.entries(signupNames()).filter(([k]) => k !== me).sort(sortByLast).map(([k, n]) => {
-                let isIn = resp[k]?.status === 'in';
-                return `<button type="button" class="rp-row${othersPicked.has(k) ? ' on' : ''}" ${isIn ? 'disabled' : ''} onclick="toggleSignupOther('${k.replace(/'/g, "\\'")}')"><span class="rp-num">${othersPicked.has(k) ? '✓' : ''}</span><span class="rp-name">${n}</span>${isIn ? '<span class="rp-note">already in</span>' : ''}</button>`;
-            }).join('');
+        function addSignupNew() {
+            let name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
+            if (!name) { alert('Type your first and last name.'); return; }
+            let key = name.toLowerCase(), r = { name, status: 'in', at: Date.now() };
+            let phone = formatPhone(document.getElementById('su-phone').value);
+            if (phone) r.phone = phone;
+            if (!localStorage.getItem('signupName')) localStorage.setItem('signupName', key);
+            signupRef.set({ responses: { [key]: r } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
+            document.getElementById('su-new').style.display = 'none';
+            document.getElementById('su-other').value = ''; document.getElementById('su-phone').value = '';
         }
-        function toggleSignupOther(k) { othersPicked.has(k) ? othersPicked.delete(k) : othersPicked.add(k); renderSignupOthers(); }
-        function putOthersIn() {
-            let names = signupNames(), me = localStorage.getItem('signupName');
-            let picked = [...othersPicked];
-            if (!picked.length) { alert('Tap who you are putting in.'); return; }
-            let list = picked.map(k => names[k]);
-            if (picked.length > 1 && !confirm(`You're putting in ${picked.length} players:\n\n${list.join('\n')}\n\nThey'll show as put in by you. OK?`)) return;
-            let by = names[me] || signupNewName?.name || 'someone';
-            let note = document.getElementById('su-others-note').value.trim().slice(0, 80);
-            let updates = {};
-            picked.forEach(k => { updates[k] = { name: names[k], status: 'in', at: Date.now(), by, ...(note ? { note } : {}) }; });
-            signupRef.set({ responses: updates }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
-            closeSignupOthers();
-        }
+        function forgetSignupName() { localStorage.removeItem('signupName'); renderSignupPage(); }
 
         // While a popup is open the page behind it stays put (iPhone otherwise scrolls it under your finger)
         (function lockScrollUnderPopups() {
