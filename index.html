@@ -320,6 +320,12 @@
         .rsvp { margin-left: 8px; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; vertical-align: 2px; }
         .rsvp.in { background: #2e7d32; color: #fff; }
         .rsvp.out { background: var(--fill-strong); color: var(--text-muted); }
+        .su-who { font-size: 17px; color: var(--text-main); margin: 14px 0 0; }
+        .su-who .text-link { display: inline; margin: 0; padding: 0; font-size: 15px; }
+        #su-others { margin-top: 6px; }
+        #su-others-box .bar-primary { width: 100%; margin-top: 10px; }
+        .su-line { padding: 8px 2px; border-bottom: 1px solid var(--line); color: var(--text-main); font-size: 16px; }
+        .su-by { display: block; font-size: 12.5px; color: var(--text-muted); }
         .su-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 8px; }
         .su-buttons button { margin: 0; }
         .su-status { text-align: center; font-weight: 700; color: var(--accent-gold); min-height: 1.2em; }
@@ -900,15 +906,35 @@
         <p class="clean-sub" id="su-details"></p>
         <p class="clean-sub" id="su-note"></p>
         <div class="su-cancelled" id="su-cancelled" style="display:none;"></div>
-        <label class="field-label" for="su-name">Your name</label>
-        <div class="select-wrap"><select id="su-name" onchange="signupNameChanged()"></select></div>
-        <input type="text" id="su-other" placeholder="First and last name" autocomplete="name" autocapitalize="words" style="display:none;">
-        <input type="tel" id="su-phone" placeholder="Mobile number (optional)" autocomplete="tel" inputmode="tel" style="display:none;">
-        <div class="su-buttons">
-            <button type="button" class="bar-primary" onclick="answerSignup('in')">I'm in</button>
-            <button type="button" class="btn-secondary" onclick="answerSignup('out')">Can't make it</button>
+        <div id="su-pick">
+            <div class="field-label">Tap your name</div>
+            <input type="text" id="su-search" placeholder="Search names" autocomplete="off" enterkeyhint="search" oninput="renderSignupPage()">
+            <div id="su-name-list" class="whos-list"></div>
+            <button type="button" class="text-link" onclick="document.getElementById('su-new').style.display = ''">Not listed? Add your name</button>
+            <div id="su-new" style="display:none;">
+                <input type="text" id="su-other" placeholder="First and last name" autocomplete="name" autocapitalize="words">
+                <input type="tel" id="su-phone" placeholder="Mobile number (optional)" autocomplete="tel" inputmode="tel">
+                <button type="button" class="btn-secondary" onclick="pickSignupNew()">That's me</button>
+            </div>
+        </div>
+        <div id="su-me" style="display:none;">
+            <p class="su-who">You're <b id="su-me-name"></b> · <button type="button" class="text-link" onclick="forgetSignupName()">not you?</button></p>
+            <div class="su-buttons">
+                <button type="button" class="bar-primary" onclick="answerSignup('in')">I'm in</button>
+                <button type="button" class="btn-secondary" onclick="answerSignup('out')">Can't make it</button>
+            </div>
         </div>
         <p class="su-status" id="su-status"></p>
+        <div id="su-others" style="display:none;">
+            <button type="button" class="text-link" id="su-others-open" onclick="openSignupOthers()">＋ Put someone else in</button>
+            <div id="su-others-box" style="display:none;">
+                <div class="field-label">Who else is in? <span class="payout-note">tap one or more</span></div>
+                <div id="su-others-list" class="whos-list"></div>
+                <input type="text" id="su-others-note" placeholder="Note, e.g. Eddie said he's in" autocomplete="off">
+                <button type="button" class="bar-primary" onclick="putOthersIn()">Put them in</button>
+                <button type="button" class="text-link" onclick="closeSignupOthers()">Cancel</button>
+            </div>
+        </div>
         <div id="su-list"></div>
     </div>
 
@@ -2116,51 +2142,90 @@ function toggle9HoleOptions() {
                 renderSignupPage();
             });
         }
+        function signupNames() {
+            let names = {};
+            Object.entries(savedPlayers).forEach(([k, sp]) => names[k] = sp.name);
+            Object.entries(signup?.responses || {}).forEach(([k, r]) => { if (!names[k]) names[k] = r.name; });
+            return names;
+        }
+        const sortByLast = (a, b) => (splitName(a[1]).last || a[1]).localeCompare(splitName(b[1]).last || b[1]) || a[1].localeCompare(b[1]);
         function renderSignupPage() {
+            let show = (id, on) => document.getElementById(id).style.display = on ? '' : 'none';
             if (!signupIsCurrent()) {
                 document.getElementById('su-details').textContent = 'No round is open for sign-up right now.';
-                document.querySelector('#step-signup .su-buttons').style.display = 'none';
+                ['su-pick', 'su-me', 'su-others', 'su-cancelled'].forEach(id => show(id, false));
+                document.getElementById('su-list').innerHTML = '';
                 return;
             }
             let off = !!signup.cancelled;
-            document.getElementById('su-cancelled').style.display = off ? '' : 'none';
+            show('su-cancelled', off);
             document.getElementById('su-cancelled').textContent = off ? `❌ This round is cancelled${signup.cancelNote ? ' · ' + signup.cancelNote : ''}` : '';
-            document.querySelector('#step-signup .su-buttons').style.display = off ? 'none' : '';
             document.getElementById('su-details').textContent = [formatRoundDate(signup.date), signup.course, signup.time ? `Tee ${formatFriendlyTime(signup.time)}` : ''].filter(Boolean).join(' · ');
             document.getElementById('su-note').textContent = signup.note || '';
-            let sel = document.getElementById('su-name');
-            let resp = signup.responses || {};
-            let names = {};
-            Object.entries(savedPlayers).forEach(([k, sp]) => names[k] = sp.name);
-            Object.entries(resp).forEach(([k, r]) => { if (!names[k]) names[k] = r.name; });
-            let mine = localStorage.getItem('signupName') || sel.value || '';
-            sel.innerHTML = '<option value="">Pick your name</option>' + Object.entries(names).sort((a, b) => a[1].localeCompare(b[1])).map(([k, n]) => `<option value="${k}">${n}</option>`).join('') + '<option value="__other">Not listed…</option>';
-            if (mine && (names[mine] || mine === '__other')) sel.value = mine;
-            signupNameChanged();
-            let ins = Object.values(resp).filter(r => r.status === 'in').map(r => r.name), outs = Object.values(resp).filter(r => r.status === 'out').map(r => r.name);
-            document.getElementById('su-list').innerHTML = `<div class="field-label">In (${ins.length})</div><p class="clean-sub" style="margin-top:0;">${ins.join(', ') || 'Nobody yet'}</p>`
-                + (outs.length ? `<div class="field-label">Out (${outs.length})</div><p class="clean-sub" style="margin-top:0;">${outs.join(', ')}</p>` : '');
-            let me = resp[sel.value];
-            document.getElementById('su-status').textContent = me ? (me.status === 'in' ? "✅ You're in" : "You're out this time") : '';
+            let resp = signup.responses || {}, names = signupNames();
+            let me = localStorage.getItem('signupName') || '';
+            if (me && !names[me] && !signupNewName) me = '';
+            let myName = names[me] || signupNewName?.name || '';
+            show('su-pick', !off && !me);
+            show('su-me', !off && !!me);
+            show('su-others', !off && !!me);
+            if (me) document.getElementById('su-me-name').textContent = myName;
+            // Tap your name
+            let q = document.getElementById('su-search').value.trim().toLowerCase();
+            document.getElementById('su-name-list').innerHTML = Object.entries(names).filter(([, n]) => !q || n.toLowerCase().includes(q)).sort(sortByLast)
+                .map(([k, n]) => `<button type="button" class="rp-row" onclick="pickSignupName('${k.replace(/'/g, "\\'")}')"><span class="rp-name">${n}</span>${resp[k] ? `<span class="rsvp ${resp[k].status}">${resp[k].status === 'in' ? 'In' : 'Out'}</span>` : ''}</button>`).join('')
+                || '<p class="clean-sub">No names match. Add yours below.</p>';
+            // Everyone's answers
+            let line = r => `${r.name}${r.by ? `<span class="su-by">put in by ${r.by.split(' ')[0]}${r.note ? ` · "${r.note}"` : ''}</span>` : ''}`;
+            let ins = Object.values(resp).filter(r => r.status === 'in').sort((a, b) => a.at - b.at), outs = Object.values(resp).filter(r => r.status === 'out');
+            document.getElementById('su-list').innerHTML = `<div class="field-label">In (${ins.length})</div>${ins.map(r => `<div class="su-line">${line(r)}</div>`).join('') || '<p class="clean-sub" style="margin-top:0;">Nobody yet</p>'}`
+                + (outs.length ? `<div class="field-label">Out (${outs.length})</div><p class="clean-sub" style="margin-top:0;">${outs.map(r => r.name).join(', ')}</p>` : '');
+            let mine = resp[me];
+            document.getElementById('su-status').textContent = off || !me ? '' : mine ? (mine.status === 'in' ? "✅ You're in" : "You're out this time") : '';
+            if (document.getElementById('su-others-box').style.display !== 'none') renderSignupOthers();
         }
-        function signupNameChanged() {
-            let other = document.getElementById('su-name').value === '__other';
-            document.getElementById('su-other').style.display = other ? '' : 'none';
-            document.getElementById('su-phone').style.display = other ? '' : 'none';
+        let signupNewName = null; // someone not on the list, until their answer is saved
+        function pickSignupName(k) { localStorage.setItem('signupName', k); signupNewName = null; renderSignupPage(); window.scrollTo(0, 0); }
+        function pickSignupNew() {
+            let name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
+            if (!name) { alert('Type your first and last name.'); return; }
+            signupNewName = { name, phone: document.getElementById('su-phone').value.trim() };
+            localStorage.setItem('signupName', name.toLowerCase());
+            renderSignupPage();
         }
+        function forgetSignupName() { localStorage.removeItem('signupName'); signupNewName = null; closeSignupOthers(); renderSignupPage(); }
         function answerSignup(status) {
-            let sel = document.getElementById('su-name'), key = sel.value, name;
-            if (!key) { alert('Pick your name first.'); return; }
-            if (key === '__other') {
-                name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
-                if (!name) { alert('Type your name.'); return; }
-                key = name.toLowerCase();
-            } else name = sel.options[sel.selectedIndex].text;
-            localStorage.setItem('signupName', key);
+            let key = localStorage.getItem('signupName');
+            let name = signupNames()[key] || signupNewName?.name;
+            if (!key || !name) { alert('Tap your name first.'); return; }
             let r = { name, status, at: Date.now() };
-            let phone = sel.value === '__other' ? document.getElementById('su-phone').value.trim() : '';
-            if (phone) r.phone = phone;
+            if (signupNewName?.phone) r.phone = signupNewName.phone;
             signupRef.set({ responses: { [key]: r } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
+        }
+        // Putting other players in (one person often answers for a buddy)
+        let othersPicked = new Set();
+        function openSignupOthers() { othersPicked = new Set(); document.getElementById('su-others-note').value = ''; document.getElementById('su-others-box').style.display = ''; document.getElementById('su-others-open').style.display = 'none'; renderSignupOthers(); }
+        function closeSignupOthers() { document.getElementById('su-others-box').style.display = 'none'; document.getElementById('su-others-open').style.display = ''; }
+        function renderSignupOthers() {
+            let me = localStorage.getItem('signupName'), resp = signup?.responses || {};
+            document.getElementById('su-others-list').innerHTML = Object.entries(signupNames()).filter(([k]) => k !== me).sort(sortByLast).map(([k, n]) => {
+                let isIn = resp[k]?.status === 'in';
+                return `<button type="button" class="rp-row${othersPicked.has(k) ? ' on' : ''}" ${isIn ? 'disabled' : ''} onclick="toggleSignupOther('${k.replace(/'/g, "\\'")}')"><span class="rp-num">${othersPicked.has(k) ? '✓' : ''}</span><span class="rp-name">${n}</span>${isIn ? '<span class="rp-note">already in</span>' : ''}</button>`;
+            }).join('');
+        }
+        function toggleSignupOther(k) { othersPicked.has(k) ? othersPicked.delete(k) : othersPicked.add(k); renderSignupOthers(); }
+        function putOthersIn() {
+            let names = signupNames(), me = localStorage.getItem('signupName');
+            let picked = [...othersPicked];
+            if (!picked.length) { alert('Tap who you are putting in.'); return; }
+            let list = picked.map(k => names[k]);
+            if (picked.length > 1 && !confirm(`You're putting in ${picked.length} players:\n\n${list.join('\n')}\n\nThey'll show as put in by you. OK?`)) return;
+            let by = names[me] || signupNewName?.name || 'someone';
+            let note = document.getElementById('su-others-note').value.trim().slice(0, 80);
+            let updates = {};
+            picked.forEach(k => { updates[k] = { name: names[k], status: 'in', at: Date.now(), by, ...(note ? { note } : {}) }; });
+            signupRef.set({ responses: updates }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
+            closeSignupOthers();
         }
 
         // While a popup is open the page behind it stays put (iPhone otherwise scrolls it under your finger)
@@ -2662,7 +2727,7 @@ function toggle9HoleOptions() {
                 .sort((a, b) => (resp[b[0]]?.status === 'in') - (resp[a[0]]?.status === 'in') || (splitName(a[1]).last || a[1]).localeCompare(splitName(b[1]).last || b[1]));
             document.getElementById('whos-list').innerHTML = rows.map(([k, n]) => {
                 let e = playerIndexEstimate(n);
-                let tag = resp[k] ? `<span class="rsvp ${resp[k].status}">${resp[k].status === 'in' ? 'In' : 'Out'}</span>` : '';
+                let tag = resp[k] ? `<span class="rsvp ${resp[k].status}">${resp[k].status === 'in' ? 'In' : 'Out'}</span>${resp[k].by ? `<span class="su-by">by ${resp[k].by.split(' ')[0]}${resp[k].note ? ` · "${resp[k].note}"` : ''}</span>` : ''}` : '';
                 return `<button type="button" class="rp-row${whosIn.has(k) ? ' on' : ''}" onclick="toggleWhos('${k.replace(/'/g, "\\'")}')">
                     <span class="rp-num">${whosIn.has(k) ? '✓' : ''}</span><span class="rp-name">${n}${tag}</span><span class="rp-note">${e ? (e.est ? '~' : '') + fmtHcp(e.idx) : ''}</span></button>`;
             }).join('') || '<p class="clean-sub">No players match.</p>';
