@@ -547,6 +547,9 @@
         .hist-row { padding: 8px 2px; border-top: 1px solid var(--border-color, rgba(128,128,128,.25)); font-size: 14px; color: var(--text-main); }
         .idx-chip { margin-right: 8px; font-weight: 700; color: var(--text-main); }
         .players-import { display: block; margin: 14px auto 0; }
+        .older-rounds { margin-top: 8px; }
+        .older-rounds summary { cursor: pointer; list-style: none; font-size: 13px; color: var(--text-muted); text-decoration: underline; }
+        .older-rounds summary::-webkit-details-marker { display: none; }
         .archive-item { display: flex; align-items: center; background: var(--bg-table); padding: 15px; border-radius: 6px; margin-bottom: 10px; border-left: 4px solid var(--accent-gold); gap: 15px;}
         .archive-checkbox { width: 22px; height: 22px; accent-color: #c94b4b; }
         .archive-info { flex: 1; }
@@ -864,8 +867,13 @@
         <button type="button" class="text-link players-import contacts-btn" style="display:none;" onclick="importContacts()">📇 Add players from contacts</button>
         <button type="button" class="text-link players-import" onclick="document.getElementById('vcf-file').click()">📇 Add phone numbers from a contacts file</button>
         <input type="file" id="vcf-file" accept=".vcf,text/vcard,text/x-vcard,text/directory" multiple style="display:none;" onchange="importVcf(this.files); this.value = ''">
-        <button type="button" class="text-link players-import" onclick="importArchivedRounds()">Add past rounds from this phone's archive</button>
         <p class="dash-footnote">Index is handicap-style: the best scores of each player's last 20 rounds, adjusted for the tee's rating and slope. It is not an official USGA index.</p>
+        <p class="dash-footnote">Stats update on their own: every round you finalize is added for each player in it.</p>
+        <details class="older-rounds">
+            <summary>Rounds from before stats were added?</summary>
+            <p class="dash-footnote">Only needed once, for rounds finalized before the app kept stats. It adds the ones saved on this phone and skips any it already has.</p>
+            <button type="button" class="text-link players-import" onclick="importArchivedRounds()">Add older rounds from this phone</button>
+        </details>
     </div>
 
     <div id="step-money" class="screen clean">
