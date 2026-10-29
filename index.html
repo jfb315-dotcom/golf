@@ -67,7 +67,7 @@
         h2 { margin-top: 0px; margin-bottom: 15px; font-size: 1.5em; }
         
         label { display: block; margin: 15px 0 5px; color: var(--text-muted); font-size: 0.85em; text-transform: uppercase; font-weight: bold;}
-        input[type="number"], input[type="text"], input[type="tel"], input[type="time"], input[type="date"], select, input[type="password"] { width: 100%; padding: 12px; box-sizing: border-box; background: var(--bg-table); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
+        input[type="number"], input[type="text"], input[type="tel"], input[type="time"], input[type="date"], select, input[type="password"], input[type="email"] { width: 100%; padding: 12px; box-sizing: border-box; background: var(--bg-table); border: 1px solid var(--border-color); color: var(--text-main); border-radius: 4px; font-size: 16px; margin-bottom: 10px; }
         
         button { font-family: 'Segoe UI', Tahoma, sans-serif; }
         /* iOS gives date/time fields a native minimum width that overflows the card */
@@ -314,6 +314,9 @@
         .team-total { margin-left: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
         .swap-hint { font-size: 13px; color: var(--text-muted); margin: 10px 0 0; }
         .team-tools { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+        #signin-gate { position: fixed; inset: 0; z-index: 2000; background: var(--bg-dark); overflow-y: auto; padding: 40px 20px; }
+        .signin-box { max-width: 420px; margin: 0 auto; }
+        .signin-logo { display: block; width: 140px; margin: 0 auto 10px; }
         .cartpick { display: block; width: 100%; margin: 0 0 10px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--fill-soft); color: var(--text-main); text-align: left; text-transform: none; cursor: pointer; }
         .cartpick b { display: block; font-size: 19px; color: var(--accent-gold); }
         .cartpick span { display: block; font-size: 15px; color: var(--text-main); margin-top: 3px; }
@@ -529,6 +532,7 @@
     <link rel="manifest" href="manifest.json">
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
 </head>
 <body>
 
@@ -557,6 +561,8 @@
             <button type="button" class="home-tile wide" id="tile-alerts-wrap" onclick="openAlertsScreen('step-home')"><i>🔔</i><b>Alerts</b><span id="tile-alerts">Turn on for this phone, pick what gets sent</span></button>
         </div>
         <div class="list-rows">
+            <button type="button" class="list-row" onclick="changeAdminPin()">Change PIN <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" id="signout-row" style="display:none;" onclick="adminSignOut()">Sign out <span class="row-note" id="signed-in-as"></span></button>
             <label class="list-row" for="app-theme-selector">Color theme
                 <select id="app-theme-selector" onchange="changeTheme()">
                     <option value="coastal" selected>Coastal Links</option>
@@ -937,6 +943,20 @@
         <p class="dash-footnote">Your picks carry over to the next round. Everyone turns alerts on for their own phone from their cart link.</p>
     </div>
 
+    <div id="signin-gate" style="display:none;">
+        <div class="signin-box">
+            <img src="logo.png" alt="JB Golf" class="signin-logo">
+            <h2 class="clean-title">Organizer sign-in</h2>
+            <p class="clean-sub">Playing in a round? Use the cart link from your text, or the JB Golf app on your Home Screen.</p>
+            <label class="field-label" for="signin-email">Email</label>
+            <input type="email" id="signin-email" autocomplete="username" autocapitalize="off">
+            <label class="field-label" for="signin-pass">Password</label>
+            <input type="password" id="signin-pass" autocomplete="current-password" onkeydown="if (event.key === 'Enter') adminSignIn()">
+            <p class="su-status" id="signin-error"></p>
+            <button type="button" class="btn-primary" onclick="adminSignIn()">Sign in</button>
+        </div>
+    </div>
+
     <div id="step-cartpick" class="screen clean">
         <div class="clean-eyebrow">JB Golf</div>
         <h2 class="clean-title">Which cart are you in today?</h2>
@@ -1047,7 +1067,6 @@
             <button type="button" class="text-link" onclick="document.getElementById('su-new').style.display = ''">Not on the list? Add your name</button>
             <div id="su-new" style="display:none;">
                 <input type="text" id="su-other" placeholder="First and last name" autocomplete="name" autocapitalize="words">
-                <input type="tel" id="su-phone" placeholder="Mobile number (optional)" autocomplete="tel" inputmode="tel" oninput="formatPhoneInput(this)">
                 <button type="button" class="bar-primary" onclick="addSignupNew()">Add me · I'm in</button>
             </div>
             <p class="su-who" id="su-who"></p>
@@ -1291,6 +1310,8 @@ const firebaseConfig = {
 firebase.initializeApp(firebaseConfig);
 
 const db = firebase.firestore();
+const auth = firebase.auth ? firebase.auth() : null;
+const adminPrivateRef = db.collection("tournaments").doc("admin_private"); // { pin, phones: { playerKey: number } } — only the organizer can read it
 
 // Phone alerts go through the Cloudflare Worker in cloudflare/alerts-worker.js. Left blank, alerts are off.
 const ALERTS_URL = 'https://jbgolf-alerts.jfb315.workers.dev/';
@@ -1452,6 +1473,7 @@ function toggle9HoleOptions() {
             const urlParams = new URLSearchParams(window.location.search); 
             const teamParam = urlParams.get('cart');
             linkCart = teamParam ? parseInt(teamParam) : null;
+            startAuth();
             const isSpectator = urlParams.get('spectator') === 'true';
             if (urlParams.get('signup')) { openSignupPage(); return; } // the sign-up link only shows the sign-up page
             if (urlParams.get('round')) { openSharedRound(urlParams.get('round')); return; } // a shared results page
@@ -1805,6 +1827,7 @@ function toggle9HoleOptions() {
             savedPlayersRef.get().then(doc => {
                 if (doc.exists && doc.data().players) {
                     savedPlayers = doc.data().players;
+                    mergePhones();
                     localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
                     renderSavedPlayersList();
                     if (document.getElementById('players-list')) renderPlayersList();
@@ -2011,10 +2034,11 @@ function toggle9HoleOptions() {
             if (editingPlayerKey && editingPlayerKey !== key) {
                 delete savedPlayers[editingPlayerKey];
                 savedPlayersRef.update(new firebase.firestore.FieldPath('players', editingPlayerKey), firebase.firestore.FieldValue.delete()).catch(() => {});
+                forgetPhone(editingPlayerKey);
             }
             savedPlayers[key] = rec;
             localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
-            savedPlayersRef.set({ players: { [key]: rec } }, { merge: true }).catch(err => console.error('Saving player failed', err));
+            writePlayers({ [key]: rec });
             document.getElementById('player-modal').classList.remove('active');
             renderPlayersList(); renderSavedPlayersList();
             if (document.getElementById('step-whos').classList.contains('active')) { whosIn.add(key); renderWhosPlaying(); }
@@ -2026,6 +2050,7 @@ function toggle9HoleOptions() {
             delete savedPlayers[key];
             localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
             savedPlayersRef.update(new firebase.firestore.FieldPath('players', key), firebase.firestore.FieldValue.delete()).catch(() => {});
+            forgetPhone(key);
             document.getElementById('player-modal').classList.remove('active');
             renderPlayersList(); renderSavedPlayersList();
         }
@@ -2050,7 +2075,7 @@ function toggle9HoleOptions() {
             if (Object.keys(updates).length === 0) return;
             localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
             renderSavedPlayersList();
-            savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error("Saving players failed: ", err));
+            writePlayers(updates);
         }
 
         // ==========================================
@@ -2254,9 +2279,9 @@ function toggle9HoleOptions() {
         function createSignupShare() {
             let date = signup.date;
             let link = shareUrl('join.html', 'signup=1');
-            let details = [formatRoundDate(date), signup.course, signup.time ? `Tee ${formatFriendlyTime(signup.time)}` : ''].filter(Boolean).join(' · ');
             // The message first, then the details, then the link on its own line (so Messages shows its picture)
-            openGroupText('all', `⛳ ${signup.note || 'Golf?'}\n${details}\nTap In or Out 👇\n${link}`);
+            let short = [signup.course?.replace(/\s*\(.*\)$/, ''), formatRoundDate(date), signup.time ? formatFriendlyTime(signup.time) : ''].filter(Boolean).join(' · ');
+            openGroupText('all', `⛳ ${signup.note || 'Golf?'}\n${short}\nTap In or Out 👇\n${link}`);
         }
         function weekdayOf(iso) {
             let m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
@@ -2342,13 +2367,11 @@ function toggle9HoleOptions() {
             let name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
             if (!name) { alert('Type your first and last name.'); return; }
             let key = name.toLowerCase(), r = { name, status: 'in', at: Date.now() };
-            let phone = formatPhone(document.getElementById('su-phone').value);
-            if (phone) r.phone = phone;
             if (!localStorage.getItem('signupName')) localStorage.setItem('signupName', key);
             signupRef.set({ responses: { [key]: r } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
             alertSignupAnswer(key, r);
             document.getElementById('su-new').style.display = 'none';
-            document.getElementById('su-other').value = ''; document.getElementById('su-phone').value = '';
+            document.getElementById('su-other').value = '';
         }
         function forgetSignupName() { localStorage.removeItem('signupName'); renderSignupPage(); }
 
@@ -2428,6 +2451,98 @@ function toggle9HoleOptions() {
         }
         function closeHomeScreenAsk() { document.getElementById('hs-modal').classList.remove('active'); }
 
+        // ===== Sign-in and private data =====
+        // The organizer signs in with email and password once per phone; everyone else (carts, spectators, the
+        // sign-up page) is signed in quietly in the background. Firestore's rules (firebase/firestore.rules) only
+        // let the organizer change rounds, players and money; carts can enter scores; sign-ups can answer In/Out.
+        let isAdminUser = false, authKnown = false, authUnavailable = !auth;
+        function isAdminPage() {
+            let q = new URLSearchParams(location.search);
+            return linkCart === null && !q.get('cart') && !q.get('spectator') && !q.get('signup') && !q.get('round');
+        }
+        function startAuth() {
+            if (!auth) { authKnown = true; afterAuth(); return; }
+            auth.onAuthStateChanged(user => {
+                authKnown = true;
+                isAdminUser = !!user && !user.isAnonymous;
+                if (!user) auth.signInAnonymously().catch(() => { authUnavailable = true; afterAuth(); }); // sign-in not set up yet: work as before
+                afterAuth();
+            });
+        }
+        function afterAuth() {
+            let gate = isAdminPage() && authKnown && !isAdminUser && !authUnavailable && !!auth?.currentUser;
+            document.getElementById('signin-gate').style.display = gate ? '' : 'none';
+            let u = auth?.currentUser;
+            document.getElementById('signout-row').style.display = isAdminUser ? '' : 'none';
+            document.getElementById('signed-in-as').textContent = isAdminUser ? (u.email || '') : '';
+            if (isAdminPage() && (isAdminUser || authUnavailable)) loadAdminPrivate();
+        }
+        async function adminSignIn() {
+            let email = document.getElementById('signin-email').value.trim(), pass = document.getElementById('signin-pass').value;
+            let err = document.getElementById('signin-error');
+            if (!email || !pass) { err.textContent = 'Enter your email and password.'; return; }
+            err.textContent = 'Signing in…';
+            try { await auth.signInWithEmailAndPassword(email, pass); err.textContent = ''; document.getElementById('signin-pass').value = ''; }
+            catch (e) {
+                err.textContent = /operation-not-allowed|configuration-not-found/.test(e.code || '') ? 'Email sign-in isn\'t turned on in Firebase yet.'
+                    : /network/.test(e.code || '') ? 'No signal. Try again in a moment.' : 'That email and password didn\'t match.';
+            }
+        }
+        async function adminSignOut() {
+            if (!confirm('Sign out of JB Golf on this phone? You\'ll need your email and password to get back in.')) return;
+            await auth.signOut().catch(() => {});
+        }
+
+        // The organizer's PIN and the players' phone numbers live in admin_private, which only the organizer can read
+        let adminPhones = {}, adminPrivateLoaded = false;
+        function mergePhones() { Object.entries(adminPhones).forEach(([k, ph]) => { if (savedPlayers[k]) savedPlayers[k].phone = ph; }); }
+        async function loadAdminPrivate() {
+            if (adminPrivateLoaded) return;
+            adminPrivateLoaded = true;
+            try {
+                let doc = await adminPrivateRef.get();
+                let d = doc.exists ? doc.data() : {};
+                if (/^\d{4}$/.test(d.pin || '')) adminPin = d.pin;
+                adminPhones = d.phones || {};
+                // Numbers saved before they were private: move them over and take them off the shared player list
+                let pub = await savedPlayersRef.get(), moved = {};
+                Object.entries((pub.exists && pub.data().players) || {}).forEach(([k, sp]) => {
+                    if (sp.phone === undefined) return;
+                    if (sp.phone && !adminPhones[k]) moved[k] = sp.phone;
+                    savedPlayersRef.update(new firebase.firestore.FieldPath('players', k, 'phone'), firebase.firestore.FieldValue.delete()).catch(() => {});
+                });
+                if (Object.keys(moved).length) { Object.assign(adminPhones, moved); adminPrivateRef.set({ phones: moved }, { merge: true }).catch(() => {}); }
+                mergePhones();
+                localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
+                renderPlayersList();
+            } catch (e) { adminPrivateLoaded = false; }
+        }
+        // Saving players: the phone number goes to the private doc, the rest to the shared list
+        function writePlayers(updates) {
+            let pub = {}, phones = {};
+            Object.entries(updates).forEach(([k, rec]) => {
+                let { phone, ...rest } = rec || {};
+                if (phone !== undefined) { phones[k] = phone; adminPhones[k] = phone; }
+                if (Object.keys(rest).length) pub[k] = rest;
+            });
+            if (Object.keys(pub).length) savedPlayersRef.set({ players: pub }, { merge: true }).catch(err => console.error('Saving players failed', err));
+            if (Object.keys(phones).length) adminPrivateRef.set({ phones }, { merge: true }).catch(err => console.error('Saving numbers failed', err));
+        }
+        function forgetPhone(key) {
+            if (!(key in adminPhones)) return;
+            delete adminPhones[key];
+            try { adminPrivateRef.update(new firebase.firestore.FieldPath('phones', key), firebase.firestore.FieldValue.delete()).catch(() => {}); } catch (e) {}
+        }
+        async function changeAdminPin() {
+            if (!(await askPin('Enter your current PIN'))) return;
+            let p1 = prompt('New 4-digit PIN:');
+            if (p1 === null) return;
+            if (!/^\d{4}$/.test(p1)) { alert('The PIN needs to be 4 numbers.'); return; }
+            if (prompt('Type the new PIN again:') !== p1) { alert("Those didn't match. Your PIN is unchanged."); return; }
+            adminPin = p1;
+            adminPrivateRef.set({ pin: p1 }, { merge: true }).then(() => alert('PIN changed.')).catch(err => alert('Could not save the PIN: ' + err.message));
+        }
+
         // ===== Home (the admin's starting page) =====
         function showScreen(id) {
             document.querySelectorAll('.screen').forEach(sc => sc.classList.remove('active'));
@@ -2500,7 +2615,7 @@ function toggle9HoleOptions() {
             });
             if (!Object.keys(updates).length) return;
             localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
-            savedPlayersRef.set({ players: updates }, { merge: true }).catch(() => {});
+            writePlayers(updates);
             renderSavedPlayersList();
         }
         // US numbers read as (423) 555-0123 however they're typed or pasted; anything else is left alone
@@ -2618,7 +2733,7 @@ function toggle9HoleOptions() {
             });
             if (added) {
                 localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
-                savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error('Saving numbers failed', err));
+                writePlayers(updates);
             }
             alert(cards.length ? `Added numbers for ${added} player${added === 1 ? '' : 's'}.${had ? ` ${had} already had one.` : ''}${unknown ? ` ${unknown} contact${unknown === 1 ? '' : 's'} didn't match a player (add them in Players first).` : ''}` : 'No contacts found in that file.');
         }
@@ -2636,7 +2751,7 @@ function toggle9HoleOptions() {
             });
             if (!added && !updated) return;
             localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
-            savedPlayersRef.set({ players: updates }, { merge: true }).catch(err => console.error('Saving players failed', err));
+            writePlayers(updates);
             renderPlayersList(); renderSavedPlayersList();
             alert(`Added ${added} player${added === 1 ? '' : 's'}${updated ? `, added numbers for ${updated}` : ''}.`);
         }
@@ -5714,7 +5829,7 @@ function hideCartHoleHeader() {
         }
 
         // Admin PIN on an on-screen number pad (the browser's own prompt always shows the full keyboard)
-        const ADMIN_PIN = '1234';
+        let adminPin = '1234'; // the organizer's own PIN, loaded from admin_private once signed in
         let pinEntry = '';
         let pinResolve = null;
 
@@ -5733,11 +5848,11 @@ function hideCartHoleHeader() {
 
         function pressPinKey(key) {
             if (key === 'back') pinEntry = pinEntry.slice(0, -1);
-            else if (pinEntry.length < ADMIN_PIN.length) pinEntry += key;
+            else if (pinEntry.length < adminPin.length) pinEntry += key;
             document.getElementById('pin-error').innerText = '';
             renderPinDots();
-            if (pinEntry.length < ADMIN_PIN.length) return;
-            if (pinEntry === ADMIN_PIN) { closePinPad(true); return; }
+            if (pinEntry.length < adminPin.length) return;
+            if (pinEntry === adminPin) { closePinPad(true); return; }
             let dots = document.getElementById('pin-dots');
             dots.classList.remove('shake'); void dots.offsetWidth; dots.classList.add('shake');
             document.getElementById('pin-error').innerText = 'Wrong PIN, try again';

@@ -1,0 +1,41 @@
+rules_version = '2';
+// JB Golf: who can change what in Firestore. Paste into Firebase console → Firestore Database → Rules → Publish.
+// Replace ORGANIZER_EMAIL with the email of the organizer's sign-in (Authentication → Users).
+//  - Anyone can read (cart links, the live leaderboard, shared results and the sign-up page need to).
+//  - Only the signed-in organizer can change rounds, players, money, history, courses and settings,
+//    and only the organizer can read the private doc (PIN and phone numbers).
+//  - Cart phones (signed in in the background) can enter scores and the few things scoring touches.
+//  - The sign-up page can only add or change In / Out answers.
+//  - The alerts worker (no sign-in) can mark "no scores in 20 minutes" alerts as sent and remove dead phones.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function isOrganizer() { return request.auth != null && request.auth.token.email == 'ORGANIZER_EMAIL'; }
+    function signedIn() { return request.auth != null; }
+    function changed() { return request.resource.data.diff(resource.data).affectedKeys(); }
+
+    match /tournaments/{doc} {
+      allow read: if doc != 'admin_private' || isOrganizer();
+      allow write: if isOrganizer();
+    }
+
+    match /tournaments/active_round {
+      // Scoring from a cart: scores, cart progress and pace, the score-change log, presses,
+      // who's scoring, and the hole each phone is on (nothing else in the round)
+      allow update: if signedIn()
+        && changed().hasOnly(['scoresDb', 'cartActivity', 'pace', 'scoreLog', 'matchPresses', 'clipboards', 'roundData'])
+        && (!changed().hasAny(['roundData'])
+            || request.resource.data.roundData.diff(resource.data.roundData).affectedKeys().hasOnly(['currentHoles']));
+      // The alerts worker
+      allow update: if changed().hasOnly(['behindAlerted']);
+    }
+
+    match /tournaments/signup {
+      allow update: if signedIn() && changed().hasOnly(['responses']);
+    }
+
+    match /tournaments/push_subs {
+      // Phones save their own alert subscription; the alerts worker removes dead ones
+      allow write: if true;
+    }
+  }
+}
