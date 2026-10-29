@@ -329,6 +329,8 @@
         .su-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 8px; }
         .su-buttons button { margin: 0; }
         .su-status { text-align: center; font-weight: 700; color: var(--accent-gold); min-height: 1.2em; }
+        .phone-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 9px; vertical-align: 2px; border: 1.5px solid var(--text-muted); opacity: .5; }
+        .phone-dot.on { background: #3fb950; border-color: #3fb950; opacity: 1; }
         .phone-row { display: flex; gap: 10px; align-items: center; }
         .phone-row input { flex: 1; }
         .phone-row .text-link { white-space: nowrap; margin: 0; }
@@ -790,6 +792,7 @@
         </div>
         <h2 class="clean-title">Players</h2>
         <p class="clean-sub">Saved for every round. Tap a player for their stats or to edit. Pick them on the roster by typing their name.</p>
+        <p class="clean-sub" id="players-phones"></p>
         <div id="players-list" class="list-rows"></div>
         <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
         <button type="button" class="text-link players-import contacts-btn" style="display:none;" onclick="importContacts()">📇 Add players from contacts</button>
@@ -913,7 +916,7 @@
             <button type="button" class="text-link" onclick="document.getElementById('su-new').style.display = ''">Not listed? Add your name</button>
             <div id="su-new" style="display:none;">
                 <input type="text" id="su-other" placeholder="First and last name" autocomplete="name" autocapitalize="words">
-                <input type="tel" id="su-phone" placeholder="Mobile number (optional)" autocomplete="tel" inputmode="tel">
+                <input type="tel" id="su-phone" placeholder="Mobile number (optional)" autocomplete="tel" inputmode="tel" oninput="formatPhoneInput(this)">
                 <button type="button" class="btn-secondary" onclick="pickSignupNew()">That's me</button>
             </div>
         </div>
@@ -976,7 +979,7 @@
             <input type="text" id="pl-tee" list="tee-names" autocomplete="off" autocapitalize="words" placeholder="e.g. Blue">
             <div id="pl-course-tees" class="dash-footnote"></div>
             <label class="field-label" for="pl-phone">Mobile number <span class="payout-note">for texting the group</span></label>
-            <div class="phone-row"><input type="tel" id="pl-phone" autocomplete="tel" inputmode="tel" placeholder="(423) 555-0123"><button type="button" class="text-link contacts-btn" style="display:none;" onclick="pickContactFor()">📇 Contacts</button></div>
+            <div class="phone-row"><input type="tel" id="pl-phone" autocomplete="tel" inputmode="tel" placeholder="(423) 555-0123" oninput="formatPhoneInput(this)"><button type="button" class="text-link contacts-btn" style="display:none;" onclick="pickContactFor()">📇 Contacts</button></div>
             <label class="field-label" for="pl-usual">Usually shoots <span class="payout-note">until they have rounds here · a score like 92, or a handicap like 14</span></label>
             <input type="number" id="pl-usual" inputmode="numeric" autocomplete="off" placeholder="e.g. 92">
             <datalist id="tee-names"><option value="Black"><option value="Blue"><option value="White"><option value="Gold"><option value="Silver"><option value="Green"><option value="Red"></datalist>
@@ -1846,9 +1849,11 @@ function toggle9HoleOptions() {
             let rows = Object.entries(savedPlayers).map(([key, sp]) => ({ key, ...playerInfo(sp) }))
                 .sort((a, b) => (a.last || a.first).localeCompare(b.last || b.first) || a.first.localeCompare(b.first));
             let html = rows.map(r => `<button type="button" class="list-row player-row" onclick="openPlayerEditor('${r.key.replace(/'/g, "\\'")}')">
-                    <span><b>${r.first} ${r.last}</b>${r.nick ? ` <span class="payout-note">"${r.nick}"</span>` : ''}</span>
+                    <span><span class="phone-dot${savedPlayers[r.key].phone ? ' on' : ''}" title="${savedPlayers[r.key].phone ? 'Has a mobile number' : 'No mobile number'}"></span><b>${r.first} ${r.last}</b>${r.nick ? ` <span class="payout-note">"${r.nick}"</span>` : ''}</span>
                     <span class="row-note">${idx(r.key)}${r.tee ? `<span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : 'No tees set'}</span></button>`).join('');
             document.getElementById('players-list').innerHTML = html || '<p class="clean-sub">No players yet. Add one, or they are added when you build a roster.</p>';
+            let withPhone = rows.filter(r => savedPlayers[r.key].phone).length;
+            document.getElementById('players-phones').innerHTML = rows.length ? `<span class="phone-dot on"></span>${withPhone} of ${rows.length} have a mobile number` : '';
             let c = document.getElementById('players-count'); if (c) c.textContent = rows.length ? `${rows.length}` : '';
         }
 
@@ -1858,7 +1863,7 @@ function toggle9HoleOptions() {
             let info = key ? playerInfo(savedPlayers[key]) : { first: '', last: '', nick: '', tee: '' };
             ['first', 'last', 'nick', 'tee'].forEach(f => { document.getElementById('pl-' + f).value = info[f]; });
             document.getElementById('pl-usual').value = key ? (savedPlayers[key].usual ?? '') : '';
-            document.getElementById('pl-phone').value = key ? (savedPlayers[key].phone || '') : '';
+            document.getElementById('pl-phone').value = key ? formatPhone(savedPlayers[key].phone || '') : '';
             document.getElementById('player-modal-title').textContent = key ? savedPlayers[key].name : 'Add a player';
             document.getElementById('pl-delete').style.display = key ? '' : 'none';
             renderPlayerStats(key);
@@ -1875,7 +1880,7 @@ function toggle9HoleOptions() {
             let name = `${first}${last ? ' ' + last : ''}`, key = name.toLowerCase();
             if (key !== editingPlayerKey && savedPlayers[key]) { alert(`${name} is already in your players.`); return; }
             let usual = parseFloat(v('usual'));
-            let rec = { ...(editingPlayerKey ? savedPlayers[editingPlayerKey] : {}), name, first, last, nick: v('nick'), tee: v('tee'), usual: isNaN(usual) ? null : usual, phone: v('phone') };
+            let rec = { ...(editingPlayerKey ? savedPlayers[editingPlayerKey] : {}), name, first, last, nick: v('nick'), tee: v('tee'), usual: isNaN(usual) ? null : usual, phone: formatPhone(v('phone')) };
             if (!rec.strokes) rec.strokes = {};
             if (editingPlayerKey && editingPlayerKey !== key) {
                 delete savedPlayers[editingPlayerKey];
@@ -2189,7 +2194,7 @@ function toggle9HoleOptions() {
         function pickSignupNew() {
             let name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
             if (!name) { alert('Type your first and last name.'); return; }
-            signupNewName = { name, phone: document.getElementById('su-phone').value.trim() };
+            signupNewName = { name, phone: formatPhone(document.getElementById('su-phone').value) };
             localStorage.setItem('signupName', name.toLowerCase());
             renderSignupPage();
         }
@@ -2324,6 +2329,22 @@ function toggle9HoleOptions() {
             savedPlayersRef.set({ players: updates }, { merge: true }).catch(() => {});
             renderSavedPlayersList();
         }
+        // US numbers read as (423) 555-0123 however they're typed or pasted; anything else is left alone
+        function formatPhone(v) {
+            let d = (v || '').replace(/\D/g, '');
+            if (d.length === 11 && d[0] === '1') d = d.slice(1);
+            if (d.length !== 10 || /^\+(?!1)/.test((v || '').trim())) return (v || '').trim();
+            return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+        }
+        // As you type: (423) 555-0123
+        function formatPhoneInput(el) {
+            let raw = el.value;
+            if (/^\+(?!1)/.test(raw.trim())) return; // international: leave it
+            let d = raw.replace(/\D/g, '');
+            if (d.length === 11 && d[0] === '1') d = d.slice(1);
+            d = d.slice(0, 10);
+            el.value = d.length < 4 ? d : d.length < 7 ? `(${d.slice(0, 3)}) ${d.slice(3)}` : `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+        }
         // Phone numbers from the players list (and anyone new who left one on the sign-up)
         function phoneFor(key) { return savedPlayers[key]?.phone || signup?.responses?.[key]?.phone || ''; }
         let textWho = 'in', textDefault = '';
@@ -2364,7 +2385,7 @@ function toggle9HoleOptions() {
             try {
                 let [c] = await navigator.contacts.select(['name', 'tel'], { multiple: false });
                 if (!c) return;
-                if (c.tel?.[0]) document.getElementById('pl-phone').value = c.tel[0];
+                if (c.tel?.[0]) document.getElementById('pl-phone').value = formatPhone(c.tel[0]);
                 let n = (c.name?.[0] || '').trim();
                 if (n && !document.getElementById('pl-first').value) { let x = splitName(n); document.getElementById('pl-first').value = x.first; document.getElementById('pl-last').value = x.last; }
             } catch (e) {}
@@ -2388,6 +2409,7 @@ function toggle9HoleOptions() {
                 if (!savedPlayers[key] && n[0] && n[1]) key = canonicalKey(`${n[1]} ${n[0]}`.toLowerCase().trim());
                 if (!savedPlayers[key]) { unknown++; return; }
                 if (savedPlayers[key].phone) { had++; return; }
+                tel = formatPhone(tel);
                 savedPlayers[key].phone = tel; updates[key] = { phone: tel }; added++;
             });
             if (added) {
@@ -2401,7 +2423,7 @@ function toggle9HoleOptions() {
             try { list = await navigator.contacts.select(['name', 'tel'], { multiple: true }); } catch (e) { return; }
             let added = 0, updated = 0, updates = {};
             list.forEach(c => {
-                let name = (c.name?.[0] || '').trim().replace(/\s+/g, ' '), phone = c.tel?.[0] || '';
+                let name = (c.name?.[0] || '').trim().replace(/\s+/g, ' '), phone = formatPhone(c.tel?.[0] || '');
                 if (!name) return;
                 let key = name.toLowerCase();
                 if (savedPlayers[key]) { if (phone && !savedPlayers[key].phone) { savedPlayers[key].phone = phone; updates[key] = { phone }; updated++; } return; }
