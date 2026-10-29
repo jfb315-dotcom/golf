@@ -5085,8 +5085,9 @@ function hideCartHoleHeader() {
                 let bets = [{ label: 'Main', diff: strokes(null), from: null }];
                 ['A', 'B'].forEach(side => {
                     let after = presses[key]?.[side];
-                    if (after != null) bets.push({ label: `${side === 'A' ? names[0] : names[1]} press · from hole ${holes[holes.indexOf(after) + 1] ?? after + 1}`, diff: strokes(after), from: after, by: side });
+                    if (after != null) bets.push({ label: `${side === 'A' ? names[0] : names[1]} press · starts hole ${holes[holes.indexOf(after) + 1] ?? after + 1}`, diff: strokes(after), from: after, by: side });
                 });
+                bets.sort((x, y) => (x.from == null ? -1 : pos(x.from)) - (y.from == null ? -1 : pos(y.from))); // Main, then presses by the hole they start
                 let behind = side => bets.some(b => side === 'A' ? b.diff > 0 : b.diff < 0);
                 let canPress = {};
                 ['A', 'B'].forEach(side => {
