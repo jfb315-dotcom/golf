@@ -2170,7 +2170,7 @@ function toggle9HoleOptions() {
                 let rData = arc.roundData || { course: arc.course, groups: arc.groups || [] };
                 if (typeof rData.course === 'string') rData = { ...rData, course: allAvailableCourses[rData.course] || { name: rData.course } };
                 let id = String(rData.roundId || ('arc-' + (arc.date || '') + '-' + (rData.course?.name || '')).replace(/[^\w-]/g, ''));
-                if (roundHistory[id]) return;
+                if (roundHistory[id] || deletedArchives()[id]) return;
                 added += recordRoundHistory(id, rData, arc.scoresDb || {});
             });
             alert(added ? `Added ${added} past round${added > 1 ? 's' : ''} to the history.` : 'No new finished rounds found on this phone.');
@@ -5940,16 +5940,31 @@ function hideCartHoleHeader() {
             let archive = localArchive().filter(a => archiveId(a) !== arc.id); // a reopened round replaces its old copy
             archive.push(arc);
             localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+            let deleted = deletedArchives();
+            if (deleted[arc.id]) {
+                delete deleted[arc.id]; localStorage.setItem('archiveDeleted', JSON.stringify(deleted));
+                archiveIndexRef.update(new firebase.firestore.FieldPath('deleted', arc.id), firebase.firestore.FieldValue.delete()).catch(() => {});
+            }
             uploadArchived(arc);
         }
 
         let archiveRows = []; // what the list shows: { id, date, course, at, local }
+        // Rounds deleted on any device: kept as a list so other devices drop their own copies instead of uploading them again
+        function deletedArchives() { try { return JSON.parse(localStorage.getItem('archiveDeleted')) || {}; } catch (e) { return {}; } }
+        function dropDeletedLocal(deleted) {
+            let keep = localArchive().filter(a => !deleted[archiveId(a)]);
+            if (keep.length !== localArchive().length) localStorage.setItem('tournamentArchive', JSON.stringify(keep));
+        }
         function viewArchiveList() {
+            dropDeletedLocal(deletedArchives());
             renderArchiveList(cloudIndexCache());
             showScreen('step-8');
             archiveIndexRef.get().then(doc => {
                 let cloud = (doc.exists && doc.data().rounds) || {};
+                let deleted = (doc.exists && doc.data().deleted) || {};
                 localStorage.setItem('archiveIndex', JSON.stringify(cloud));
+                localStorage.setItem('archiveDeleted', JSON.stringify(deleted));
+                dropDeletedLocal(deleted);
                 // Rounds only on this phone get backed up now
                 localArchive().forEach(arc => { if (!cloud[archiveId(arc)]) { uploadArchived(arc); cloud[archiveId(arc)] = { date: arc.date, course: arc.course?.name || arc.course, at: arc.at || Date.parse(arc.date) || 0 }; } });
                 renderArchiveList(cloud);
@@ -5993,6 +6008,10 @@ function hideCartHoleHeader() {
                 archiveDocRef(id).delete().catch(() => {});
                 archiveIndexRef.update(new firebase.firestore.FieldPath('rounds', id), firebase.firestore.FieldValue.delete()).catch(() => {});
             });
+            let deleted = deletedArchives();
+            ids.forEach(id => deleted[id] = Date.now());
+            localStorage.setItem('archiveDeleted', JSON.stringify(deleted));
+            archiveIndexRef.set({ deleted: Object.fromEntries(ids.map(id => [id, Date.now()])) }, { merge: true }).catch(() => {});
             localStorage.setItem('archiveIndex', JSON.stringify(cloud));
             localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
             renderArchiveList(cloud);
