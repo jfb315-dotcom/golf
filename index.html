@@ -504,6 +504,7 @@
         .alerts-all .text-link { padding: 6px 0; }
         .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
         .alerts-banner { margin: 12px 0 4px; }
+        #step-dashboard.round-over .alerts-banner { display: none !important; }
         .ab-big { padding: 16px 18px 14px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
         .ab-title { font-size: 20px; font-weight: 900; line-height: 1.15; }
         .ab-sub { margin-top: 4px; font-size: 14px; font-weight: 600; opacity: 0.85; }
@@ -4472,9 +4473,14 @@ function hideCartHoleHeader() {
             activeViewScoresDb = scoresDb;
 
 
-            document.getElementById('dashboard-eyebrow').innerText = showingFinalResults ? 'Round complete' : 'Live';
-            document.getElementById('dashboard-title').innerText = showingFinalResults ? "Final results" : ((urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings");
+            // Our Match only: once the last score is in, the match is over even before the round is finalized
+            let matchOver = isOurMatchOnly(roundData) && !!calculateOurMatch(roundData, scoresDb, matchPresses || {})?.finished;
+            let over = showingFinalResults || matchOver;
+            document.getElementById('dashboard-eyebrow').innerText = over ? 'Round complete' : 'Live';
+            document.getElementById('dashboard-title').innerText = over ? "Final results" : ((urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings");
             document.getElementById('dashboard-sub').textContent = roundWhere(roundData);
+            // A finished round has nothing left to alert about, so no "Get alerts" card on it
+            document.getElementById('step-dashboard').classList.toggle('round-over', over || !liveRoundInCloud);
             
             let orderedSegments = getOrderedSegments(roundData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
