@@ -4463,6 +4463,7 @@ function hideCartHoleHeader() {
 
         function viewDashboard() {
             const urlParams = new URLSearchParams(window.location.search);
+            let wasOpen = document.getElementById('step-dashboard').classList.contains('active');
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
 
@@ -4520,6 +4521,8 @@ function hideCartHoleHeader() {
             dash.insertBefore(cardsEl, spectator || banner ? dash.querySelector('.alerts-banner').nextSibling : document.getElementById('dashboard-payouts'));
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
+            // Opening the page starts at its top; a live refresh while you're reading it leaves you where you are
+            if (!wasOpen) window.scrollTo(0, 0);
         }
         // Per cart: how far they've scored ("Thru") and any earlier holes still missing a score
         // Minutes per hole from the tee time (or first hole) to the last hole the cart finished, and when they'll be done
@@ -5182,7 +5185,7 @@ function hideCartHoleHeader() {
             let pressList = ourMatchPressList(m);
             if (pressList.length) {
                 html += `<div class="payout-sub">Presses</div>`;
-                pressList.forEach(pr => { html += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text.replace(' pressed the ', ' · ')}</span><span>from ${pr.start}</span></div>`; });
+                pressList.forEach(pr => { html += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text.replace(' pressed the ', ' · ')}</span><span>starts hole ${pr.start}</span></div>`; });
             }
 
             // Nassau
@@ -5193,7 +5196,7 @@ function hideCartHoleHeader() {
                 html += `<div class="om-bet"><div class="payout-row"><b>${labels[key]}</b><span class="payout-note">${n.finished ? 'final' : (n.done.length ? `thru ${n.lastDone}` : 'not started')}</span></div>`;
                 n.bets.forEach(b => {
                     let money = n.finished ? (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0) : null;
-                    let label = b.label === 'Main' ? 'Main' : `Press from ${n.holes[n.holes.indexOf(b.from) + 1] ?? b.from + 1}`;
+                    let label = b.label === 'Main' ? 'Main' : `Press · starts hole ${n.holes[n.holes.indexOf(b.from) + 1] ?? b.from + 1}`;
                     html += `<div class="om-bet-row"><span>${label}</span><span class="om-standing">${nassauText(m, b.diff)}</span><b>${money !== null ? formatMatchMoney(money) : ''}</b></div>`;
                 });
                 html += `<div class="payout-row om-subtotal"><span>${labels[key]} Nassau${n.bets.length > 1 ? ` (${n.bets.length} bets)` : ''}</span>${n.finished ? `<b class="payout-amount">${formatMatchMoney(n.money)}</b>` : '<span class="payout-note">in play</span>'}</div>`;
@@ -5226,7 +5229,7 @@ function hideCartHoleHeader() {
                     }
                     let low = `<span class="${a < b ? 'om-a' : ''}">${a}</span> v <span class="${b < a ? 'om-b-win' : ''}">${b}</span>`;
                     chart += `<tr><td><b>${h}</b></td><td class="om-par">${rData.course.pars[h - 1]}</td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
-                    pressList.filter(pr => pr.after === h).forEach(pr => { chart += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
+                    pressList.filter(pr => pr.after === h).forEach(pr => { chart += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · starts hole ${pr.start}</td></tr>`; });
                 });
                 chart += `</tbody></table>`;
                 html += fold('om-nassau-holes', 'Nassau hole by hole', chart);
@@ -5306,7 +5309,7 @@ function hideCartHoleHeader() {
             if (m) MATCH_BETS.forEach(key => ['A', 'B'].forEach((side, i) => {
                 if (m.nassau[key]?.canPress[side]) open.push(`${m.names[i]} (${{ front: 'front', back: 'back', overall: 'overall' }[key]})`);
             }));
-            let pressed = m ? ourMatchPressList(m).map(pr => `${pr.text.replace(' pressed the ', ' · ')} from ${pr.start}`) : [];
+            let pressed = m ? ourMatchPressList(m).map(pr => `${pr.text.replace(' pressed the ', ' · ')}, starts hole ${pr.start}`) : [];
             el.style.display = open.length || pressed.length ? '' : 'none';
             el.classList.toggle('quiet', open.length === 0);
             let openLink = `<button type="button" class="text-link" onclick="viewDashboard(); document.getElementById('our-match')?.scrollIntoView({block:'start'});">Open ›</button>`;
@@ -5322,7 +5325,7 @@ function hideCartHoleHeader() {
             let st = `JB Golf · Our Match\n${formatRoundDate(activeViewRoundData.date)} · ${activeViewRoundData.course.name}\n${m.names[0]} vs ${m.names[1]}\n`;
             st += `All amounts per person\n`;
             let pressList = ourMatchPressList(m);
-            if (pressList.length) { st += `\nPresses\n`; pressList.forEach(pr => { st += `${pr.text} from hole ${pr.start}\n`; }); }
+            if (pressList.length) { st += `\nPresses\n`; pressList.forEach(pr => { st += `${pr.text}, starts hole ${pr.start}\n`; }); }
             st += `\nNassau ($${om.nassauBet} a bet)\n`;
             MATCH_BETS.forEach(key => {
                 let n = m.nassau[key]; if (!n) return;
