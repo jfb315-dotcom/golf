@@ -273,6 +273,33 @@
         .top-row { display: flex; align-items: center; justify-content: space-between; min-height: 44px; }
         .clean input.date-chip { width: auto; height: 40px; min-height: 0; padding: 0 14px; margin: 0; border: none; border-radius: 20px; background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 600; }
         .roster-team { margin-top: 24px; }
+        .dash-pace { font-size: 13px; color: var(--text-muted); margin-top: 2px; }
+        .score-changes summary { cursor: pointer; list-style: none; }
+        .score-changes summary::-webkit-details-marker { display: none; }
+        .score-changes summary::after { content: ' ▾'; }
+        .change-row { font-size: 14px; padding: 6px 0; border-top: 1px solid var(--line); }
+        .money-row { display: block; width: 100%; padding: 12px 4px; background: none; border: none; border-bottom: 1px solid var(--line); color: var(--text-main); text-align: left; cursor: pointer; font-size: 16px; }
+        .money-row .dash-row-line b.pos { color: #3fb950; }
+        .money-row .dash-row-line b.neg { color: #f85149; }
+        .money-detail { display: none; margin-top: 6px; font-size: 13px; color: var(--text-muted); }
+        .money-row.open .money-detail { display: block; }
+        .money-detail div { display: flex; justify-content: space-between; padding: 2px 0; }
+        .reopen-banner { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 8px 0 4px; padding: 10px 12px; border-radius: 12px; background: var(--fill); color: var(--text-main); font-size: 14px; }
+        .reopen-banner button { width: auto; margin: 0; padding: 8px 14px; border-radius: 10px; border: 1px solid var(--accent-gold); background: none; color: var(--accent-gold); font-weight: 700; font-size: 14px; }
+        button.roster-num { background: none; border: none; padding: 0; margin: 0; cursor: pointer; text-align: left; border-radius: 50%; }
+        button.roster-num.picked { background: var(--accent-gold); color: var(--on-accent); text-align: center; width: 26px; height: 26px; font-size: 15px; }
+        .team-total { margin-left: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
+        .swap-hint { font-size: 13px; color: var(--text-muted); margin: 10px 0 0; }
+        .team-tools { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+        .whos-btn { display: block; width: 100%; margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--accent-gold); background: var(--fill-soft); color: var(--accent-gold); font-size: 17px; font-weight: 700; text-align: left; text-transform: none; cursor: pointer; }
+        .whos-btn span { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-top: 2px; }
+        .whos-list { margin: 10px 0 8px; }
+        .rsvp { margin-left: 8px; padding: 1px 7px; border-radius: 8px; font-size: 11px; font-weight: 700; text-transform: uppercase; vertical-align: 2px; }
+        .rsvp.in { background: #2e7d32; color: #fff; }
+        .rsvp.out { background: var(--fill-strong); color: var(--text-muted); }
+        .su-buttons { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin: 18px 0 8px; }
+        .su-buttons button { margin: 0; }
+        .su-status { text-align: center; font-weight: 700; color: var(--accent-gold); min-height: 1.2em; }
         .roster-add-saved { display: block; margin: 6px 0 0 4px; font-size: 15px; }
         .rp-list { max-height: 52vh; overflow-y: auto; margin: 10px 0 14px; }
         .rp-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 50px; padding: 0 6px; background: none; border: none; border-bottom: 1px solid var(--line); color: var(--text-main); font-size: 16px; text-align: left; cursor: pointer; }
@@ -450,6 +477,7 @@
 
     <div id="step-1" class="screen clean active">
         <div class="clean-eyebrow">New round</div>
+        <div id="reopen-banner" class="reopen-banner" style="display:none;"><span id="reopen-text"></span><button type="button" onclick="reopenLastRound()">Reopen</button></div>
         <div class="edit-round-banner"><span>Editing the live round. Tap <b>Save &amp; return to round</b> to keep changes.</span><button type="button" onclick="cancelMidRoundEdit()">Cancel edit</button></div>
         <h2 class="clean-title">Tournament setup</h2>
 
@@ -475,6 +503,8 @@
                 </div>
             </div>
         </div>
+
+        <button type="button" class="whos-btn" onclick="openWhosPlaying()">✓ Who's playing? <span>Check off players and make teams</span></button>
 
         <div class="field-label">Holes</div>
         <div class="segmented" data-select="hole-format"><button type="button" data-value="18">18 holes</button><button type="button" data-value="9">9 holes</button></div>
@@ -559,6 +589,7 @@
 
         <div class="list-rows">
             <button type="button" class="list-row" onclick="openPlayersScreen()">Players <span class="row-note" id="players-count"></span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" onclick="openMoneyScreen()">Money · season <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" id="btn-archive" class="list-row" onclick="viewArchiveList()">Archived rounds <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <label class="list-row" for="app-theme-selector">Color theme
                 <select id="app-theme-selector" onchange="changeTheme()">
@@ -599,7 +630,12 @@
         <div id="roster-container"></div>
         <datalist id="saved-players-list"></datalist>
 
-        <button type="button" class="text-link" onclick="balanceTeams()">⚖️ Balance teams by index</button>
+        <p class="swap-hint" id="swap-hint">Tap a number, then another player's number, to swap them.</p>
+        <div class="team-tools">
+            <button type="button" class="text-link" onclick="balanceTeams()">⚖️ Balance teams</button>
+            <button type="button" class="text-link" id="try-teams" style="display:none;" onclick="balanceTeams(true)">🔀 Try another</button>
+            <button type="button" class="text-link" id="undo-teams" style="display:none;" onclick="undoTeams()">↩︎ Undo</button>
+        </div>
         <button type="button" class="text-link" onclick="openPreRoundBlindDrawModal()">Assign blind draw (ghost)</button>
 
         <div id="om-sides" style="display: none;">
@@ -700,6 +736,7 @@
         <div id="dashboard-payouts"></div>
         <div id="dashboard-our-match"></div>
         <div id="dashboard-financial-summary"></div>
+        <div id="dashboard-changes"></div>
         <div class="dash-actions">
             <button type="button" class="bar-primary" onclick="(hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) ? openResultsShareModal() : openOurMatchShareModal()">Share results</button>
             <div id="admin-finalize-container">
@@ -725,6 +762,69 @@
         <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
         <button type="button" class="text-link players-import" onclick="importArchivedRounds()">Add past rounds from this phone's archive</button>
         <p class="dash-footnote">Index is handicap-style: the best scores of each player's last 20 rounds, adjusted for the tee's rating and slope. It is not an official USGA index.</p>
+    </div>
+
+    <div id="step-money" class="screen clean">
+        <div class="top-row">
+            <button type="button" class="text-link back-link-top" onclick="switchScreen('step-money', 'step-1')">‹ Setup</button>
+        </div>
+        <h2 class="clean-title">Money</h2>
+        <div class="segmented" id="money-range"><button type="button" data-range="season" onclick="setMoneyRange('season')">Since last settle-up</button><button type="button" data-range="all" onclick="setMoneyRange('all')">All time</button></div>
+        <p class="clean-sub" id="money-sub"></p>
+        <div id="money-list"></div>
+        <button type="button" class="bar-primary players-add" id="money-settle" onclick="settleUp()">Settle up · start fresh</button>
+        <p class="dash-footnote">Team bets and skins less each buy-in, plus Our Match. Every finalized round counts.</p>
+    </div>
+
+    <div id="step-whos" class="screen clean">
+        <div class="top-row">
+            <button type="button" class="text-link back-link-top" onclick="switchScreen('step-whos', 'step-1')">‹ Setup</button>
+        </div>
+        <h2 class="clean-title">Who's playing?</h2>
+        <p class="clean-sub" id="whos-count"></p>
+        <div class="reopen-banner"><span id="whos-signup-text">Ask the group who's in with a link they tap.</span><button type="button" onclick="openSignupModal()">📨 Sign-up link</button></div>
+        <input type="text" id="whos-search" placeholder="Search players" autocomplete="off" enterkeyhint="search" oninput="renderWhosPlaying()">
+        <div id="whos-list" class="whos-list"></div>
+        <button type="button" class="text-link" onclick="openPlayerEditor()">+ Add a new player</button>
+        <div class="field-label">Players per team</div>
+        <div class="segmented" id="whos-size"><button type="button" data-size="2" onclick="setWhosSize(2)">2</button><button type="button" data-size="3" onclick="setWhosSize(3)">3</button><button type="button" data-size="4" onclick="setWhosSize(4)">4</button></div>
+        <p class="clean-sub" id="whos-plan"></p>
+        <div class="bottom-bar">
+            <button type="button" class="bar-primary" id="whos-make" onclick="makeTeamsFromWhos()">Make teams</button>
+        </div>
+    </div>
+
+    <div id="signup-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Sign-up link</h2>
+            <p class="clean-sub" style="text-align:center;">Everyone taps the link and picks In or Out. Their answers show up on Who's playing.</p>
+            <div class="clean-grid-2">
+                <div><label class="field-label" for="su-date-in">Date</label><input type="date" id="su-date-in"></div>
+                <div><label class="field-label" for="su-time-in">First tee time</label><input type="time" id="su-time-in"></div>
+            </div>
+            <div class="field-label">Course</div>
+            <p class="clean-sub" id="su-course-in" style="margin-top:0;"></p>
+            <label class="field-label" for="su-note-in">Note <span class="payout-note">optional</span></label>
+            <input type="text" id="su-note-in" placeholder="e.g. $20 Nassau, skins $10" autocomplete="off">
+            <button class="btn-primary" onclick="createSignup()">Create &amp; share</button>
+            <button class="btn-secondary" onclick="document.getElementById('signup-modal').classList.remove('active')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="step-signup" class="screen clean">
+        <div class="clean-eyebrow">JB Golf</div>
+        <h2 class="clean-title">Are you in?</h2>
+        <p class="clean-sub" id="su-details"></p>
+        <p class="clean-sub" id="su-note"></p>
+        <label class="field-label" for="su-name">Your name</label>
+        <div class="select-wrap"><select id="su-name" onchange="signupNameChanged()"></select></div>
+        <input type="text" id="su-other" placeholder="First and last name" autocomplete="name" autocapitalize="words" style="display:none;">
+        <div class="su-buttons">
+            <button type="button" class="bar-primary" onclick="answerSignup('in')">I'm in</button>
+            <button type="button" class="btn-secondary" onclick="answerSignup('out')">Can't make it</button>
+        </div>
+        <p class="su-status" id="su-status"></p>
+        <div id="su-list"></div>
     </div>
 
     <div id="roster-picker" class="modal-overlay">
@@ -763,6 +863,8 @@
             <label class="field-label" for="pl-tee">Usual tees</label>
             <input type="text" id="pl-tee" list="tee-names" autocomplete="off" autocapitalize="words" placeholder="e.g. Blue">
             <div id="pl-course-tees" class="dash-footnote"></div>
+            <label class="field-label" for="pl-usual">Usually shoots <span class="payout-note">until they have rounds here · a score like 92, or a handicap like 14</span></label>
+            <input type="number" id="pl-usual" inputmode="numeric" autocomplete="off" placeholder="e.g. 92">
             <datalist id="tee-names"><option value="Black"><option value="Blue"><option value="White"><option value="Gold"><option value="Silver"><option value="Green"><option value="Red"></datalist>
             <button class="btn-primary" onclick="savePlayerEditor()">Save</button>
             <button class="btn-secondary" id="pl-delete" onclick="deletePlayerFromEditor()">Delete player</button>
@@ -958,6 +1060,9 @@ const ALERT_TYPES = ['birdies', 'doubles', 'skins', 'leadChange', 'turn', 'score
 const activeTournamentRef = db.collection("tournaments").doc("active_round");
 const savedPlayersRef = db.collection("tournaments").doc("saved_players");
 const historyRef = db.collection("tournaments").doc("player_history");
+const ledgerRef = db.collection("tournaments").doc("ledger"); // { settledAt }
+const archiveIndexRef = db.collection("tournaments").doc("archive_index"); // { rounds: { id: { date, course, at } } }
+const archiveDocRef = id => db.collection("tournaments").doc("archive_" + id); // one finished round each
 const courseTeesRef = db.collection("tournaments").doc("course_tees");
 
 db.enablePersistence().catch(err => { 
@@ -993,6 +1098,8 @@ const curatedColors = ['#00f3ff', 'var(--good)', '#ff007f', '#ccff00', '#ff5e00'
 let roundData = { course: null, groups: [], carts: [], formats: [], birdieRules: {}, currentHole: 1, currentHoles: { admin: 1 }, betAmount: 0, skinsAmount: 0, playMode: '18', startType: 'front', startHole: 1, endHole: 18, nineHoleType: 'nassau', isScrambled: false, date: '' };
 let scoresDb = {}; 
 let clipboards = {};
+let paceLog = {};  // { cartId: { hole: time the whole cart had scored it } }
+let scoreLog = {}; // { key: { g, p, hole, from, to, by, at } } — every score that was changed after it was entered
 let alertBaseScores = {}; // scores as they were before this phone's latest change
 let showingFinalResults = false; // a cart looking at a finalized round's results
 let matchPresses = {}; // Our Match presses: { front|back|overall: { A|B: hole pressed after } }
@@ -1106,6 +1213,7 @@ function toggle9HoleOptions() {
             const urlParams = new URLSearchParams(window.location.search); 
             const teamParam = urlParams.get('cart');
             const isSpectator = urlParams.get('spectator') === 'true';
+            if (urlParams.get('signup')) { openSignupPage(); return; } // the sign-up link only shows the sign-up page
 
             if (teamParam) { 
                 lockedTeamId = parseInt(teamParam); 
@@ -1121,6 +1229,7 @@ function toggle9HoleOptions() {
             activeTournamentRef.onSnapshot((doc) => {
                 try {
                     liveRoundInCloud = doc.exists && !doc.data().isArchived;
+                    showReopenBanner(doc.exists ? doc.data() : null);
                     if (doc.exists) {
                         const data = doc.data();
 
@@ -1170,6 +1279,8 @@ function toggle9HoleOptions() {
                         scoresDb = data.scoresDb || {};
                         alertBaseScores = JSON.parse(JSON.stringify(scoresDb));
                         clipboards = data.clipboards || {};
+                        paceLog = data.pace || {};
+                        scoreLog = data.scoreLog || {};
                         matchPresses = data.matchPresses || {};
                         
                         if(!roundData.playMode) { roundData.playMode = '18'; } 
@@ -1353,8 +1464,31 @@ function toggle9HoleOptions() {
             }
         }
 
+        // Tee times: each team goes off 10 minutes after the one before
+        const TEE_GAP_MIN = 10;
+        function addMinutes(hhmm, mins) {
+            let [h, m] = (hhmm || '08:00').split(':').map(Number);
+            let t = ((h * 60 + m + mins) % 1440 + 1440) % 1440;
+            return `${String(Math.floor(t / 60)).padStart(2, '0')}:${String(t % 60).padStart(2, '0')}`;
+        }
+        // Changing a team's time moves every team after it
+        function cascadeTeeTimes(from, prefix = 'g') {
+            let base = document.getElementById(`${prefix}${from}-time`).value;
+            if (!base) return;
+            for (let n = from + 1, el; (el = document.getElementById(`${prefix}${n}-time`)); n++) el.value = addMinutes(base, (n - from) * TEE_GAP_MIN);
+            prefix === 'cart' ? savePairingsCache() : saveRosterCache();
+        }
+
         function goToStep2() {
             applySetupFormToRoundData();
+            renderRosterScreen();
+            document.querySelectorAll('.screen').forEach(sc => sc.classList.remove('active'));
+            document.getElementById('step-2').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+
+        // Draws the rosters from the roster cache (also after swaps and balancing, without leaving the screen)
+        function renderRosterScreen() {
 
             const gCount = parseInt(document.getElementById('group-count').value); 
             const pCount = parseInt(document.getElementById('players-per-group').value);
@@ -1362,11 +1496,11 @@ function toggle9HoleOptions() {
             let html = '';
             for (let g = 1; g <= gCount; g++) {
                 let rosterColor = teamColor({ id: g, color: curatedColors[(g - 1) % curatedColors.length] });
-                let savedTime = tempRosterCache[`g${g}-time`] || "08:00";
+                let savedTime = tempRosterCache[`g${g}-time`] || addMinutes(tempRosterCache['g1-time'] || '08:00', (g - 1) * TEE_GAP_MIN);
                 html += `<div class="roster-team">
                     <div class="roster-team-head">
-                        <span class="roster-team-name" style="color:${rosterColor};">Team ${g}</span>
-                        <label id="g${g}-time-wrap" class="tee-chip">Tee <input type="time" id="g${g}-time" value="${savedTime}" aria-label="Team ${g} tee time"></label>
+                        <span class="roster-team-name" style="color:${rosterColor};">Team ${g} <span class="team-total" id="g${g}-total"></span></span>
+                        <label id="g${g}-time-wrap" class="tee-chip">Tee <input type="time" id="g${g}-time" value="${savedTime}" aria-label="Team ${g} tee time" onchange="cascadeTeeTimes(${g})"></label>
                     </div>`;
                 
                 for (let p = 1; p <= pCount; p++) {
@@ -1377,7 +1511,7 @@ function toggle9HoleOptions() {
                     let isGhostProp = savedGhost ? `data-ghost="${savedGhost}" readonly style="color:var(--accent-gold);"` : "";
                     
                     html += `<div class="roster-player-block">
-                        <span class="roster-num">${p}</span>
+                        <button type="button" class="roster-num${swapFrom === `${g}-${p}` ? ' picked' : ''}" onclick="tapSwap(${g}, ${p})" aria-label="Move Team ${g} player ${p}">${p}</button>
                         <input type="text" class="roster-name-input" id="g${g}-p${p}-name" placeholder="${placeholder}" value="${savedName}" ${isGhostProp} list="saved-players-list" autocomplete="off" onchange="applySavedPlayer(this); saveRosterCache()">
                         ${savedGhost ? '' : rosterTeeSelect(g, p)}
                         <input type="text" class="roster-stroke-input" id="g${g}-p${p}-strokes" placeholder="Strokes" aria-label="Strokes" autocomplete="off" value="${savedStrokes}" onchange="saveRosterCache()">
@@ -1388,18 +1522,19 @@ function toggle9HoleOptions() {
             document.getElementById('roster-container').innerHTML = html;
             
             document.getElementById('is-scrambled').value = tempRosterCache['isScrambled'] || 'no';
-            document.getElementById('is-scrambled').addEventListener('change', (e) => { 
+            document.getElementById('is-scrambled').onchange = (e) => { 
                 saveRosterCache(); 
                 let isScram = e.target.value === 'yes'; 
                 document.getElementById('btn-step2-next').innerText = isScram ? "Next: Set carts" : startRoundLabel();
                 document.getElementById('btn-step2-text').style.display = isScram ? 'none' : '';
                 for(let g=1; g<=gCount; g++) document.getElementById(`g${g}-time-wrap`).style.display = isScram ? 'none' : '';
-            });
+            };
             document.getElementById('is-scrambled').dispatchEvent(new Event('change'));
             renderOurMatchSides();
             refreshSegments();
-            
-            switchScreen('step-1', 'step-2');
+            updateTeamTotals();
+            document.getElementById('undo-teams').style.display = teamsUndo ? '' : 'none';
+            document.getElementById('try-teams').style.display = teamsBalanced ? '' : 'none';
         }
 
         // ==========================================
@@ -1420,6 +1555,8 @@ function toggle9HoleOptions() {
                     localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
                     renderSavedPlayersList();
                     if (document.getElementById('players-list')) renderPlayersList();
+                    if (document.getElementById('step-signup').classList.contains('active')) renderSignupPage();
+                    if (document.getElementById('step-whos').classList.contains('active')) renderWhosPlaying();
                 }
             }).catch(err => console.log("Saved players offline: ", err));
         }
@@ -1584,6 +1721,7 @@ function toggle9HoleOptions() {
             editingPlayerKey = key;
             let info = key ? playerInfo(savedPlayers[key]) : { first: '', last: '', nick: '', tee: '' };
             ['first', 'last', 'nick', 'tee'].forEach(f => { document.getElementById('pl-' + f).value = info[f]; });
+            document.getElementById('pl-usual').value = key ? (savedPlayers[key].usual ?? '') : '';
             document.getElementById('player-modal-title').textContent = key ? savedPlayers[key].name : 'Add a player';
             document.getElementById('pl-delete').style.display = key ? '' : 'none';
             renderPlayerStats(key);
@@ -1599,7 +1737,8 @@ function toggle9HoleOptions() {
             if (!first) { alert('Add at least a first name.'); return; }
             let name = `${first}${last ? ' ' + last : ''}`, key = name.toLowerCase();
             if (key !== editingPlayerKey && savedPlayers[key]) { alert(`${name} is already in your players.`); return; }
-            let rec = { ...(editingPlayerKey ? savedPlayers[editingPlayerKey] : {}), name, first, last, nick: v('nick'), tee: v('tee') };
+            let usual = parseFloat(v('usual'));
+            let rec = { ...(editingPlayerKey ? savedPlayers[editingPlayerKey] : {}), name, first, last, nick: v('nick'), tee: v('tee'), usual: isNaN(usual) ? null : usual };
             if (!rec.strokes) rec.strokes = {};
             if (editingPlayerKey && editingPlayerKey !== key) {
                 delete savedPlayers[editingPlayerKey];
@@ -1610,6 +1749,7 @@ function toggle9HoleOptions() {
             savedPlayersRef.set({ players: { [key]: rec } }, { merge: true }).catch(err => console.error('Saving player failed', err));
             document.getElementById('player-modal').classList.remove('active');
             renderPlayersList(); renderSavedPlayersList();
+            if (document.getElementById('step-whos').classList.contains('active')) { whosIn.add(key); renderWhosPlaying(); }
         }
 
         function deletePlayerFromEditor() {
@@ -1696,9 +1836,23 @@ function toggle9HoleOptions() {
                 let line = historyLine(rData, sDb, g, p, courseKey);
                 if (line) players[p.name.trim().toLowerCase()] = line;
             }));
-            if (!Object.keys(players).length) return null;
+            let money = roundMoney(rData, sDb);
+            if (!Object.keys(players).length && !Object.keys(money).length) return null;
             let course = typeof rData.course === 'string' ? rData.course : rData.course?.name;
-            return { date: rData.date || '', courseKey, course: course || 'Course', holes: rData.playMode === '9' ? 9 : 18, players };
+            return { date: rData.date || '', at: rData.finalizedAt || Date.parse(rData.date) || Date.now(), courseKey, course: course || 'Course', holes: rData.playMode === '9' ? 9 : 18, players, money };
+        }
+
+        // Each player's winnings for the season ledger, in cents: { key: { name, games, om } }
+        // games = team bets + skins less their buy-in; om = Our Match (per person)
+        function roundMoney(rData, sDb) {
+            let money = {};
+            let add = (name, field, cents) => { let k = name.trim().toLowerCase(); (money[k] = money[k] || { name: name.trim(), games: 0, om: 0 })[field] += cents; };
+            try { if (hasTournamentMoney(rData)) calculatePayouts(rData, sDb).players.forEach(pl => add(pl.name, 'games', pl.netCents)); } catch (e) {}
+            try {
+                let m = rData.ourMatch ? calculateOurMatch(rData, sDb, rData.matchPresses || {}) : null;
+                if (m) m.sides.forEach((side, i) => side.forEach(x => add(x.player.name, 'om', (i === 0 ? 1 : -1) * Math.round(m.totalMoney * 100))));
+            } catch (e) {}
+            return money;
         }
 
         function recordRoundHistory(id, rData, sDb) {
@@ -1773,6 +1927,138 @@ function toggle9HoleOptions() {
                 <div class="hist-list">${list}</div>`;
         }
 
+        // ===== Sign-up link: "Are you in?" =====
+        const signupRef = db.collection("tournaments").doc("signup"); // { date, time, course, courseKey, note, theme, responses: { key: { name, status, at } } }
+        let signup = null;
+        function loadSignup(then) {
+            signupRef.get().then(doc => { signup = doc.exists ? doc.data() : null; renderSignupSummary(); if (then) then(); }).catch(() => {});
+        }
+        function todayISO() { let d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`; }
+        function signupIsCurrent() { return !!signup && (signup.date || '') >= todayISO(); }
+        function renderSignupSummary() {
+            let el = document.getElementById('whos-signup-text');
+            if (!el) return;
+            if (!signupIsCurrent()) { el.textContent = "Ask the group who's in with a link they tap."; return; }
+            let r = Object.values(signup.responses || {});
+            el.innerHTML = `Sign-up for ${formatRoundDate(signup.date)}<br><span class="payout-note">${r.filter(x => x.status === 'in').length} in · ${r.filter(x => x.status === 'out').length} out</span>`;
+        }
+        function openSignupModal() {
+            let keep = signupIsCurrent() ? signup : null;
+            document.getElementById('su-date-in').value = keep?.date || document.getElementById('round-date').value || todayISO();
+            document.getElementById('su-time-in').value = keep?.time || tempRosterCache['g1-time'] || '08:00';
+            document.getElementById('su-note-in').value = keep?.note || '';
+            let key = document.getElementById('course-selector').value;
+            document.getElementById('su-course-in').textContent = allAvailableCourses[key]?.name || '';
+            document.getElementById('signup-modal').classList.add('active');
+        }
+        function createSignup() {
+            let date = document.getElementById('su-date-in').value || todayISO();
+            let key = document.getElementById('course-selector').value;
+            let data = { date, time: document.getElementById('su-time-in').value, note: document.getElementById('su-note-in').value.trim(),
+                course: allAvailableCourses[key]?.name || '', courseKey: key, theme: localStorage.getItem('savedTheme') || 'coastal' };
+            // Same date: keep everyone's answers. New date: start over.
+            let sameDay = signup && signup.date === date;
+            signup = { ...data, responses: sameDay ? (signup.responses || {}) : {} };
+            signupRef.set(signup).catch(err => alert('Could not save the sign-up: ' + err.message));
+            document.getElementById('signup-modal').classList.remove('active');
+            renderSignupSummary(); renderWhosPlaying();
+            let link = `${location.href.split('?')[0].split('#')[0]}?signup=1`;
+            let details = [formatRoundDate(date), signup.course, signup.time ? `Tee ${formatFriendlyTime(signup.time)}` : ''].filter(Boolean).join(' · ');
+            document.getElementById('share-modal-title').innerText = 'Share the sign-up link';
+            document.getElementById('share-text-content').value = `⛳ JB Golf · ${details}${signup.note ? `\n${signup.note}` : ''}\nAre you in? Tap to answer:\n${link}`;
+            document.getElementById('share-modal').classList.add('active');
+        }
+
+        // The page someone sees from the sign-up link
+        function openSignupPage() {
+            document.querySelectorAll('.screen').forEach(sc => sc.classList.remove('active'));
+            document.getElementById('step-signup').classList.add('active');
+            signupRef.onSnapshot(doc => {
+                signup = doc.exists ? doc.data() : null;
+                if (signup?.theme && signup.theme !== localStorage.getItem('savedTheme')) changeTheme(signup.theme, true);
+                renderSignupPage();
+            });
+        }
+        function renderSignupPage() {
+            if (!signupIsCurrent()) {
+                document.getElementById('su-details').textContent = 'No round is open for sign-up right now.';
+                document.querySelector('#step-signup .su-buttons').style.display = 'none';
+                return;
+            }
+            document.querySelector('#step-signup .su-buttons').style.display = '';
+            document.getElementById('su-details').textContent = [formatRoundDate(signup.date), signup.course, signup.time ? `Tee ${formatFriendlyTime(signup.time)}` : ''].filter(Boolean).join(' · ');
+            document.getElementById('su-note').textContent = signup.note || '';
+            let sel = document.getElementById('su-name');
+            let resp = signup.responses || {};
+            let names = {};
+            Object.entries(savedPlayers).forEach(([k, sp]) => names[k] = sp.name);
+            Object.entries(resp).forEach(([k, r]) => { if (!names[k]) names[k] = r.name; });
+            let mine = localStorage.getItem('signupName') || sel.value || '';
+            sel.innerHTML = '<option value="">Pick your name</option>' + Object.entries(names).sort((a, b) => a[1].localeCompare(b[1])).map(([k, n]) => `<option value="${k}">${n}</option>`).join('') + '<option value="__other">Not listed…</option>';
+            if (mine && (names[mine] || mine === '__other')) sel.value = mine;
+            signupNameChanged();
+            let ins = Object.values(resp).filter(r => r.status === 'in').map(r => r.name), outs = Object.values(resp).filter(r => r.status === 'out').map(r => r.name);
+            document.getElementById('su-list').innerHTML = `<div class="field-label">In (${ins.length})</div><p class="clean-sub" style="margin-top:0;">${ins.join(', ') || 'Nobody yet'}</p>`
+                + (outs.length ? `<div class="field-label">Out (${outs.length})</div><p class="clean-sub" style="margin-top:0;">${outs.join(', ')}</p>` : '');
+            let me = resp[sel.value];
+            document.getElementById('su-status').textContent = me ? (me.status === 'in' ? "✅ You're in" : "You're out this time") : '';
+        }
+        function signupNameChanged() {
+            document.getElementById('su-other').style.display = document.getElementById('su-name').value === '__other' ? '' : 'none';
+        }
+        function answerSignup(status) {
+            let sel = document.getElementById('su-name'), key = sel.value, name;
+            if (!key) { alert('Pick your name first.'); return; }
+            if (key === '__other') {
+                name = document.getElementById('su-other').value.trim().replace(/\s+/g, ' ');
+                if (!name) { alert('Type your name.'); return; }
+                key = name.toLowerCase();
+            } else name = sel.options[sel.selectedIndex].text;
+            localStorage.setItem('signupName', key);
+            signupRef.set({ responses: { [key]: { name, status, at: Date.now() } } }, { merge: true }).catch(err => alert('Could not send: ' + err.message));
+        }
+
+        // ===== Season money ledger =====
+        let moneyRange = 'season', ledger = { settledAt: 0 };
+        function openMoneyScreen() {
+            try { ledger = JSON.parse(localStorage.getItem('ledger')) || ledger; } catch (e) {}
+            renderMoney();
+            switchScreen('step-1', 'step-money');
+            ledgerRef.get().then(doc => { if (doc.exists) { ledger = doc.data(); localStorage.setItem('ledger', JSON.stringify(ledger)); renderMoney(); } }).catch(() => {});
+        }
+        function setMoneyRange(r) { moneyRange = r; renderMoney(); }
+        function renderMoney() {
+            document.querySelectorAll('#money-range button').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === moneyRange));
+            let since = moneyRange === 'season' ? (ledger.settledAt || 0) : 0;
+            let rounds = Object.values(roundHistory).filter(r => r.money && (r.at || 0) > since).sort((a, b) => (b.at || 0) - (a.at || 0));
+            let totals = {};
+            rounds.forEach(r => Object.entries(r.money).forEach(([k, m]) => {
+                let t = totals[k] = totals[k] || { name: savedPlayers[k]?.name || m.name, net: 0, games: 0, om: 0, rounds: [] };
+                t.games += m.games; t.om += m.om; t.net += m.games + m.om;
+                t.rounds.push({ date: r.date, course: r.course, cents: m.games + m.om });
+            }));
+            let fmt = c => (c > 0 ? '+' : c < 0 ? '−' : '') + formatCents(c);
+            let cls = c => c > 0 ? 'pos' : c < 0 ? 'neg' : '';
+            document.getElementById('money-sub').textContent = since ? `Since ${new Date(since).toLocaleDateString([], { month: 'short', day: 'numeric' })} · ${rounds.length} round${rounds.length === 1 ? '' : 's'}` : `${rounds.length} round${rounds.length === 1 ? '' : 's'}`;
+            let rows = Object.values(totals).sort((a, b) => b.net - a.net);
+            document.getElementById('money-list').innerHTML = rows.map(t => `<button type="button" class="money-row" onclick="this.classList.toggle('open')">
+                    <div class="dash-row-line"><span>${t.name} <span class="payout-note">${t.rounds.length} rd${t.rounds.length === 1 ? '' : 's'}</span></span><b class="${cls(t.net)}">${fmt(t.net)}</b></div>
+                    <div class="money-detail">
+                        <div><span>Team bets &amp; skins</span><span>${fmt(t.games)}</span></div>
+                        ${t.om ? `<div><span>Our Match</span><span>${fmt(t.om)}</span></div>` : ''}
+                        ${t.rounds.map(r => `<div><span>${formatRoundDate(r.date)} · ${r.course.replace(/\s*\(.*\)$/, '')}</span><span>${fmt(r.cents)}</span></div>`).join('')}
+                    </div></button>`).join('') || '<p class="clean-sub">No money rounds yet.</p>';
+            document.getElementById('money-settle').style.display = moneyRange === 'season' && rows.length ? '' : 'none';
+        }
+        async function settleUp() {
+            if (!(await askPin('Enter PIN to settle up'))) return;
+            if (!confirm('Everyone is square? The season totals start over from now. All time still keeps every round.')) return;
+            ledger = { ...ledger, settledAt: Date.now() };
+            localStorage.setItem('ledger', JSON.stringify(ledger));
+            ledgerRef.set(ledger, { merge: true }).catch(err => console.error('Settle up failed', err));
+            renderMoney();
+        }
+
         // ===== Pick a team from the saved players =====
         let pickerTeam = 1;
         function openRosterPicker(g) {
@@ -1828,69 +2114,219 @@ function toggle9HoleOptions() {
             renderRosterPicker();
         }
 
-        // ===== Balance teams =====
-        // Each player's strength is their course handicap from these tees (index × slope ÷ 113 + rating − par),
-        // or just the index when the tees have no rating. Teams are dealt out snake-style, then players are
-        // swapped while it brings the team totals closer together. Strokes are left alone.
-        function balanceTeams() {
+        // ===== Team strength, balancing and swaps =====
+        // A player's strength is their course handicap from their tees (index × slope ÷ 113 + rating − par),
+        // or the index when the tees have no rating. Where the index comes from, best first:
+        // 3+ rounds → handicap-style index; 1–2 rounds → their average; else "Usually shoots" from their card.
+        function playerIndexEstimate(name) {
+            let key = (name || '').trim().toLowerCase();
+            let rounds = playerRounds(key);
+            let idx = handicapIndex(rounds);
+            if (idx !== null) return { idx, est: false };
+            let diffs = rounds.filter(r => typeof r.diff === 'number').map(r => r.diff);
+            if (diffs.length) return { idx: diffs.reduce((a, b) => a + b, 0) / diffs.length, est: true };
+            let usual = savedPlayers[key]?.usual;
+            if (typeof usual === 'number' && usual > 0) return { idx: usual <= 54 ? usual : (usual - 72) * 0.9, est: true }; // a score: about 90% of strokes over par
+            return null;
+        }
+        function playerStrength(name, teeName) {
+            let e = playerIndexEstimate(name);
+            if (!e) return null;
+            let courseKey = document.getElementById('course-selector').value;
+            let par = (allAvailableCourses[courseKey]?.pars || []).reduce((a, b) => a + b, 0) || 72;
+            let tee = findTee(courseKey, teeName);
+            return { v: tee?.rating && tee?.slope ? e.idx * tee.slope / 113 + (tee.rating - par) : e.idx, est: e.est };
+        }
+        function rosterPlayers() {
+            const gCount = parseInt(document.getElementById('group-count').value), pCount = parseInt(document.getElementById('players-per-group').value);
+            let list = [];
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let k = `g${g}-p${p}`, name = (tempRosterCache[`${k}-name`] || '').trim();
+                if (name) list.push({ g, p, name, ghost: tempRosterCache[`${k}-ghost`] || '', tee: tempRosterCache[`${k}-tee`] || '', strokes: tempRosterCache[`${k}-strokes`] || '' });
+            }
+            return list;
+        }
+        const fmtHcp = v => fmtIndex(Math.round(v * 10) / 10);
+        // Team totals in each team's heading; ~ when any number is an estimate or missing (counted as the average)
+        function updateTeamTotals() {
+            let players = rosterPlayers().filter(x => !x.ghost).map(x => ({ ...x, s: playerStrength(x.name, x.tee) }));
+            let known = players.filter(x => x.s);
+            let avg = known.length ? known.reduce((a, x) => a + x.s.v, 0) / known.length : 0;
+            document.querySelectorAll('.team-total').forEach(el => {
+                let g = parseInt(el.id.slice(1));
+                let mine = players.filter(x => x.g === g);
+                if (!known.length || !mine.length) { el.textContent = ''; return; }
+                let rough = mine.some(x => !x.s || x.s.est);
+                el.textContent = `· ${rough ? '~' : ''}${fmtHcp(mine.reduce((a, x) => a + (x.s ? x.s.v : avg), 0))}`;
+            });
+        }
+
+        let teamsUndo = null, teamsBalanced = false;
+        function balanceTeams(another = false) {
             saveRosterCache();
             const gCount = parseInt(document.getElementById('group-count').value);
             const pCount = parseInt(document.getElementById('players-per-group').value);
-            let courseKey = document.getElementById('course-selector').value;
-            let par = (allAvailableCourses[courseKey]?.pars || []).reduce((a, b) => a + b, 0) || 72;
-            let players = [];
-            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
-                let k = `g${g}-p${p}`;
-                if (tempRosterCache[`${k}-ghost`]) { alert('Remove the blind draw (ghost) first, balance the teams, then add it back.'); return; }
-                let name = (tempRosterCache[`${k}-name`] || '').trim();
-                if (!name) continue;
-                let index = handicapIndex(playerRounds(name.toLowerCase()));
-                let tee = findTee(courseKey, tempRosterCache[`${k}-tee`]);
-                let ch = index === null ? null : (tee?.rating && tee?.slope ? index * tee.slope / 113 + (tee.rating - par) : index);
-                players.push({ name, index, ch, tee: tempRosterCache[`${k}-tee`] || '', strokes: tempRosterCache[`${k}-strokes`] || '' });
+            let all = rosterPlayers();
+            if (all.some(x => x.ghost)) { alert('Remove the blind draw (ghost) first, balance the teams, then add it back.'); return; }
+            let players = all.map(x => ({ ...x, s: playerStrength(x.name, x.tee) }));
+            let known = players.filter(x => x.s);
+            if (known.length < 2) { alert('Not enough to go on yet. Players need a finished round, or a "Usually shoots" number on their card in Players.'); return; }
+            let avg = known.reduce((a, x) => a + x.s.v, 0) / known.length;
+            players.forEach(x => x.v = x.s ? x.s.v : avg);
+
+            let total = t => t.reduce((a, x) => a + x.v, 0);
+            let spreadOf = teams => { let tots = teams.map(total); return Math.max(...tots) - Math.min(...tots); };
+            let improve = teams => {
+                for (let changed = true, n = 0; changed && n < 200; n++) {
+                    changed = false;
+                    for (let a = 0; a < gCount; a++) for (let b = a + 1; b < gCount; b++)
+                        for (let i = 0; i < teams[a].length; i++) for (let j = 0; j < teams[b].length; j++) {
+                            let before = spreadOf(teams);
+                            [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
+                            if (spreadOf(teams) < before - 0.05) changed = true;
+                            else [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
+                        }
+                }
+                return teams;
+            };
+            let deal = order => { // snake: 1,2,3,3,2,1,... keeping team sizes even
+                let teams = Array.from({ length: gCount }, () => []);
+                order.forEach((x, i) => { let r = Math.floor(i / gCount), pos = i % gCount; let t = r % 2 ? gCount - 1 - pos : pos; while (teams[t].length >= pCount) t = (t + 1) % gCount; teams[t].push(x); });
+                return teams;
+            };
+            let sig = teams => teams.map(t => t.map(x => x.name).sort().join('|')).sort().join('/');
+            let best = improve(deal(players.slice().sort((a, b) => a.v - b.v)));
+            let pick = best;
+            if (another) { // a different split that is nearly as even
+                let current = sig(Array.from({ length: gCount }, (_, i) => players.filter(x => x.g === i + 1)));
+                let options = [];
+                for (let n = 0; n < 60; n++) {
+                    let t = improve(deal(players.slice().sort(() => Math.random() - 0.5)));
+                    if (sig(t) !== current && spreadOf(t) <= spreadOf(best) + 1.5 && !options.some(o => sig(o) === sig(t))) options.push(t);
+                }
+                if (!options.length) { alert('These are the only even teams with this group.'); return; }
+                pick = options[Math.floor(Math.random() * options.length)];
             }
-            let rated = players.filter(p => p.ch !== null);
-            if (rated.length < 2) { alert('Not enough players have an index yet. An index shows after 3 finished 18-hole rounds.'); return; }
-            if (players.length > gCount * pCount) return;
-            let avg = rated.reduce((s, p) => s + p.ch, 0) / rated.length;
-            players.forEach(p => p.v = p.ch ?? avg); // no index yet: counted as the group's average
-            // snake deal, strongest (lowest) first
-            let teams = Array.from({ length: gCount }, () => []);
-            players.slice().sort((a, b) => a.v - b.v).forEach((pl, i) => {
-                let round = Math.floor(i / gCount), pos = i % gCount;
-                let order = round % 2 ? gCount - 1 - pos : pos;
-                let t = order; while (teams[t].length >= pCount) t = (t + 1) % gCount;
-                teams[t].push(pl);
-            });
-            let total = t => t.reduce((s, p) => s + p.v, 0);
-            let spread = () => { let tots = teams.map(total); return Math.max(...tots) - Math.min(...tots); };
-            for (let improved = true, n = 0; improved && n < 200; n++) {
-                improved = false;
-                for (let a = 0; a < gCount; a++) for (let b = a + 1; b < gCount; b++)
-                    for (let i = 0; i < teams[a].length; i++) for (let j = 0; j < teams[b].length; j++) {
-                        let before = spread();
-                        [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
-                        if (spread() < before - 0.05) improved = true;
-                        else [teams[a][i], teams[b][j]] = [teams[b][j], teams[a][i]];
-                    }
-            }
-            teams.forEach(t => t.sort((a, b) => a.v - b.v)); // lowest handicap is captain
-            let fmt = v => fmtIndex(Math.round(v * 10) / 10); // better than scratch shows as +
-            let missing = players.filter(p => p.ch === null).map(p => p.name.split(' ')[0]);
-            let msg = teams.map((t, i) => `Team ${i + 1} (total ${fmt(total(t))}): ${t.map(p => `${p.name.split(' ')[0]} ${p.ch === null ? '?' : fmt(p.ch)}`).join(', ')}`).join('\n')
-                + (missing.length ? `\n\nNo index yet, counted as average: ${missing.join(', ')}` : '')
-                + '\n\nNumbers are course handicaps from each player\'s tees. Use these teams?';
-            if (!confirm(msg)) return;
+            pick.forEach(t => t.sort((a, b) => a.v - b.v)); // lowest handicap is captain
+            applyTeams(pick);
+            teamsBalanced = true;
+            let unknown = players.filter(x => !x.s).map(x => x.name.split(' ')[0]);
+            renderRosterScreen();
+            if (unknown.length && !another) alert(`No rounds or "Usually shoots" yet for ${unknown.join(', ')}, so they count as the group's average.`);
+        }
+        function applyTeams(teams) {
+            const gCount = parseInt(document.getElementById('group-count').value), pCount = parseInt(document.getElementById('players-per-group').value);
+            teamsUndo = JSON.stringify(tempRosterCache);
             for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
-                let pl = teams[g - 1][p - 1], k = `g${g}-p${p}`;
-                tempRosterCache[`${k}-name`] = pl ? pl.name : '';
-                tempRosterCache[`${k}-tee`] = pl ? pl.tee : '';
-                tempRosterCache[`${k}-strokes`] = pl ? pl.strokes : '';
+                let x = teams[g - 1]?.[p - 1], k = `g${g}-p${p}`;
+                tempRosterCache[`${k}-name`] = x ? x.name : '';
+                tempRosterCache[`${k}-tee`] = x ? x.tee : '';
+                tempRosterCache[`${k}-strokes`] = x ? x.strokes : '';
                 tempRosterCache[`${k}-ghost`] = '';
             }
             OM_SEATS.forEach(id => { tempRosterCache[id] = ''; }); // Our Match sides start over from the new teams
             localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
+        }
+        function undoTeams() {
+            if (!teamsUndo) return;
+            tempRosterCache = JSON.parse(teamsUndo);
+            teamsUndo = null;
+            localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
+            renderRosterScreen();
+        }
+
+        // Tap one player's number, then another's: they trade places (with their tees and strokes)
+        let swapFrom = null;
+        function tapSwap(g, p) {
+            saveRosterCache();
+            let here = `${g}-${p}`;
+            if (!swapFrom) {
+                if (!(tempRosterCache[`g${g}-p${p}-name`] || '').trim()) return; // start from a player
+                swapFrom = here;
+                document.querySelectorAll('button.roster-num').forEach(b => b.classList.toggle('picked', b.getAttribute('onclick') === `tapSwap(${g}, ${p})`));
+                document.getElementById('swap-hint').textContent = 'Now tap where they should go.';
+                return;
+            }
+            let from = swapFrom; swapFrom = null;
+            document.getElementById('swap-hint').textContent = "Tap a number, then another player's number, to swap them.";
+            if (from === here) { renderRosterScreen(); return; }
+            let [fg, fp] = from.split('-');
+            teamsUndo = JSON.stringify(tempRosterCache);
+            ['name', 'tee', 'strokes', 'ghost'].forEach(f => {
+                let a = `g${fg}-p${fp}-${f}`, b = `g${g}-p${p}-${f}`;
+                [tempRosterCache[a], tempRosterCache[b]] = [tempRosterCache[b] || '', tempRosterCache[a] || ''];
+            });
+            OM_SEATS.forEach(id => { if (tempRosterCache[id] === from) tempRosterCache[id] = here; else if (tempRosterCache[id] === here) tempRosterCache[id] = from; });
+            localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
+            renderRosterScreen();
+        }
+
+        // ===== Who's playing today: check off players, then make teams =====
+        let whosIn = new Set();
+        let whosSize = 4;
+        function openWhosPlaying() {
+            whosIn = new Set();
+            // Start from whoever is on the roster now, plus anyone who signed up "in"
+            rosterPlayers().filter(x => !x.ghost).forEach(x => whosIn.add(x.name.toLowerCase()));
+            let addSignedUp = () => Object.entries(signupIsCurrent() ? signup.responses || {} : {}).forEach(([k, r]) => { if (r.status === 'in') whosIn.add(k); });
+            addSignedUp();
+            whosSize = parseInt(document.getElementById('players-per-group').value) || 4;
+            document.getElementById('whos-search').value = '';
+            renderWhosPlaying();
+            switchScreen('step-1', 'step-whos');
+            loadSignup(() => { addSignedUp(); renderWhosPlaying(); });
+        }
+        function whosNames() { // saved players plus anyone new from the sign-up link
+            let names = {};
+            Object.entries(savedPlayers).forEach(([k, sp]) => names[k] = sp.name);
+            if (signupIsCurrent()) Object.entries(signup.responses || {}).forEach(([k, r]) => { if (!names[k]) names[k] = r.name; });
+            return names;
+        }
+        function renderWhosPlaying() {
+            let q = document.getElementById('whos-search').value.trim().toLowerCase();
+            let names = whosNames();
+            let resp = signupIsCurrent() ? (signup.responses || {}) : {};
+            let rows = Object.entries(names).filter(([k, n]) => !q || n.toLowerCase().includes(q))
+                .sort((a, b) => (resp[b[0]]?.status === 'in') - (resp[a[0]]?.status === 'in') || (splitName(a[1]).last || a[1]).localeCompare(splitName(b[1]).last || b[1]));
+            document.getElementById('whos-list').innerHTML = rows.map(([k, n]) => {
+                let e = playerIndexEstimate(n);
+                let tag = resp[k] ? `<span class="rsvp ${resp[k].status}">${resp[k].status === 'in' ? 'In' : 'Out'}</span>` : '';
+                return `<button type="button" class="rp-row${whosIn.has(k) ? ' on' : ''}" onclick="toggleWhos('${k.replace(/'/g, "\\'")}')">
+                    <span class="rp-num">${whosIn.has(k) ? '✓' : ''}</span><span class="rp-name">${n}${tag}</span><span class="rp-note">${e ? (e.est ? '~' : '') + fmtHcp(e.idx) : ''}</span></button>`;
+            }).join('') || '<p class="clean-sub">No players match.</p>';
+            let n = whosIn.size;
+            document.getElementById('whos-count').textContent = n ? `${n} playing` : 'Tap everyone who is playing';
+            document.querySelectorAll('#whos-size button').forEach(b => b.setAttribute('aria-pressed', parseInt(b.dataset.size) === whosSize));
+            let teams = Math.ceil(n / whosSize);
+            let sizes = Array.from({ length: teams }, (_, i) => Math.floor(n / teams) + (i < n % teams ? 1 : 0));
+            document.getElementById('whos-plan').textContent = n < 2 ? '' : sizes.every(x => x === whosSize) ? `${teams} teams of ${whosSize}` : `${teams} teams (${sizes.join(', ')}) · use a blind draw to fill short teams`;
+            document.getElementById('whos-make').disabled = n < 2;
+        }
+        function toggleWhos(k) { whosIn.has(k) ? whosIn.delete(k) : whosIn.add(k); renderWhosPlaying(); }
+        function setWhosSize(n) { whosSize = n; renderWhosPlaying(); }
+        function makeTeamsFromWhos() {
+            let names = whosNames();
+            let picked = [...whosIn].map(k => names[k] || savedPlayers[k]?.name).filter(Boolean);
+            let teams = Math.ceil(picked.length / whosSize);
+            document.getElementById('group-count').value = teams;
+            document.getElementById('players-per-group').value = whosSize;
+            // Fresh roster: drop old names, keep tee times
+            Object.keys(tempRosterCache).forEach(k => { if (/^g\d+-p\d+-/.test(k) || OM_SEATS.includes(k)) delete tempRosterCache[k]; });
+            // Deal them in order (balanced right after); each gets their tees for this course
+            let even = Array.from({ length: teams }, () => []);
+            picked.forEach((n, i) => even[i % teams].push(n));
+            even.forEach((list, gi) => list.forEach((n, pi) => {
+                let k = `g${gi + 1}-p${pi + 1}`, sp = savedPlayers[n.toLowerCase()];
+                tempRosterCache[`${k}-name`] = n;
+                tempRosterCache[`${k}-tee`] = defaultTeeFor(n);
+                tempRosterCache[`${k}-strokes`] = sp?.strokes?.[document.getElementById('course-selector').value] || '';
+            }));
+            localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
+            teamsUndo = null; teamsBalanced = false;
+            document.getElementById('step-whos').classList.remove('active');
             goToStep2();
+            let known = picked.filter(n => playerIndexEstimate(n)).length;
+            if (known >= 2 && teams > 1) balanceTeams();
         }
 
         // ===== Our Match setup =====
@@ -1968,6 +2404,7 @@ function toggle9HoleOptions() {
             tempRosterCache['isScrambled'] = document.getElementById('is-scrambled').value;
             localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
             renderOurMatchSides(); // names may have changed
+            updateTeamTotals();
         }
 
         function backToStep1() { 
@@ -2003,11 +2440,11 @@ function processStep2() {
             
             let html = '';
             for(let c=1; c<=cartCount; c++) {
-                let savedTime = tempRosterCache[`cart${c}-time`] || tempRosterCache[`g${c}-time`] || '08:00';
+                let savedTime = tempRosterCache[`cart${c}-time`] || addMinutes(tempRosterCache['cart1-time'] || tempRosterCache['g1-time'] || '08:00', (c - 1) * TEE_GAP_MIN);
                 html += `<div class="roster-team">
                     <div class="roster-team-head">
                         <span class="roster-team-name" style="color: var(--accent-gold);">Cart ${c}</span>
-                        <label class="tee-chip">Tee <input type="time" id="cart${c}-time" value="${savedTime}" aria-label="Cart ${c} tee time" onchange="savePairingsCache()"></label>
+                        <label class="tee-chip">Tee <input type="time" id="cart${c}-time" value="${savedTime}" aria-label="Cart ${c} tee time" onchange="cascadeTeeTimes(${c}, 'cart')"></label>
                     </div>`;
                 
                 for(let p=1; p<=4; p++) {
@@ -2942,6 +3379,21 @@ function hideCartHoleHeader() {
             let now = Date.now();
             new Set(players.map(([g, p]) => cartOfPlayer(g, p)?.id).filter(id => id != null)).forEach(cid => {
                 fieldsAndValues.push(new firebase.firestore.FieldPath('cartActivity', String(cid)), { at: now, done: cartIsDone(cid, scoresDb) });
+                // Pace of play: when the whole cart has this hole in
+                let list = realPlayersOf(roundData.carts.find(c => c.id == cid));
+                if (holeDoneBy(list, scoresDb, hole) && !paceLog[cid]?.[hole]) {
+                    (paceLog[cid] = paceLog[cid] || {})[hole] = now;
+                    fieldsAndValues.push(new firebase.firestore.FieldPath('pace', String(cid), String(hole)), now);
+                }
+            });
+            // Score change history: any score replaced or cleared after it was entered
+            players.forEach(([g, p]) => {
+                let from = alertBaseScores[g]?.[p]?.[hole], to = scoresDb[g]?.[p]?.[hole] || 0;
+                let player = roundData.groups.find(x => x.id == g)?.players.find(x => x.id == p);
+                if (!from || from == to || !player || player.isGhost) return;
+                let key = `${now}-${g}-${p}-${hole}`;
+                scoreLog[key] = { g: Number(g), p: Number(p), hole, from: Number(from), to: Number(to), by: lockedTeamId !== null ? `Cart ${lockedTeamId}` : 'Admin', at: now };
+                fieldsAndValues.push(new firebase.firestore.FieldPath('scoreLog', key), scoreLog[key]);
             });
 
             trackCloudWrite(activeTournamentRef.update(...fieldsAndValues));
@@ -3215,6 +3667,7 @@ function hideCartHoleHeader() {
             // Cart progress is an admin tool; carts and spectators don't need it
             let showProgress = urlParams.get('spectator') !== 'true' && lockedTeamId === null && !isOurMatchOnly(roundData);
             document.getElementById('dashboard-cart-progress').innerHTML = showProgress ? generateCartProgressHTML(roundData, scoresDb) : '';
+            document.getElementById('dashboard-changes').innerHTML = urlParams.get('spectator') !== 'true' ? generateScoreChangesHTML(roundData) : '';
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
             document.getElementById('dashboard-scorecards').innerHTML = generateScorecardHTML(scorecardView(roundData), scoresDb); 
             document.getElementById('dashboard-payouts').innerHTML = hasTournamentMoney(roundData) ? generateFinancialSummaryHTML(roundData, scoresDb) : '';
@@ -3226,6 +3679,37 @@ function hideCartHoleHeader() {
             document.getElementById('step-dashboard').classList.add('active');
         }
         // Per cart: how far they've scored ("Thru") and any earlier holes still missing a score
+        // Minutes per hole from the tee time (or first hole) to the last hole the cart finished, and when they'll be done
+        function cartPace(cart, seq, thruIdx) {
+            let times = seq.slice(0, thruIdx + 1).map(h => paceLog[cart.id]?.[h]).filter(Boolean);
+            if (!times.length) return '';
+            let last = Math.max(...times), first = Math.min(...times);
+            let start = null;
+            if (cart.time) { // tee time today, if it fits
+                let [h, m] = cart.time.split(':').map(Number), d = new Date(first);
+                d.setHours(h, m, 0, 0);
+                if (d.getTime() < first && first - d.getTime() < 3 * 3600000) start = d.getTime();
+            }
+            let holes = start !== null ? times.length : times.length - 1;
+            if (holes < 1) return '';
+            let perHole = (last - (start ?? first)) / holes;
+            if (perHole < 60000) return '';
+            let mins = Math.round(perHole / 60000);
+            let total = perHole * seq.length / 60000;
+            let left = seq.length - (thruIdx + 1);
+            let clock = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            return `${mins} min/hole · ${seq.length === 18 ? `on pace for ${Math.floor(total / 60)}h ${String(Math.round(total % 60)).padStart(2, '0')}m` : `${Math.round(total)} min for 9`}${left > 0 ? ` · done ~${clock(last + left * perHole)}` : ''}`;
+        }
+
+        function generateScoreChangesHTML(rData) {
+            let rows = Object.values(scoreLog).sort((a, b) => b.at - a.at);
+            if (!rows.length) return '';
+            let name = x => rData.groups.find(g => g.id == x.g)?.players.find(p => p.id == x.p)?.name.split(' ')[0] || 'Player';
+            let clock = t => new Date(t).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            return `<details class="dash-section score-changes"><summary class="dash-section-title">Score changes (${rows.length})</summary>
+                ${rows.map(x => `<div class="dash-row-line change-row"><span>${clock(x.at)} · <b>${x.by}</b> changed ${name(x)}'s ${x.from} to ${x.to || 'blank'} on ${x.hole}</span></div>`).join('')}</details>`;
+        }
+
         function generateCartProgressHTML(rData, sDb) {
             let seq = getHoleSequence();
             let html = `<section class="dash-section"><div class="dash-section-title">Cart progress</div>`;
@@ -3251,8 +3735,10 @@ function hideCartHoleHeader() {
 
                 let driver = players[0].p.name.split(' ')[0];
                 let thruText = thruIdx === seq.length - 1 ? 'Finished' : (thruIdx >= 0 ? `Thru ${seq[thruIdx]}` : 'Not started');
+                let pace = cartPace(cart, seq, thruIdx);
                 html += `<div class="dash-row stacked">
                     <div class="dash-row-line"><b>Cart ${cart.id} · ${driver}</b><span>${thruText}</span></div>
+                    ${pace ? `<div class="dash-pace">${pace}</div>` : ''}
                     ${missing.length > 0 ? `<div class="dash-missing">Missing: ${missing.join(', ')}</div>` : ''}
                 </div>`;
             });
@@ -4571,7 +5057,7 @@ function hideCartHoleHeader() {
             }
 
             saveToArchive(); 
-            recordRoundHistory(String(roundData.roundId || Date.now()), { ...roundData }, scoresDb);
+            recordRoundHistory(String(roundData.roundId || Date.now()), { ...roundData, matchPresses, finalizedAt: Date.now() }, scoresDb);
             // The results text reads activeView*, which is only set if the standings page was opened first
             activeViewRoundData = JSON.parse(JSON.stringify({ ...roundData, matchPresses }));
             activeViewScoresDb = JSON.parse(JSON.stringify(scoresDb));
@@ -4610,47 +5096,109 @@ function hideCartHoleHeader() {
             document.getElementById('share-modal-title').innerText = "Round finalized · Share results";
         }
 
-        function saveToArchive() {
-            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || [];
-            archive.push({ date: roundData.date || new Date().toLocaleDateString(), course: roundData.course, roundData: { ...roundData, matchPresses }, scoresDb: scoresDb });
-            localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+        // Finished rounds live in Firebase (so a lost phone loses nothing) with a copy on this phone for offline viewing
+        function archiveId(arc) {
+            let rd = arc.roundData || {};
+            return String(arc.id || rd.roundId || ('arc-' + (arc.date || '') + '-' + (rd.course?.name || arc.course?.name || arc.course || '')).replace(/[^\w-]/g, ''));
+        }
+        function localArchive() { try { return JSON.parse(localStorage.getItem('tournamentArchive')) || []; } catch (e) { return []; } }
+        function uploadArchived(arc) {
+            let id = archiveId(arc), at = arc.at || Date.parse(arc.date) || Date.now();
+            let courseName = arc.course?.name || arc.course || 'Course';
+            archiveDocRef(id).set({ ...arc, id, at }).catch(err => console.error('Archive upload failed', err));
+            archiveIndexRef.set({ rounds: { [id]: { date: arc.date || '', course: courseName, at } } }, { merge: true }).catch(() => {});
         }
 
+        function saveToArchive() {
+            let arc = { id: String(roundData.roundId || Date.now()), at: Date.now(), date: roundData.date || new Date().toLocaleDateString(), course: roundData.course, roundData: { ...roundData, matchPresses }, scoresDb: scoresDb, scoreLog, pace: paceLog };
+            let archive = localArchive().filter(a => archiveId(a) !== arc.id); // a reopened round replaces its old copy
+            archive.push(arc);
+            localStorage.setItem('tournamentArchive', JSON.stringify(archive));
+            uploadArchived(arc);
+        }
+
+        let archiveRows = []; // what the list shows: { id, date, course, at, local }
         function viewArchiveList() {
-            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; 
+            renderArchiveList(cloudIndexCache());
+            switchScreen('step-1', 'step-8');
+            archiveIndexRef.get().then(doc => {
+                let cloud = (doc.exists && doc.data().rounds) || {};
+                localStorage.setItem('archiveIndex', JSON.stringify(cloud));
+                // Rounds only on this phone get backed up now
+                localArchive().forEach(arc => { if (!cloud[archiveId(arc)]) { uploadArchived(arc); cloud[archiveId(arc)] = { date: arc.date, course: arc.course?.name || arc.course, at: arc.at || Date.parse(arc.date) || 0 }; } });
+                renderArchiveList(cloud);
+            }).catch(() => {});
+        }
+        function cloudIndexCache() { try { return JSON.parse(localStorage.getItem('archiveIndex')) || {}; } catch (e) { return {}; } }
+        function renderArchiveList(cloud) {
+            let rows = {};
+            Object.entries(cloud).forEach(([id, r]) => rows[id] = { id, ...r });
+            localArchive().forEach(arc => { let id = archiveId(arc); rows[id] = { id, date: arc.date, course: arc.course?.name || arc.course, at: arc.at || Date.parse(arc.date) || 0, ...(rows[id] || {}), local: true }; });
+            archiveRows = Object.values(rows).sort((a, b) => (b.at || 0) - (a.at || 0));
             let html = '';
-            document.getElementById('bulk-delete-btn').style.display = archive.length > 0 ? 'block' : 'none';
-            if(archive.length === 0) { 
-                html = '<p style="text-align: center; padding: 20px; background: var(--bg-table); border-radius: 6px;">No archived rounds found.</p>'; 
-            } else { 
-                archive.forEach((arc, i) => { 
+            document.getElementById('bulk-delete-btn').style.display = archiveRows.length > 0 ? 'block' : 'none';
+            if (archiveRows.length === 0) {
+                html = '<p style="text-align: center; padding: 20px; background: var(--bg-table); border-radius: 6px;">No archived rounds found.</p>';
+            } else {
+                archiveRows.forEach((r, i) => {
                     html += `<div class="archive-item">
                         <input type="checkbox" class="archive-checkbox" value="${i}">
                         <div class="archive-info">
-                            <div style="font-weight: bold; font-size: 18px;">${arc.course.name || arc.course}</div>
-                            <div style="color: var(--text-muted); font-size: 14px;">Played on: ${arc.date}</div>
+                            <div style="font-weight: bold; font-size: 18px;">${r.course}</div>
+                            <div style="color: var(--text-muted); font-size: 14px;">Played on: ${r.date}</div>
                         </div>
                         <button class="btn-secondary" style="width:auto; padding: 8px 12px; margin:0; font-size: 12px;" onclick="showArchivedCard(${i})">View</button>
-                    </div>`; 
-                }); 
+                    </div>`;
+                });
             }
-            document.getElementById('archive-list-container').innerHTML = html; 
-            switchScreen('step-1', 'step-8');
+            document.getElementById('archive-list-container').innerHTML = html;
         }
 
         async function deleteSelectedArchives() {
             let checkboxes = document.querySelectorAll('.archive-checkbox:checked'); 
             if(checkboxes.length === 0) { alert("Please select at least one round to delete."); return; }
             if (!(await askPin('Enter PIN to delete rounds'))) return;
-            let archive = JSON.parse(localStorage.getItem('tournamentArchive')) || []; 
-            let indices = Array.from(checkboxes).map(cb => parseInt(cb.value)).sort((a,b) => b-a);
-            indices.forEach(idx => archive.splice(idx, 1)); 
-            localStorage.setItem('tournamentArchive', JSON.stringify(archive)); 
-            viewArchiveList();
+            let ids = Array.from(checkboxes).map(cb => archiveRows[parseInt(cb.value)].id);
+            localStorage.setItem('tournamentArchive', JSON.stringify(localArchive().filter(a => !ids.includes(archiveId(a)))));
+            let cloud = cloudIndexCache();
+            ids.forEach(id => {
+                delete cloud[id];
+                archiveDocRef(id).delete().catch(() => {});
+                archiveIndexRef.update(new firebase.firestore.FieldPath('rounds', id), firebase.firestore.FieldValue.delete()).catch(() => {});
+            });
+            localStorage.setItem('archiveIndex', JSON.stringify(cloud));
+            renderArchiveList(cloud);
         }
 
-        function showArchivedCard(index) {
-            let arc = (JSON.parse(localStorage.getItem('tournamentArchive')) || [])[index];
+        // Undo a finalize: within a day, and only while no new round has started
+        const REOPEN_HOURS = 24;
+        let reopenable = null;
+        function showReopenBanner(data) {
+            let el = document.getElementById('reopen-banner');
+            let ok = data && data.isArchived && data.roundData && (Date.now() - (data.archivedAt || 0)) < REOPEN_HOURS * 3600000
+                && lockedTeamId === null && !new URLSearchParams(location.search).get('spectator');
+            reopenable = ok ? data : null;
+            if (!el) return;
+            el.style.display = ok ? '' : 'none';
+            if (ok) {
+                let at = new Date(data.archivedAt).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+                document.getElementById('reopen-text').innerHTML = `Last round finalized at ${at}<br><span class="payout-note">${data.roundData.course?.name || ''}</span>`;
+            }
+        }
+        async function reopenLastRound() {
+            if (!reopenable) return;
+            if (!(await askPin('Enter PIN to reopen the round'))) return;
+            if (!confirm('Reopen the last round? Scores can be changed again and every cart link works again. Finalize it again when done.')) return;
+            activeTournamentRef.update({ isArchived: false, archivedAt: firebase.firestore.FieldValue.delete() }).catch(err => alert('Could not reopen: ' + err.message));
+        }
+
+        async function showArchivedCard(index) {
+            let row = archiveRows[index];
+            let arc = localArchive().find(a => archiveId(a) === row.id);
+            if (!arc) {
+                try { let doc = await archiveDocRef(row.id).get(); arc = doc.exists ? doc.data() : null; } catch (e) {}
+                if (!arc) { alert('Could not load this round. Check your signal and try again.'); return; }
+            }
             activeViewRoundData = arc.roundData || { course: arc.course, groups: arc.groups || [], formats: arc.formats || [1, 2], betAmount: arc.betAmount || 0, skinsAmount: arc.skinsAmount || 0 };
             activeViewScoresDb = arc.scoresDb || arc.scores || {};
             
