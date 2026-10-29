@@ -951,7 +951,7 @@
                 <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Do you have the JB Golf app on your Home Screen?</h2>
                 <p class="clean-sub" style="text-align:center;">The icon you saved from an earlier cart link.</p>
                 <div class="su-buttons"><button type="button" class="bar-primary" onclick="answerHomeScreen(true)">Yes</button><button type="button" class="btn-secondary" onclick="answerHomeScreen(false)">No</button></div>
-                <button type="button" class="text-link" style="display:block; margin: 6px auto;" onclick="closeHomeScreenAsk()">Not now</button>
+                <button type="button" class="text-link" style="display:block; margin: 6px auto;" onclick="closeHomeScreenAsk()">Not now · score here without alerts</button>
             </div>
             <div id="hs-yes" style="display:none;">
                 <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Great, use that</h2>
@@ -960,8 +960,8 @@
                     <li>Open <b>JB Golf</b> on your Home Screen.</li>
                     <li>It asks which cart you're in today. Tap <b id="hs-cart-1"></b>.</li>
                 </ol>
-                <p class="clean-sub" style="text-align:center;">Alerts work from the Home Screen app.</p>
-                <button class="btn-secondary" onclick="closeHomeScreenAsk()">Keep scoring here instead</button>
+                <p class="clean-sub" style="text-align:center;">On iPhone, <b>alerts only work from the Home Screen app</b> (birdies, skins, missed holes, final results).</p>
+                <button class="btn-secondary" onclick="closeHomeScreenAsk()">Score here anyway · no alerts</button>
             </div>
             <div id="hs-no" style="display:none;">
                 <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Add it to your Home Screen</h2>
@@ -971,7 +971,7 @@
                     <li>Tap <b>Add</b>.</li>
                     <li>Open <b>JB Golf</b> from your Home Screen. It's set to <b id="hs-cart-2"></b>, and that's where you turn on alerts.</li>
                 </ol>
-                <p class="clean-sub" style="text-align:center;">Next round, open the same icon and pick your cart.</p>
+                <p class="clean-sub" style="text-align:center;">Alerts only work from the Home Screen app. Next round, open the same icon and pick your cart.</p>
                 <button class="btn-secondary" onclick="closeHomeScreenAsk()">Got it</button>
             </div>
         </div>
