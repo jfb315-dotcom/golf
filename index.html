@@ -2092,7 +2092,7 @@ function toggle9HoleOptions() {
         }
         function createSignupShare() {
             let date = signup.date;
-            let link = `${location.href.split('?')[0].split('#')[0]}?signup=1`;
+            let link = shareUrl('join.html', 'signup=1');
             let details = [formatRoundDate(date), signup.course, signup.time ? `Tee ${formatFriendlyTime(signup.time)}` : ''].filter(Boolean).join(' · ');
             // Straight to a group text when we have numbers; "Share another way" is in the popup
             openGroupText('all', `⛳ JB Golf · ${details}${signup.note ? `\n${signup.note}` : ''}\nAre you in? Tap to answer:\n${link}`);
@@ -3203,9 +3203,14 @@ function processStep2() {
             }
         }
 
+        // Links we text out go through a small page with that kind of link's own preview card (join, cart, live, results),
+        // which opens the app with the same details
+        function shareUrl(page, query) {
+            let dir = location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '');
+            return `${dir}${page}?${query}`;
+        }
         function shareSpectatorLink() {
-            const baseUrl = window.location.href.split('#')[0].split('?')[0]; 
-            const spectatorLink = `${baseUrl}?spectator=true`;
+            const spectatorLink = shareUrl('live.html', 'spectator=true');
             let st = `JB Golf · Live leaderboard\n${spectatorLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
             
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
@@ -5009,8 +5014,7 @@ function hideCartHoleHeader() {
                     }
                 }
                 
-                const baseUrl = window.location.href.split('?')[0]; 
-                const magicLink = `${baseUrl}?cart=${c.id}`;
+                const magicLink = shareUrl('cart.html', `cart=${c.id}`);
                 // Course, date and tee time so everyone knows where and when
                 let details = [formatRoundDate(roundData.date), roundData.course?.name, c.time ? `Tee ${formatFriendlyTime(c.time)}` : ''].filter(Boolean).join(' · ');
                 const message = encodeURIComponent(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
@@ -5523,7 +5527,7 @@ function hideCartHoleHeader() {
             if (!viewingArchive) return;
             uploadArchived(viewingArchive); // make sure it's in Firebase for whoever opens the link
             let rd = viewingArchive.roundData || {};
-            let link = `${location.href.split('?')[0].split('#')[0]}?round=${encodeURIComponent(viewingArchiveId)}`;
+            let link = shareUrl('results.html', `round=${encodeURIComponent(viewingArchiveId)}`);
             let title = `JB Golf results · ${(rd.course?.name || viewingArchive.course?.name || '').replace(/\s*\(.*\)$/, '')} · ${formatRoundDate(rd.date || viewingArchive.date)}`;
             if (navigator.share) navigator.share({ title, text: title, url: link }).catch(() => {});
             else {
