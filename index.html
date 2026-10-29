@@ -314,6 +314,12 @@
         .team-total { margin-left: 8px; font-size: 12px; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--text-muted); }
         .swap-hint { font-size: 13px; color: var(--text-muted); margin: 10px 0 0; }
         .team-tools { display: flex; flex-wrap: wrap; gap: 4px 18px; }
+        .cartpick { display: block; width: 100%; margin: 0 0 10px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--line); background: var(--fill-soft); color: var(--text-main); text-align: left; text-transform: none; cursor: pointer; }
+        .cartpick b { display: block; font-size: 19px; color: var(--accent-gold); }
+        .cartpick span { display: block; font-size: 15px; color: var(--text-main); margin-top: 3px; }
+        .hs-steps { color: var(--text-main); font-size: 16px; line-height: 1.5; padding-left: 22px; margin: 6px 0 12px; }
+        .hs-steps li { margin-bottom: 6px; }
+        .hs-share { display: inline-block; padding: 0 6px; border: 1.5px solid var(--text-muted); border-radius: 6px; font-size: 13px; }
         .whos-btn { display: block; width: 100%; margin: 14px 0 4px; padding: 14px 16px; border-radius: 14px; border: 1px solid var(--accent-gold); background: var(--fill-soft); color: var(--accent-gold); font-size: 17px; font-weight: 700; text-align: left; text-transform: none; cursor: pointer; }
         .whos-btn span { display: block; font-size: 13px; font-weight: 500; color: var(--text-muted); margin-top: 2px; }
         .whos-list { margin: 10px 0 8px; }
@@ -859,6 +865,7 @@
             <p><b>New round</b> sets the course, holes, bets, skins and Our Match. <b>Next: Rosters</b> shows the teams (or use Who's playing), then <b>Start round</b>.</p>
             <p>Tee times start 10 minutes apart. Change one and the rest follow.</p>
             <p>On the scoring screen, <b>Text live links to carts</b> sends each cart its own scorecard link. <b>Share spectator leaderboard</b> is a watch-only link for anyone else.</p>
+            <p>Players who saved JB Golf to their Home Screen keep using that icon. Each new round, it asks <i>"Which cart are you in today?"</i> and they tap theirs. A cart link opened in Safari asks once if they have the app, and shows how to add it if not.</p>
         </details>
 
         <details class="help"><summary>4 · During the round <span>Scoring</span></summary>
@@ -928,6 +935,46 @@
             <div class="format-row"><label class="format-label" for="alert-signups">Sign-up answers (who's in or out) 🙋</label><input type="checkbox" class="switch" id="alert-signups" checked onchange="saveSignupAlertPref()"></div>
         </div>
         <p class="dash-footnote">Your picks carry over to the next round. Everyone turns alerts on for their own phone from their cart link.</p>
+    </div>
+
+    <div id="step-cartpick" class="screen clean">
+        <div class="clean-eyebrow">JB Golf</div>
+        <h2 class="clean-title">Which cart are you in today?</h2>
+        <p class="clean-sub" id="cartpick-sub"></p>
+        <div id="cartpick-list"></div>
+        <p class="dash-footnote">This is a new round. Pick your cart once and this app keeps it until the round is over.</p>
+    </div>
+
+    <div id="hs-modal" class="modal-overlay">
+        <div class="modal-content">
+            <div id="hs-ask">
+                <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Do you have the JB Golf app on your Home Screen?</h2>
+                <p class="clean-sub" style="text-align:center;">The icon you saved from an earlier cart link.</p>
+                <div class="su-buttons"><button type="button" class="bar-primary" onclick="answerHomeScreen(true)">Yes</button><button type="button" class="btn-secondary" onclick="answerHomeScreen(false)">No</button></div>
+                <button type="button" class="text-link" style="display:block; margin: 6px auto;" onclick="closeHomeScreenAsk()">Not now</button>
+            </div>
+            <div id="hs-yes" style="display:none;">
+                <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Great, use that</h2>
+                <ol class="hs-steps">
+                    <li>Close Safari.</li>
+                    <li>Open <b>JB Golf</b> on your Home Screen.</li>
+                    <li>It asks which cart you're in today. Tap <b id="hs-cart-1"></b>.</li>
+                </ol>
+                <p class="clean-sub" style="text-align:center;">Alerts work from the Home Screen app.</p>
+                <button class="btn-secondary" onclick="closeHomeScreenAsk()">Keep scoring here instead</button>
+            </div>
+            <div id="hs-no" style="display:none;">
+                <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Add it to your Home Screen</h2>
+                <ol class="hs-steps">
+                    <li>Tap the <b>Share</b> button <span class="hs-share">⬆</span> at the bottom of Safari.</li>
+                    <li>Scroll down and tap <b>Add to Home Screen</b>.</li>
+                    <li>Tap <b>Add</b>.</li>
+                    <li>Open <b>JB Golf</b> from your Home Screen. It's set to <b id="hs-cart-2"></b>, and that's where you turn on alerts.</li>
+                </ol>
+                <p class="clean-sub" style="text-align:center;">Next round, open the same icon and pick your cart.</p>
+                <button class="btn-secondary" onclick="closeHomeScreenAsk()">Got it</button>
+            </div>
+        </div>
     </div>
 
     <div id="step-whos" class="screen clean">
@@ -1404,6 +1451,7 @@ function toggle9HoleOptions() {
 
             const urlParams = new URLSearchParams(window.location.search); 
             const teamParam = urlParams.get('cart');
+            linkCart = teamParam ? parseInt(teamParam) : null;
             const isSpectator = urlParams.get('spectator') === 'true';
             if (urlParams.get('signup')) { openSignupPage(); return; } // the sign-up link only shows the sign-up page
             if (urlParams.get('round')) { openSharedRound(urlParams.get('round')); return; } // a shared results page
@@ -1505,6 +1553,13 @@ function toggle9HoleOptions() {
                         }
                         if(typeof roundData.course === 'string') { 
                             roundData.course = allAvailableCourses[roundData.course] || { name: "Course", pars: [4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4,4] }; 
+                        }
+
+                        // A cart link or Home Screen icon from an earlier round asks which cart you're in today
+                        if (lockedTeamId !== null && !isSpectator && !showingFinalResults && !resolveCartForRound()) {
+                            if (roundData.theme && roundData.theme !== localStorage.getItem('savedTheme')) changeTheme(roundData.theme, true);
+                            showCartPicker();
+                            return;
                         }
 
                         // Carts and spectators wear the round's theme (the admin's choice)
@@ -2317,6 +2372,61 @@ function toggle9HoleOptions() {
             };
             new MutationObserver(update).observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
         })();
+
+        // ===== Cart links and Home Screen icons across rounds =====
+        // Cart links carry their round (&r=). A link or icon from an earlier round, or for a cart that isn't in
+        // today's round, asks "Which cart are you in today?"; the answer is kept for that round on this phone.
+        let linkCart = null;
+        function cartPickFor(roundId) { try { let p = JSON.parse(localStorage.getItem('jbCartPick') || 'null'); return p && String(p.roundId) === String(roundId) ? p.cart : null; } catch (e) { return null; } }
+        function useCart(c) {
+            lockedTeamId = c; currentTeamFilter = c;
+            if (window.Notification?.permission === 'granted') { refreshAlertsButtons.saved = false; refreshAlertsButtons(); } // alerts follow the cart
+        }
+        function resolveCartForRound() {
+            let rid = String(roundData.roundId || ''), has = c => roundData.carts.some(x => x.id == c);
+            // A link made for this round wins; otherwise the cart picked on this phone for this round
+            let linkRound = new URLSearchParams(location.search).get('r');
+            if (linkRound && linkRound === rid && has(linkCart)) {
+                if (lockedTeamId !== linkCart) useCart(linkCart);
+                setTimeout(maybeAskHomeScreen, 800);
+                return true;
+            }
+            let picked = cartPickFor(rid);
+            if (picked !== null && has(picked)) { if (lockedTeamId !== picked) useCart(picked); return true; }
+            return false;
+        }
+        function showCartPicker() {
+            document.getElementById('cartpick-sub').textContent = [roundData.course?.name, formatRoundDate(roundData.date)].filter(Boolean).join(' · ');
+            document.getElementById('cartpick-list').innerHTML = roundData.carts.map(c => {
+                let names = realPlayersOf(c).map(x => x.player.name.split(' ')[0]).join(', ');
+                return `<button type="button" class="cartpick" onclick="pickCartForRound(${c.id})"><b>Cart ${c.id}${c.time ? ` · ${formatFriendlyTime(c.time)}` : ''}</b><span>${names || 'No players yet'}</span></button>`;
+            }).join('') || '<p class="clean-sub">No carts are set up yet. Check back once the round starts.</p>';
+            document.querySelectorAll('.screen').forEach(sc => sc.classList.remove('active'));
+            document.getElementById('step-cartpick').classList.add('active');
+        }
+        function pickCartForRound(c) {
+            try { localStorage.setItem('jbCartPick', JSON.stringify({ roundId: roundData.roundId, cart: c })); } catch (e) {}
+            useCart(c);
+            renderPillNav(); renderScoreEntry();
+            document.querySelectorAll('.screen').forEach(sc => sc.classList.remove('active'));
+            document.getElementById('step-3').classList.add('active');
+            window.scrollTo(0, 0);
+        }
+        // Opened a cart link in Safari on an iPhone: point them to their Home Screen app (once per round)
+        function maybeAskHomeScreen() {
+            if (!isIPhone() || isHomeScreenApp() || lockedTeamId === null) return;
+            let k = 'jbHsAsked_' + roundData.roundId;
+            try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch (e) { return; }
+            if (!document.getElementById('step-3').classList.contains('active')) return;
+            ['hs-cart-1', 'hs-cart-2'].forEach(id => document.getElementById(id).textContent = `Cart ${lockedTeamId}`);
+            document.getElementById('hs-ask').style.display = ''; document.getElementById('hs-yes').style.display = 'none'; document.getElementById('hs-no').style.display = 'none';
+            document.getElementById('hs-modal').classList.add('active');
+        }
+        function answerHomeScreen(yes) {
+            document.getElementById('hs-ask').style.display = 'none';
+            document.getElementById(yes ? 'hs-yes' : 'hs-no').style.display = '';
+        }
+        function closeHomeScreenAsk() { document.getElementById('hs-modal').classList.remove('active'); }
 
         // ===== Home (the admin's starting page) =====
         function showScreen(id) {
@@ -5243,7 +5353,7 @@ function hideCartHoleHeader() {
                     }
                 }
                 
-                const magicLink = shareUrl('cart.html', `cart=${c.id}`);
+                const magicLink = shareUrl('cart.html', `cart=${c.id}&r=${roundData.roundId || ''}`);
                 // Course, date and tee time so everyone knows where and when
                 let details = [formatRoundDate(roundData.date), roundData.course?.name, c.time ? `Tee ${formatFriendlyTime(c.time)}` : ''].filter(Boolean).join(' · ');
                 cartShareMessages.push(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n${magicLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`);
