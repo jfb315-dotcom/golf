@@ -3531,7 +3531,7 @@ function processStep2() {
         }
         function shareSpectatorLink() {
             const spectatorLink = shareUrl('live.html', 'spectator=true');
-            let st = `JB Golf · Live leaderboard\n${spectatorLink}\n\nPRO TIP: To use this like a real app without browser bars, open the link in Safari, tap the Share button at the bottom, and select "Add to Home Screen"!`;
+            let st = `JB Golf · Live leaderboard (watch only)\nTap to follow along. Want birdie & skins alerts? Tap Share at the bottom of your browser › Add to Home Screen.\n${spectatorLink}`;
             if (navigator.share) { shareWithPreview(st, 'JB Golf · Live leaderboard'); return; }
 
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
