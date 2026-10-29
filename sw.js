@@ -1,10 +1,11 @@
 // Lets the app open with no signal. Pages load from the network when it answers within a few
 // seconds (so updates show straight away) and fall back to the copy saved on the phone otherwise.
 // Scores still sync through Firebase, which keeps its own offline queue.
-const CACHE = 'jb-golf-v2';
+const CACHE = 'jb-golf-v3';
 const FIREBASE = [
     'https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js',
-    'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js'
+    'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js',
+    'https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js'
 ];
 const APP_FILES = ['./', './index.html', './logo.png', './manifest.json', './cart.html', './live.html', './join.html', './results.html'];
 const NETWORK_WAIT_MS = 4000;
