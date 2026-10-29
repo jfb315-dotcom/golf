@@ -428,6 +428,9 @@
         .par-setup-item input { width: 50px !important; margin: 0; padding: 5px; text-align: center; font-size: 16px;}
         
         .payout-header { font-size: 13px; font-weight: bold; letter-spacing: 0.12em; text-transform: uppercase; color: var(--text-muted); margin: 28px 4px 4px; }
+        .round-info { text-align: center; font-size: 11px; font-weight: 600; letter-spacing: .04em; color: var(--text-muted); padding: 2px 0 4px; }
+        .round-where { margin-top: 2px; font-weight: 600; }
+        .om-par { color: var(--text-muted); }
         .om-head { margin: 24px 0 8px; padding: 10px 12px; border-radius: 10px; background: var(--fill); border-left: 4px solid var(--accent-gold); }
         .om-head b { display: block; font-size: 16px; color: var(--text-main); }
         .om-head span { display: block; font-size: 12.5px; color: var(--text-muted); margin-top: 2px; }
@@ -758,6 +761,7 @@
 
     <div id="step-3" class="screen" style="max-width: 600px; margin: 0 auto;">
         <div class="sticky-top">
+            <div class="round-info" id="round-info-line"></div>
             <div id="pill-nav-container" class="pill-nav"></div>
             <div id="cart-hole-header" style="display: none;"></div>
             <div class="hole-nav" style="margin-top: 5px;">
@@ -806,6 +810,7 @@
         </div>
         <div class="clean-eyebrow" id="dashboard-eyebrow">Live</div>
         <h2 class="clean-title" id="dashboard-title">Standings</h2>
+        <p class="clean-sub round-where" id="dashboard-sub"></p>
         <div class="alerts-banner" style="display:none;"></div>
         <div id="dashboard-cart-progress"></div>
         <div id="dashboard-scorecards"></div>
@@ -3663,7 +3668,8 @@ function processStep2() {
         function shareStandingsLink() {
             let rd = activeViewRoundData || roundData;
             let final = showingFinalResults || !liveRoundInCloud;
-            let link = final ? shareUrl('results.html', `round=${encodeURIComponent(rd.roundId || '')}`) : shareUrl('live.html', `spectator=true${rd.ourMatch ? '&om=1' : ''}`);
+            let page = rd.ourMatch ? 'match.html' : final ? 'results.html' : 'live.html';
+            let link = final ? shareUrl(page, `round=${encodeURIComponent(rd.roundId || '')}`) : shareUrl(page, `spectator=true${rd.ourMatch ? '&om=1' : ''}`);
             let course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
             let title = `JB Golf · ${final ? 'Final results' : rd.ourMatch && isOurMatchOnly(rd) ? 'Our Match, live' : 'Live leaderboard'} · ${course}`;
             if (navigator.share) { shareWithPreview(`${title}\n${link}`, title); return; }
@@ -3672,9 +3678,11 @@ function processStep2() {
             document.getElementById('share-modal').classList.add('active');
         }
         function shareSpectatorLink() {
-            const spectatorLink = shareUrl('live.html', 'spectator=true');
-            let st = `JB Golf · Live leaderboard (watch only)\nTap to follow along. Want birdie & skins alerts? Tap Share at the bottom of your browser › Add to Home Screen.\n${spectatorLink}`;
-            if (navigator.share) { shareWithPreview(st, 'JB Golf · Live leaderboard'); return; }
+            // Our Match only: the people following along are there for the match, so it's on their page
+            let om = roundData.ourMatch && isOurMatchOnly(roundData);
+            const spectatorLink = om ? shareUrl('match.html', 'spectator=true&om=1') : shareUrl('live.html', 'spectator=true');
+            let st = `JB Golf · ${om ? 'Big Money Match, live' : 'Live leaderboard'} (watch only)\nTap to follow along. Want birdie & skins alerts? Tap Share at the bottom of your browser › Add to Home Screen.\n${spectatorLink}`;
+            if (navigator.share) { shareWithPreview(st, om ? 'JB Golf · Big Money Match' : 'JB Golf · Live leaderboard'); return; }
 
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
             document.getElementById('share-text-content').value = st;
@@ -3913,7 +3921,11 @@ function renderScoreEntry() {
     activateFirstOpenScore();
 }
 
+// Course and date, small, at the top of the scoring screen
+function roundWhere(rd) { return [rd?.course?.name?.replace(/\s*\(.*\)$/, ''), rd?.date ? formatRoundDate(rd.date) : ''].filter(Boolean).join(' · '); }
+function setRoundInfo() { let el = document.getElementById('round-info-line'); if (el) el.textContent = roundWhere(roundData); }
 function setHoleHeader(hole, par) {
+    setRoundInfo();
     let isAdminView = currentTeamFilter === "ALL" && lockedTeamId === null;
     let who = isOurMatchOnly(roundData) ? 'Our Match' : (isAdminView ? 'All teams' : `Cart ${currentTeamFilter}`);
     // The admin sees every team at once, so its screen uses a compact layout
@@ -3936,6 +3948,7 @@ function showCartHoleList() {
 
       function renderCartHoleList() {
     cancelAutoAdvance();
+    setRoundInfo();
     let cart = roundData.carts.find(c => c.id == currentTeamFilter);
     if (!cart) {
         document.getElementById('entry-container').innerHTML = `<div style="padding:20px; color:#ccc;">No cart data found.</div>`;
@@ -4448,6 +4461,7 @@ function hideCartHoleHeader() {
 
             document.getElementById('dashboard-eyebrow').innerText = showingFinalResults ? 'Round complete' : 'Live';
             document.getElementById('dashboard-title').innerText = showingFinalResults ? "Final results" : ((urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings");
+            document.getElementById('dashboard-sub').textContent = roundWhere(roundData);
             
             let orderedSegments = getOrderedSegments(roundData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
@@ -4480,8 +4494,11 @@ function hideCartHoleHeader() {
             document.getElementById('dashboard-cart-progress').innerHTML = showProgress ? generateCartProgressHTML(roundData, scoresDb) : '';
             document.getElementById('dashboard-changes').innerHTML = urlParams.get('spectator') !== 'true' ? generateScoreChangesHTML(roundData) : '';
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
-            let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-') : null;
-            document.getElementById('dashboard-scorecards').innerHTML = money ? '' : (isOurMatchOnly(roundData) ? fold('live-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(roundData), scoresDb)) : generateScorecardHTML(scorecardView(roundData), scoresDb));
+            // Spectators mostly check the cards as the round goes, so theirs sit at the very top, open
+            let spectator = urlParams.get('spectator') === 'true';
+            let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
+            let cardsFold = fold('live-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator);
+            document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
             let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults && urlParams.get('spectator') !== 'true') : '';
@@ -4489,6 +4506,8 @@ function hideCartHoleHeader() {
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
+            let cardsEl = document.getElementById('dashboard-scorecards');
+            dash.insertBefore(cardsEl, spectator ? dash.querySelector('.alerts-banner').nextSibling : document.getElementById('dashboard-payouts'));
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
         }
@@ -5174,8 +5193,8 @@ function hideCartHoleHeader() {
                 let running = (n, b, h) => b.from != null && m.pos(h) <= m.pos(b.from) ? null
                     : -n.done.filter(x => m.pos(x) <= m.pos(h) && (b.from == null || m.pos(x) > m.pos(b.from))).reduce((a, x) => a + n.lows[x][0] - n.lows[x][1], 0);
                 let cell = (n, h) => n.bets.map(b => running(n, b, h)).filter(v => v !== null).map(formatMatchBet).join(' ');
-                let chart = `<p class="payout-sub" style="margin-top:0;">Low gross each hole · + = ${m.names[0]} up (strokes)</p><table class="om-chart"><thead><tr><th>Hole</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
-                let cols = overall ? 4 : 3;
+                let chart = `<p class="payout-sub" style="margin-top:0;">Low gross each hole · + = ${m.names[0]} up (strokes)</p><table class="om-chart"><thead><tr><th>Hole</th><th>Par</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
+                let cols = overall ? 5 : 4;
                 playedNassau.forEach(({ h, key }, i) => {
                     let n = m.nassau[key], [a, b] = n.lows[h];
                     // Clean break at the turn: a header row for each nine
@@ -5183,7 +5202,7 @@ function hideCartHoleHeader() {
                         chart += `<tr class="om-nine-break${i === 0 ? ' first' : ''}"><td colspan="${cols}">${key === 'back' ? 'Back 9' : 'Front 9'}</td></tr>`;
                     }
                     let low = `<span class="${a < b ? 'om-a' : ''}">${a}</span> v <span class="${b < a ? 'om-b-win' : ''}">${b}</span>`;
-                    chart += `<tr><td><b>${h}</b></td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
+                    chart += `<tr><td><b>${h}</b></td><td class="om-par">${rData.course.pars[h - 1]}</td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
                     pressList.filter(pr => pr.after === h).forEach(pr => { chart += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
                 });
                 chart += `</tbody></table>`;
@@ -5197,11 +5216,11 @@ function hideCartHoleHeader() {
                 if (nine.rows.length === 0) {
                     html += `<div class="payout-row muted">No holes finished yet</div>`;
                 } else {
-                    html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Net</th><th>Won</th><th>Bets</th><th>Birdies</th></tr></thead><tbody>`;
+                    html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Par</th><th>Net</th><th>Won</th><th>Bets</th><th>Birdies</th></tr></thead><tbody>`;
                     nine.rows.forEach(r => {
                         let won = r.result > 0 ? `<span class="om-a">${m.names[0].split(' ')[0]}</span>` : (r.result < 0 ? `<span class="om-b">${m.names[1].split(' ')[0]}</span>` : '–');
                         let bird = [r.units[0] ? `<span class="om-a">${'●'.repeat(r.units[0])}</span>` : '', r.units[1] ? `<span class="om-b">${'●'.repeat(r.units[1])}</span>` : ''].filter(Boolean).join(' ') || '';
-                        html += `<tr><td><b>${r.hole}</b></td><td>${r.lowNets[0]} v ${r.lowNets[1]}${r.lowNets[0] === r.lowNets[1] ? `<div class="om-second">2nd ${r.secondNets[0]} v ${r.secondNets[1]}</div>` : ''}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
+                        html += `<tr><td><b>${r.hole}</b></td><td class="om-par">${rData.course.pars[r.hole - 1]}</td><td>${r.lowNets[0]} v ${r.lowNets[1]}${r.lowNets[0] === r.lowNets[1] ? `<div class="om-second">2nd ${r.secondNets[0]} v ${r.secondNets[1]}</div>` : ''}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
                     });
                     html += `</tbody></table>`;
                 }
@@ -5429,11 +5448,11 @@ function hideCartHoleHeader() {
             return `Our Match · ${t === 0 ? 'all square' : `${lead} up $${Math.abs(t).toLocaleString('en-US')}`}${m.finished ? '' : ' so far'}`;
         }
         // The standings / results page, in order. Returns { top, more } so Our Match can sit between them.
-        function standingsSections(rData, sDb, presses, prefix) {
+        function standingsSections(rData, sDb, presses, prefix, cardsElsewhere) {
             let pay = calculatePayouts(rData, sDb);
             if (pay.players.length === 0) return { top: '<p>No data.</p>', more: '' };
             let top = purseHTML(pay) + generateScorecardHTML(scorecardView(rData), sDb, 'leaderboard') + teamBetsWonHTML(rData, pay) + skinsHTML(rData, pay);
-            let more = fold(prefix + 'cards', 'Team Scorecards', generateScorecardHTML(scorecardView(rData), sDb, 'cards'))
+            let more = (cardsElsewhere ? '' : fold(prefix + 'cards', 'Team Scorecards', generateScorecardHTML(scorecardView(rData), sDb, 'cards')))
                 + fold(prefix + 'math', 'Who pays who &amp; all the math', settleUpHTML(rData, sDb, pay, presses) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
             return { top, more };
         }
@@ -6096,7 +6115,7 @@ function hideCartHoleHeader() {
             if (!viewingArchive) return;
             uploadArchived(viewingArchive); // make sure it's in Firebase for whoever opens the link
             let rd = viewingArchive.roundData || {};
-            let link = shareUrl('results.html', `round=${encodeURIComponent(viewingArchiveId)}`);
+            let link = shareUrl(rd.ourMatch ? 'match.html' : 'results.html', `round=${encodeURIComponent(viewingArchiveId)}`);
             let title = `JB Golf results · ${(rd.course?.name || viewingArchive.course?.name || '').replace(/\s*\(.*\)$/, '')} · ${formatRoundDate(rd.date || viewingArchive.date)}`;
             if (navigator.share) navigator.share({ title, text: title, url: link }).catch(() => {});
             else {
