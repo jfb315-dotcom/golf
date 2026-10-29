@@ -515,6 +515,10 @@
         .om-sum-row b { font-size: 15px; }
         .om-sum-row.grand { border-bottom: none; padding-top: 10px; font-size: 18px; font-weight: 800; }
         .om-sum-row.grand b { font-size: 20px; }
+        .om-final-banner { display: flex; flex-direction: column; gap: 4px; margin: 14px 0 6px; padding: 16px 14px; border-radius: 14px; background: var(--fill-soft); border-left: 4px solid var(--accent-gold); }
+        .om-final-banner .om-final-label { font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--text-muted); }
+        .om-final-banner b { font-size: 19px; line-height: 1.3; color: var(--accent-gold); }
+        .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
         .om-b-win { font-weight: 800; text-decoration: underline; }
         .om-press-log span:first-child { color: var(--bad); font-weight: 700; }
@@ -4497,8 +4501,10 @@ function hideCartHoleHeader() {
             // Spectators mostly check the cards as the round goes, so theirs sit at the very top, open
             let spectator = urlParams.get('spectator') === 'true';
             let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
-            let cardsFold = fold('live-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator);
-            document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
+            // Our Match over: who pays who goes first, with the scorecards folded under it
+            let banner = ourMatchFinalBanner(roundData, scoresDb, matchPresses, showingFinalResults);
+            let cardsFold = fold('live-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator && !banner);
+            document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
             let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults && urlParams.get('spectator') !== 'true') : '';
@@ -4507,7 +4513,7 @@ function hideCartHoleHeader() {
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
             let cardsEl = document.getElementById('dashboard-scorecards');
-            dash.insertBefore(cardsEl, spectator ? dash.querySelector('.alerts-banner').nextSibling : document.getElementById('dashboard-payouts'));
+            dash.insertBefore(cardsEl, spectator || banner ? dash.querySelector('.alerts-banner').nextSibling : document.getElementById('dashboard-payouts'));
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
         }
@@ -5128,6 +5134,14 @@ function hideCartHoleHeader() {
             let first = x => x.player.name.split(' ')[0];
             let amt = `$${Math.abs(total).toLocaleString('en-US')}`;
             return `${first(lose[0])} pays ${first(win[0])} ${amt} · ${first(lose[1])} pays ${first(win[1])} ${amt}`;
+        }
+
+        // Our Match only, once it's over: who pays who in one line at the very top of the page
+        function ourMatchFinalBanner(rData, sDb, presses, final) {
+            if (!isOurMatchOnly(rData)) return '';
+            let m = calculateOurMatch(rData, sDb, presses || {});
+            if (!m || !(final || m.finished)) return '';
+            return `<div class="om-final-banner"><span class="om-final-label">Final results</span><b>${matchSettleLine(m, m.totalMoney)}</b><span class="om-final-note">See the breakdowns below</span></div>`;
         }
 
         // Every press made, in the order it started
@@ -6190,7 +6204,7 @@ function hideCartHoleHeader() {
             try { 
                 let presses = activeViewRoundData.matchPresses || {};
                 let money = hasTournamentMoney(activeViewRoundData) ? standingsSections(activeViewRoundData, activeViewScoresDb, presses, 'arc-') : null;
-                document.getElementById('archived-card-container').innerHTML = money ? '' : (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
+                document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(activeViewRoundData, activeViewScoresDb, presses, true) + (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', 'Team Scorecards', generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
                 document.getElementById('archived-payout-summary-container').innerHTML = money ? money.top : '';
                 let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, presses, false) : '';
                 document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(activeViewRoundData, activeViewScoresDb, presses), omHTML) : omHTML;
