@@ -532,6 +532,16 @@
         .om-final-banner b { font-size: 19px; line-height: 1.3; color: var(--accent-gold); }
         .om-final-banner.pending { border-left-color: var(--text-muted); }
         .om-final-banner .om-final-down { font-size: 15px; font-weight: 600; color: var(--text-main); }
+        .om-grid-wrap { margin: 14px 0 6px; padding: 14px 12px; border-radius: 14px; background: var(--fill-soft); }
+        .om-grid-wrap .om-settle { display: block; margin-top: 10px; color: var(--accent-gold); font-size: 17px; }
+        .om-grid { width: 100%; min-width: 0; table-layout: auto; border-collapse: collapse; margin-top: 8px; font-size: 14px; font-variant-numeric: tabular-nums; }
+        .om-grid th, .om-grid td { padding: 8px 4px; text-align: right; border-top: 1px solid var(--line); border-bottom: 0; white-space: nowrap; background: transparent; }
+        .om-grid thead th { border-top: 0; font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--text-muted); }
+        .om-grid tbody th { text-align: left; font-weight: 600; white-space: normal; line-height: 1.25; color: var(--text-main); }
+        .om-grid .om-grid-total { font-weight: 700; color: var(--text-main); }
+        .om-grid .om-grid-live, .om-grid .om-grid-none { color: var(--text-muted); font-size: 12px; }
+        .om-grid tr.om-grid-sum th, .om-grid tr.om-grid-sum td { border-top: 2px solid var(--text-muted); font-weight: 800; font-size: 16px; color: var(--text-main); }
+        .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
         .om-b-win { font-weight: 800; text-decoration: underline; }
@@ -5214,35 +5224,41 @@ function hideCartHoleHeader() {
             let html = `<section class="dash-section om-section" id="our-match">
                 <div class="dash-section-title team-head"><span>Our Match</span><span>${m.finished ? 'Final' : 'Live'}</span></div>
                 <div class="om-sides"><span class="om-side a">${m.names[0]}</span><span class="om-vs">vs</span><span class="om-side b">${m.names[1]}</span></div>`;
+            html += ourMatchMoneyTable(m, rData);
+
+            // Press buttons stay up top while the match is live
+            if (live) MATCH_BETS.forEach(key => {
+                let n = m.nassau[key];
+                if (n) ['A', 'B'].forEach((side, i) => {
+                    if (n.canPress[side]) html += `<button type="button" class="om-press" onclick="pressOurMatch('${key}','${side}')">PRESS ${labels[key].toUpperCase()} · ${m.names[i]}</button>`;
+                });
+            });
 
             let pressList = ourMatchPressList(m);
+            let nassauHTML = '';
             if (pressList.length) {
-                html += `<div class="payout-sub">Presses</div>`;
-                pressList.forEach(pr => { html += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text.replace(' pressed the ', ' · ')}</span><span>starts hole ${pr.start}</span></div>`; });
+                nassauHTML += `<div class="payout-sub">Presses</div>`;
+                pressList.forEach(pr => { nassauHTML += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text.replace(' pressed the ', ' · ')}</span><span>starts hole ${pr.start}</span></div>`; });
             }
 
             // Nassau
-            html += omHead('Nassau', `low ball ${om.nassauNet ? 'net (strokes count)' : 'gross'}, stroke play · $${om.nassauBet} a bet, per person`);
+            nassauHTML += omHead('Nassau', `low ball ${om.nassauNet ? 'net (strokes count)' : 'gross'}, stroke play · $${om.nassauBet} a bet, per person`);
             MATCH_BETS.forEach(key => {
                 let n = m.nassau[key];
                 if (!n) return;
-                html += `<div class="om-bet"><div class="payout-row"><b>${labels[key]}</b><span class="payout-note">${n.finished ? 'final' : (n.done.length ? `thru ${n.lastDone}` : 'not started')}</span></div>`;
+                nassauHTML += `<div class="om-bet"><div class="payout-row"><b>${labels[key]}</b><span class="payout-note">${n.finished ? 'final' : (n.done.length ? `thru ${n.lastDone}` : 'not started')}</span></div>`;
                 n.bets.forEach(b => {
                     let money = n.finished ? (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0) : null;
                     let label = b.label === 'Main' ? 'Main' : `Press · starts hole ${n.holes[n.holes.indexOf(b.from) + 1] ?? b.from + 1}`;
-                    html += `<div class="om-bet-row"><span>${label}</span><span class="om-standing">${nassauText(m, b.diff)}</span><b>${money !== null ? formatMatchMoney(money) : ''}</b></div>`;
+                    nassauHTML += `<div class="om-bet-row"><span>${label}</span><span class="om-standing">${nassauText(m, b.diff)}</span><b>${money !== null ? formatMatchMoney(money) : ''}</b></div>`;
                 });
-                html += `<div class="payout-row om-subtotal"><span>${labels[key]} Nassau${n.bets.length > 1 ? ` (${n.bets.length} bets)` : ''}</span>${n.finished ? `<b class="payout-amount">${formatMatchMoney(n.money)}</b>` : '<span class="payout-note">in play</span>'}</div>`;
-                if (live) {
-                    ['A', 'B'].forEach((side, i) => {
-                        if (n.canPress[side]) html += `<button type="button" class="om-press" onclick="pressOurMatch('${key}','${side}')">PRESS ${labels[key].toUpperCase()} · ${m.names[i]}</button>`;
-                    });
-                }
-                html += `</div>`;
+                nassauHTML += `<div class="payout-row om-subtotal"><span>${labels[key]} Nassau${n.bets.length > 1 ? ` (${n.bets.length} bets)` : ''}</span>${n.finished ? `<b class="payout-amount">${formatMatchMoney(n.money)}</b>` : '<span class="payout-note">in play</span>'}</div>`;
+                nassauHTML += `</div>`;
             });
             let nassauTotal = MATCH_BETS.reduce((a, k) => a + (m.nassau[k]?.money || 0), 0);
             let nassauDone = MATCH_BETS.every(k => !m.nassau[k] || m.nassau[k].finished);
-            html += `<div class="payout-row om-grand"><span>Nassau total${nassauDone ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nassauTotal)}</b></div>`;
+            nassauHTML += `<div class="payout-row om-grand"><span>Nassau total${nassauDone ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nassauTotal)}</b></div>`;
+            html += fold('om-nassau-bets', 'See the Nassau bets &amp; presses', nassauHTML);
 
             // Nassau hole by hole: low gross each side, then every Nassau bet's running score (+ = side 1 up)
             let ninesNassau = ['front', 'back'].filter(k => m.nassau[k]);
@@ -5268,7 +5284,8 @@ function hideCartHoleHeader() {
                 nassauFold = fold('om-nassau-holes', 'See Nassau hole by hole', chart); // goes at the bottom, above the rules
             }
 
-            // First ball / second ball and birdies, one chart per nine
+            // First ball / second ball and birdies, one chart per nine, together in one dropdown
+            let outer = html; html = '';
             m.nines.forEach(nine => {
                 let title = nine.key === 'back' ? 'Back 9' : 'Front 9';
                 html += omHead(`1st ball goes to 2nd ball · ${title}`, `net · $${nine.amount} a bet per person · + = ${m.names[0]} up`);
@@ -5289,18 +5306,38 @@ function hideCartHoleHeader() {
                 html += ourMatchBirdiesHTML(m, nine);
                 html += `<div class="payout-row om-subtotal"><span>${title} 1st ball goes to 2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
             });
+            html = outer + fold('om-balls', 'See 1st ball goes to 2nd ball &amp; birdies', html);
 
-            // Money summary: one line per game, then the total and who pays who
-            let ballTotal = m.nines.reduce((a, n) => a + n.ballMoney, 0), birdieTotal = m.nines.reduce((a, n) => a + n.birdieMoney, 0);
-            let sumRow = (label, v, cls = '') => `<div class="om-sum-row ${cls}"><span>${label}</span><b>${formatMatchMoney(v)}</b></div>`;
-            html += `<div class="om-total">
-                <div class="om-sum-head"><span>${m.finished ? 'Final' : 'So far'} · per person</span><span>+ = ${m.names[0]}</span></div>
-                ${sumRow('Nassau', nassauTotal)}${sumRow('1st ball goes to 2nd ball', ballTotal)}${sumRow('Team birdies', birdieTotal)}
-                ${sumRow('Total', m.totalMoney, 'grand')}
-                <b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>
-            </div>`;
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; 1st ball goes to 2nd ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             return html + nassauFold + `</section>`;
+        }
+
+        // Every game by nine in one table, per person, from the first side's view: what each part of the match paid
+        function ourMatchMoneyTable(m, rData) {
+            let om = rData.ourMatch;
+            let nines = m.nines, overall = m.nassau.overall;
+            let nineTitle = n => n.key === 'back' ? 'Back 9' : 'Front 9';
+            // A Nassau bet still in play shows where the main bet stands for the first side instead of money
+            let cell = v => typeof v === 'string' ? `<td class="om-grid-live">${v}</td>` : `<td>${formatMatchMoney(v)}</td>`;
+            let nassauMoney = n => n.finished ? n.money : !n.done.length ? 'not started' : n.bets[0].diff < 0 ? `up ${-n.bets[0].diff}` : n.bets[0].diff > 0 ? `down ${n.bets[0].diff}` : 'even';
+            let rows = [
+                ['Nassau', nines.map(n => nassauMoney(m.nassau[n.key])), overall ? nassauMoney(overall) : undefined],
+                ['1st ball goes to 2nd ball', nines.map(n => n.ballMoney), overall ? '' : undefined],
+                ['Team birdies', nines.map(n => n.birdieMoney), overall ? '' : undefined],
+            ];
+            let rowTotal = r => [...r[1], r[2]].reduce((a, v) => a + (typeof v === 'number' ? v : 0), 0);
+            let colTotal = i => rows.reduce((a, r) => a + (typeof r[1][i] === 'number' ? r[1][i] : 0), 0);
+            let html = `<div class="om-grid-wrap"><div class="om-sum-head"><span>${m.finished ? 'Final money' : 'Money so far'}</span><span>+ = ${m.names[0]}</span></div>
+                <table class="om-grid"><thead><tr><th></th>${nines.map(n => `<th>${nineTitle(n)}</th>`).join('')}${overall ? '<th>Overall</th>' : ''}<th>Total</th></tr></thead><tbody>`;
+            rows.forEach(r => {
+                html += `<tr><th>${r[0]}</th>${r[1].map(cell).join('')}${overall ? (r[2] === '' ? '<td class="om-grid-none">–</td>' : cell(r[2])) : ''}<td class="om-grid-total">${formatMatchMoney(rowTotal(r))}</td></tr>`;
+            });
+            html += `<tr class="om-grid-sum"><th>Total</th>${nines.map((n, i) => `<td>${formatMatchMoney(colTotal(i))}</td>`).join('')}${overall ? `<td>${formatMatchMoney(typeof nassauMoney(overall) === 'number' ? nassauMoney(overall) : 0)}</td>` : ''}<td class="om-grid-total">${formatMatchMoney(m.totalMoney)}</td></tr>`;
+            html += `</tbody></table>`;
+            html += `<p class="om-grid-rules">Per person · Nassau ${om.nassauNet ? 'net (strokes count)' : 'gross'} · $${om.nassauBet} a bet · 1st ball goes to 2nd ball and birdies $${nines[0]?.amount ?? om.ballBet}${nines[1] ? ` front, $${nines[1].amount} back` : ''}</p>`;
+            // The Our Match only page already says who pays who at the very top
+            if (!isOurMatchOnly(rData)) html += `<b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>`;
+            return html + `</div>`;
         }
 
         // Who made each birdie and where: "BREN 1, 7, 10 eagle", then the net per side in dollars
