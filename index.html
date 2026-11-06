@@ -541,6 +541,7 @@
         .om-grid .om-grid-total { font-weight: 700; color: var(--text-main); }
         .om-grid .om-grid-live, .om-grid .om-grid-none { color: var(--text-muted); font-size: 12px; }
         .om-grid tr.om-grid-sum th, .om-grid tr.om-grid-sum td { border-top: 2px solid var(--text-muted); font-weight: 800; font-size: 16px; color: var(--text-main); }
+        .om-view-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -1019,6 +1020,18 @@
         <p class="clean-sub" id="cartpick-sub"></p>
         <div id="cartpick-list"></div>
         <p class="dash-footnote">This is a new round. Pick your cart once and this app keeps it until the round is over.</p>
+    </div>
+
+    <div id="om-view-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Who's this link for?</h2>
+            <p class="clean-sub" style="text-align:center;">They'll see the match from their side: their names first, + when they're up.</p>
+            <div class="om-view-buttons">
+                <button type="button" class="bar-primary" onclick="pickOurMatchView('a')" id="om-view-a"></button>
+                <button type="button" class="bar-primary" onclick="pickOurMatchView('b')" id="om-view-b"></button>
+            </div>
+            <button type="button" class="text-link" style="display:block; margin: 10px auto 0;" onclick="pickOurMatchView(null)">Cancel</button>
+        </div>
     </div>
 
     <div id="hs-modal" class="modal-overlay">
@@ -3710,11 +3723,28 @@ function processStep2() {
         }
         // Standings → a link: the final results page once the round is finalized, otherwise the live leaderboard
         // (with Our Match on it when the round has one)
-        function shareStandingsLink() {
+        // Our Match links are made for one side: pick whose view it is first
+        function askOurMatchView(rd, then) {
+            let [a, b] = ourMatchSides(rd.ourMatch).map(side => side.map(cp => rd.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p)?.name.split(' ')[0] || '?').join(' & '));
+            document.getElementById('om-view-a').textContent = a;
+            document.getElementById('om-view-b').textContent = b;
+            omViewThen = then;
+            document.getElementById('om-view-modal').classList.add('active');
+        }
+        let omViewThen = null;
+        function pickOurMatchView(side) {
+            document.getElementById('om-view-modal').classList.remove('active');
+            let then = omViewThen; omViewThen = null;
+            if (then && side) then(side);
+        }
+
+        function shareStandingsLink(side) {
             let rd = activeViewRoundData || roundData;
+            if (rd.ourMatch && !side) { askOurMatchView(rd, shareStandingsLink); return; }
             let final = showingFinalResults || !liveRoundInCloud;
             let page = rd.ourMatch ? 'match.html' : final ? 'results.html' : 'live.html';
-            let link = final ? shareUrl(page, `round=${encodeURIComponent(rd.roundId || '')}`) : shareUrl(page, `spectator=true${rd.ourMatch ? '&om=1' : ''}`);
+            let view = side === 'b' ? '&om=2' : rd.ourMatch ? '&om=1' : '';
+            let link = final ? shareUrl(page, `round=${encodeURIComponent(rd.roundId || '')}${side === 'b' ? '&om=2' : ''}`) : shareUrl(page, `spectator=true${view}`);
             let course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
             let title = `JB Golf · ${final ? 'Final results' : rd.ourMatch && isOurMatchOnly(rd) ? 'Our Match, live' : 'Live leaderboard'} · ${course}`;
             if (navigator.share) { shareWithPreview(`${title}\n${link}`, title); return; }
@@ -3722,10 +3752,11 @@ function processStep2() {
             document.getElementById('share-text-content').value = `${title}\n${link}`;
             document.getElementById('share-modal').classList.add('active');
         }
-        function shareSpectatorLink() {
-            // Our Match only: the people following along are there for the match, so it's on their page
+        function shareSpectatorLink(side) {
+            // Our Match only: the people following along are there for the match, so it's on their page, from their side
             let om = roundData.ourMatch && isOurMatchOnly(roundData);
-            const spectatorLink = om ? shareUrl('match.html', 'spectator=true&om=1') : shareUrl('live.html', 'spectator=true');
+            if (om && !side) { askOurMatchView(roundData, shareSpectatorLink); return; }
+            const spectatorLink = om ? shareUrl('match.html', `spectator=true&om=${side === 'b' ? 2 : 1}`) : shareUrl('live.html', 'spectator=true');
             let st = `JB Golf · ${om ? 'Big Money Match, live' : 'Live leaderboard'} (watch only)\nTap to follow along. Want birdie & skins alerts? Tap Share at the bottom of your browser › Add to Home Screen.\n${spectatorLink}`;
             if (navigator.share) { shareWithPreview(st, om ? 'JB Golf · Big Money Match' : 'JB Golf · Live leaderboard'); return; }
 
@@ -4548,13 +4579,14 @@ function hideCartHoleHeader() {
             let spectator = urlParams.get('spectator') === 'true';
             let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
             // Our Match over: who pays who goes first, with the scorecards folded under it
-            let banner = ourMatchFinalBanner(roundData, scoresDb, matchPresses, showingFinalResults);
+            let omv = ourMatchForViewer(roundData, matchPresses);
+            let banner = ourMatchFinalBanner(omv.rData, scoresDb, omv.presses, showingFinalResults);
             let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator && !banner.startsWith('<div class="om-final-banner">')); // open for spectators until the match is over
             document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
-            let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(roundData, scoresDb, matchPresses, !showingFinalResults && urlParams.get('spectator') !== 'true') : '';
-            document.getElementById('dashboard-our-match').innerHTML = omHTML && money ? fold('live-om', ourMatchSummaryLine(roundData, scoresDb, matchPresses), omHTML, !showingFinalResults) : omHTML;
+            let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(omv.rData, scoresDb, omv.presses, !showingFinalResults && urlParams.get('spectator') !== 'true') : '';
+            document.getElementById('dashboard-our-match').innerHTML = omHTML && money ? fold('live-om', ourMatchSummaryLine(omv.rData, scoresDb, omv.presses), omHTML, !showingFinalResults) : omHTML;
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
@@ -5164,10 +5196,19 @@ function hideCartHoleHeader() {
         }
 
         // Our Match is shown to the admin and to carts that have one of its four players; spectators never see it
+        // A link made for the second side (om=2) shows the match from their side: their names first, + = them up.
+        // Swapping the two sides (and whose press is whose) is all it takes; who pays who stays the same.
+        function ourMatchForViewer(rData, presses) {
+            if (!rData?.ourMatch || new URLSearchParams(location.search).get('om') !== '2') return { rData, presses };
+            let om = rData.ourMatch, flipped = {};
+            Object.entries(presses || {}).forEach(([k, v]) => { flipped[k] = { A: v?.B ?? null, B: v?.A ?? null }; });
+            return { rData: { ...rData, ourMatch: { ...om, sideA: om.sideB, sideB: om.sideA } }, presses: flipped };
+        }
+
         function canSeeOurMatch(rData) {
             let q = new URLSearchParams(window.location.search);
             if (!rData.ourMatch) return false;
-            if (q.get('spectator') === 'true') return q.get('om') === '1'; // a shared link that includes Our Match
+            if (q.get('spectator') === 'true') return q.get('om') === '1' || q.get('om') === '2'; // a shared link that includes Our Match
             if (lockedTeamId === null) return true;
             let cart = rData.carts.find(c => c.id === lockedTeamId);
             let mine = rData.isScrambled && cart ? cart.players : (rData.groups.find(g => g.id === lockedTeamId)?.players.map(p => ({ g: lockedTeamId, p: p.id })) || []);
@@ -6309,10 +6350,11 @@ function hideCartHoleHeader() {
             try { 
                 let presses = activeViewRoundData.matchPresses || {};
                 let money = hasTournamentMoney(activeViewRoundData) ? standingsSections(activeViewRoundData, activeViewScoresDb, presses, 'arc-') : null;
-                document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(activeViewRoundData, activeViewScoresDb, presses, true) + (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
+                let omv = ourMatchForViewer(activeViewRoundData, presses);
+                document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(omv.rData, activeViewScoresDb, omv.presses, true) + (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
                 document.getElementById('archived-payout-summary-container').innerHTML = money ? money.top : '';
-                let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(activeViewRoundData, activeViewScoresDb, presses, false) : '';
-                document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(activeViewRoundData, activeViewScoresDb, presses), omHTML) : omHTML;
+                let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(omv.rData, activeViewScoresDb, omv.presses, false) : '';
+                document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(omv.rData, activeViewScoresDb, omv.presses), omHTML) : omHTML;
                 document.getElementById('archived-more').innerHTML = money ? money.more : '';
                 document.getElementById('archived-sub').textContent = [activeViewRoundData.course?.name, formatRoundDate(activeViewRoundData.date || arc.date)].filter(Boolean).join(' · ');
                 return true;
