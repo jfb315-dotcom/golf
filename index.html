@@ -1183,13 +1183,13 @@
 
     <div id="text-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Send to the group</h2>
+            <h2 id="text-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Send to the group</h2>
             <textarea id="text-body" rows="5" style="width: 100%; box-sizing: border-box; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none; margin-bottom: 10px;"></textarea>
             <button class="btn-primary" onclick="sendToGroupChat()">Send to your group chat</button>
             <p class="dash-footnote" style="text-align:center; margin-top: 0;">Opens Share: pick Messages, then your golf group text.</p>
             <details class="text-numbers">
                 <summary><span>Or pick who gets it (new text)</span><span class="fold-hint">Tap to open</span></summary>
-                <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
+                <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-round" style="display:none;" onclick="setTextWho('round')">This round</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
                 <div id="text-pick" class="text-pick"></div>
                 <p class="clean-sub" id="text-to"></p>
                 <button class="btn-secondary" onclick="sendGroupText()">Open Messages with these</button>
@@ -2881,8 +2881,12 @@ function toggle9HoleOptions() {
         // Phone numbers from the players list (and anyone new who left one on the sign-up)
         function phoneFor(key) { return savedPlayers[key]?.phone || signup?.responses?.[key]?.phone || ''; }
         let textWho = 'in', textDefault = '';
-        function openGroupText(who, body) {
+        let textRound = null; // the round a "This round" text is about
+        function openGroupText(who, body, title) {
             textWho = who;
+            document.getElementById('text-modal-title').textContent = title || 'Send to the group';
+            if (who !== 'round') textRound = null;
+            document.getElementById('text-pick-round').style.display = textRound ? '' : 'none';
             textDefault = body || (signupIsCurrent() ? `⛳ JB Golf · ${formatRoundDate(signup.date)}${signup.course ? ' · ' + signup.course : ''}${signup.time ? ' · Tee ' + formatFriendlyTime(signup.time) : ''}\n` : '⛳ JB Golf\n');
             document.getElementById('text-body').value = textDefault;
             textExtra = {};
@@ -2896,13 +2900,20 @@ function toggle9HoleOptions() {
         function textCandidates() {
             let names = whosNames(), list = {};
             Object.keys(names).forEach(k => list[k] = { name: names[k], phone: phoneFor(k) });
+            // a player from the round who isn't on the sign-up list still shows up
+            roundPlayerKeys(textRound).forEach(k => { if (!list[k] && savedPlayers[k]) list[k] = { name: savedPlayers[k].name, phone: phoneFor(k) }; });
             Object.entries(textExtra).forEach(([k, v]) => list[k] = v);
             return Object.entries(list).sort((a, b) => !!b[1].phone - !!a[1].phone || sortByLast([a[0], a[1].name], [b[0], b[1].name]));
+        }
+        // The players in a round, as saved-player keys
+        function roundPlayerKeys(rData) {
+            return (rData?.groups || []).flatMap(g => g.players).filter(p => !p.isGhost && p.name).map(p => canonicalKey(p.name.trim().toLowerCase()));
         }
         function setTextWho(w) {
             textWho = w;
             let inKeys = Object.entries(signup?.responses || {}).filter(([, r]) => r.status === 'in').map(([k]) => k);
-            textPicked = new Set(textCandidates().filter(([k, v]) => v.phone && (w !== 'in' || inKeys.includes(k))).map(([k]) => k));
+            let roundKeys = roundPlayerKeys(textRound);
+            textPicked = new Set(textCandidates().filter(([k, v]) => v.phone && (w === 'in' ? inKeys.includes(k) : w === 'round' ? roundKeys.includes(k) : true)).map(([k]) => k));
             renderGroupText();
         }
         function textPickAll(on) { textPicked = new Set(on ? textCandidates().filter(([, v]) => v.phone).map(([k]) => k) : []); renderGroupText(); }
@@ -6569,9 +6580,10 @@ function hideCartHoleHeader() {
             }).catch(err => console.log(err));
             sendAlert('final', '🏆 Final results are in', `${activeViewRoundData.course?.name || 'JB Golf'} · ${formatRoundDate(activeViewRoundData.date)}`, 'standings', 'final', activeViewRoundData);
 
-            if (hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) openResultsShareModal();
-            else openOurMatchShareModal();
-            document.getElementById('share-modal-title').innerText = "Round finalized · Share results";
+            textRound = activeViewRoundData;
+            let rd = activeViewRoundData, course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
+            let link = shareUrl(rd.ourMatch ? 'match.html' : 'results.html', `round=${encodeURIComponent(rd.roundId || '')}`);
+            openGroupText('round', `🏆 JB Golf final results · ${course} · ${formatRoundDate(rd.date)}\nScores, money and who pays who:\n${link}`, 'Round finalized · text the results');
         }
 
         // Finished rounds live in Firebase (so a lost phone loses nothing) with a copy on this phone for offline viewing
