@@ -568,6 +568,12 @@
         .hist-row { padding: 8px 2px; border-top: 1px solid var(--border-color, rgba(128,128,128,.25)); font-size: 14px; color: var(--text-main); }
         .idx-chip { margin-right: 8px; font-weight: 700; color: var(--text-main); }
         .players-import { display: block; margin: 14px auto 0; }
+        .dupes-box { margin: 10px 0 14px; padding: 12px 14px; border-radius: 14px; background: var(--fill-soft); border-left: 4px solid var(--accent-gold); }
+        .dupes-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 15px; }
+        .dupes-row:first-of-type { border-top: 0; }
+        .dupes-btn { width: auto; min-width: 0; padding: 8px 16px; margin: 0; font-size: 14px; flex-shrink: 0; }
+        .pl-merge-row { margin: 6px 0 4px; }
+        .pl-merge-row select { flex: 1; }
         .older-rounds { margin-top: 8px; }
         .older-rounds summary { cursor: pointer; list-style: none; font-size: 13px; color: var(--text-muted); text-decoration: underline; }
         .older-rounds summary::-webkit-details-marker { display: none; }
@@ -884,6 +890,7 @@
         <h2 class="clean-title">Players</h2>
         <p class="clean-sub">Saved for every round. Tap a player for their stats or to edit. Pick them on the roster by typing their name.</p>
         <p class="clean-sub" id="players-phones"></p>
+        <div id="players-dupes"></div>
         <div id="players-list" class="list-rows"></div>
         <button type="button" class="bar-primary players-add" onclick="openPlayerEditor()">+ Add a player</button>
         <button type="button" class="text-link players-import contacts-btn" style="display:none;" onclick="importContacts()">📇 Add players from contacts</button>
@@ -1211,6 +1218,10 @@
             <input type="number" id="pl-usual" inputmode="numeric" autocomplete="off" placeholder="e.g. 92">
             <datalist id="tee-names"><option value="Black"><option value="Blue"><option value="White"><option value="Gold"><option value="Silver"><option value="Green"><option value="Red"></datalist>
             <button class="btn-primary" onclick="savePlayerEditor()">Save</button>
+            <div id="pl-merge-row" class="pl-merge-row">
+                <label class="field-label" for="pl-merge">Same person as… <span class="payout-note">merge this entry into another player</span></label>
+                <div class="phone-row"><select id="pl-merge"></select><button type="button" class="text-link" onclick="mergeFromEditor()">Merge</button></div>
+            </div>
             <button class="btn-secondary" id="pl-delete" onclick="deletePlayerFromEditor()">Delete player</button>
             <button class="btn-secondary" onclick="document.getElementById('player-modal').classList.remove('active')">Cancel</button>
         </div>
@@ -2103,6 +2114,11 @@ function toggle9HoleOptions() {
                     <span><span class="phone-dot${savedPlayers[r.key].phone ? ' on' : ''}" title="${savedPlayers[r.key].phone ? 'Has a mobile number' : 'No mobile number'}"></span><b>${r.first} ${r.last}</b>${r.nick ? ` <span class="payout-note">"${r.nick}"</span>` : ''}</span>
                     <span class="row-note">${idx(r.key)}${r.tee ? `<span class="tee-dot" style="background:${teeColor(r.tee)};"></span>${r.tee}` : 'No tees set'}</span></button>`).join('');
             document.getElementById('players-list').innerHTML = html || '<p class="clean-sub">No players yet. Add one, or they are added when you build a roster.</p>';
+            let esc = k => k.replace(/'/g, "\\'");
+            let dupes = duplicatePlayers();
+            document.getElementById('players-dupes').innerHTML = dupes.length ? `<div class="dupes-box"><b>Same person twice?</b>
+                ${dupes.map(([f, t]) => `<div class="dupes-row"><span>"${savedPlayers[f].name}" looks like <b>${savedPlayers[t].name}</b></span><button type="button" class="bar-primary dupes-btn" onclick="mergeDuplicate('${esc(f)}','${esc(t)}')">Merge</button></div>`).join('')}
+                <p class="dash-footnote" style="margin:6px 0 0;">From typing a first name on a roster. Merging keeps one player with all their rounds and money.</p></div>` : '';
             let withPhone = rows.filter(r => savedPlayers[r.key].phone).length;
             document.getElementById('players-phones').innerHTML = rows.length ? `<span class="phone-dot on"></span>${withPhone} of ${rows.length} have a mobile number` : '';
             let c = document.getElementById('players-count'); if (c) c.textContent = rows.length ? `${rows.length}` : '';
@@ -2117,6 +2133,9 @@ function toggle9HoleOptions() {
             document.getElementById('pl-phone').value = key ? formatPhone(savedPlayers[key].phone || '') : '';
             document.getElementById('player-modal-title').textContent = key ? savedPlayers[key].name : 'Add a player';
             document.getElementById('pl-delete').style.display = key ? '' : 'none';
+            document.getElementById('pl-merge-row').style.display = key ? '' : 'none';
+            if (key) document.getElementById('pl-merge').innerHTML = '<option value="">Pick a player</option>' + Object.keys(savedPlayers).filter(k => k !== key)
+                .sort((a, b) => savedPlayers[a].name.localeCompare(savedPlayers[b].name)).map(k => `<option value="${k.replace(/"/g, '&quot;')}">${savedPlayers[k].name}</option>`).join('');
             renderPlayerStats(key);
             let byCourse = Object.entries((key && savedPlayers[key].tees) || {}).filter(([k]) => allAvailableCourses[k])
                 .map(([k, t]) => `${allAvailableCourses[k].name.replace(/\s*\(.*\)$/, '')}: <span class="tee-dot" style="background:${teeColor(t)};"></span>${t}`);
@@ -2146,6 +2165,56 @@ function toggle9HoleOptions() {
             if (document.getElementById('step-whos').classList.contains('active')) { whosIn.add(key); renderWhosPlaying(); }
         }
 
+        // Two entries for one person ("Brent" and "Brent Copeland"): keep the full one, bring over what only the
+        // other had (tees, strokes, number), move their past rounds and money onto it, then remove the extra
+        function mergePlayers(fromKey, toKey) {
+            let from = savedPlayers[fromKey], to = savedPlayers[toKey];
+            if (!from || !to || fromKey === toKey) return;
+            let merged = { ...to,
+                tee: to.tee || from.tee || '',
+                tees: { ...(from.tees || {}), ...(to.tees || {}) },
+                strokes: { ...(from.strokes || {}), ...Object.fromEntries(Object.entries(to.strokes || {}).filter(([, v]) => v)) },
+                usual: to.usual ?? from.usual };
+            if (merged.usual === undefined) delete merged.usual;
+            let update = { tee: merged.tee, tees: merged.tees, strokes: merged.strokes, name: to.name };
+            if (merged.usual !== undefined) update.usual = merged.usual;
+            if (!to.phone && from.phone) { merged.phone = from.phone; update.phone = from.phone; }
+            savedPlayers[toKey] = merged;
+            writePlayers({ [toKey]: update });
+            // Past rounds and money
+            let paths = [];
+            Object.entries(roundHistory).forEach(([id, r]) => {
+                ['players', 'money'].forEach(f => {
+                    if (!r[f]?.[fromKey]) return;
+                    if (!r[f][toKey]) { r[f][toKey] = r[f][fromKey]; paths.push(new firebase.firestore.FieldPath('rounds', id, f, toKey), r[f][toKey]); }
+                    delete r[f][fromKey];
+                    paths.push(new firebase.firestore.FieldPath('rounds', id, f, fromKey), firebase.firestore.FieldValue.delete());
+                });
+            });
+            localStorage.setItem('roundHistory', JSON.stringify(roundHistory));
+            if (paths.length) historyRef.update(...paths).catch(err => console.error('Moving rounds failed', err));
+            delete savedPlayers[fromKey];
+            localStorage.setItem('savedPlayers', JSON.stringify(savedPlayers));
+            savedPlayersRef.update(new firebase.firestore.FieldPath('players', fromKey), firebase.firestore.FieldValue.delete()).catch(() => {});
+            forgetPhone(fromKey);
+            renderPlayersList(); renderSavedPlayersList();
+        }
+        // Players screen: first-name-only entries that clearly mean someone already saved
+        function duplicatePlayers() {
+            return Object.keys(savedPlayers).filter(k => !playerInfo(savedPlayers[k]).last).map(k => [k, savedPlayerFor(savedPlayers[k].name)]).filter(([, to]) => to);
+        }
+        function mergeDuplicate(fromKey, toKey) {
+            if (!confirm(`Merge "${savedPlayers[fromKey].name}" into ${savedPlayers[toKey].name}?\n\nTheir rounds, money, tees and number move to ${savedPlayers[toKey].name}, and "${savedPlayers[fromKey].name}" is removed.`)) return;
+            mergePlayers(fromKey, toKey);
+        }
+        function mergeFromEditor() {
+            let to = document.getElementById('pl-merge').value;
+            if (!to || !editingPlayerKey) return;
+            if (!confirm(`Merge ${savedPlayers[editingPlayerKey].name} into ${savedPlayers[to].name}?\n\nTheir rounds, money, tees and number move to ${savedPlayers[to].name}, and ${savedPlayers[editingPlayerKey].name} is removed.`)) return;
+            mergePlayers(editingPlayerKey, to);
+            document.getElementById('player-modal').classList.remove('active');
+        }
+
         function deletePlayerFromEditor() {
             let key = editingPlayerKey;
             if (!key || !confirm(`Delete ${savedPlayers[key]?.name} from your players?`)) return;
@@ -2157,6 +2226,17 @@ function toggle9HoleOptions() {
             renderPlayersList(); renderSavedPlayersList();
         }
 
+        // "John" typed on the roster: the one saved player with that first name or nickname (and a last name)
+        function savedPlayerFor(name) {
+            let n = (name || '').trim().toLowerCase();
+            if (!n || n.includes(' ')) return null;
+            let same = Object.keys(savedPlayers).filter(k => {
+                let i = playerInfo(savedPlayers[k]);
+                return i.last && ((i.first || '').toLowerCase() === n || (i.nick || '').toLowerCase() === n);
+            });
+            return same.length === 1 ? same[0] : null;
+        }
+
         function rememberRosterPlayers(gCount, pCount) {
             let courseKey = document.getElementById('course-selector').value;
             let updates = {};
@@ -2164,6 +2244,8 @@ function toggle9HoleOptions() {
                 for (let p = 1; p <= pCount; p++) {
                     let name = (tempRosterCache[`g${g}-p${p}-name`] || '').trim();
                     if (!name || tempRosterCache[`g${g}-p${p}-ghost`]) continue;
+                    let match = savedPlayerFor(name);
+                    if (match) { name = savedPlayers[match].name; tempRosterCache[`g${g}-p${p}-name`] = name; }
                     let key = name.toLowerCase();
                     let parts = splitName(name);
                     let tee = tempRosterCache[`g${g}-p${p}-tee`] || '';
@@ -2284,7 +2366,7 @@ function toggle9HoleOptions() {
         function canonicalKey(k) {
             if (savedPlayers[k] || k.includes(' ')) return k;
             let same = Object.keys(savedPlayers).filter(sk => (playerInfo(savedPlayers[sk]).first || '').toLowerCase() === k);
-            return same.length === 1 ? same[0] : k;
+            return same.length === 1 ? same[0] : (savedPlayerFor(k) || k);
         }
         function linesFor(map, key) { return Object.entries(map || {}).filter(([k]) => canonicalKey(k) === key).map(([, v]) => v); }
 
