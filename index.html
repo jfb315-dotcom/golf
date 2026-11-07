@@ -1185,14 +1185,14 @@
         <div class="modal-content">
             <h2 id="text-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Send to the group</h2>
             <textarea id="text-body" rows="5" style="width: 100%; box-sizing: border-box; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none; margin-bottom: 10px;"></textarea>
-            <button class="btn-primary" onclick="sendToGroupChat()">Send to your group chat</button>
-            <p class="dash-footnote" style="text-align:center; margin-top: 0;">Opens Share: pick Messages, then your golf group text.</p>
-            <details class="text-numbers">
-                <summary><span>Or pick who gets it (new text)</span><span class="fold-hint">Tap to open</span></summary>
+            <button class="btn-primary" id="text-send-picked" onclick="sendGroupText()">💬 Text the players checked below</button>
+            <button class="btn-secondary" onclick="sendToGroupChat()">Send to your own group text</button>
+            <p class="dash-footnote" style="text-align:center; margin-top: 0;">Your own group text: opens Share, pick Messages, then your golf group.</p>
+            <details class="text-numbers" open>
+                <summary><span>Who gets the text</span><span class="fold-hint">Tap to open</span></summary>
                 <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-round" style="display:none;" onclick="setTextWho('round')">This round</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
                 <div id="text-pick" class="text-pick"></div>
                 <p class="clean-sub" id="text-to"></p>
-                <button class="btn-secondary" onclick="sendGroupText()">Open Messages with these</button>
             </details>
             <button class="btn-secondary" onclick="document.getElementById('text-modal').classList.remove('active')">Cancel</button>
         </div>
@@ -2940,6 +2940,7 @@ function toggle9HoleOptions() {
             }).join('');
             let have = groupTextList().filter(x => x.phone);
             document.getElementById('text-to').textContent = have.length ? `${have.length} selected` : 'Nobody selected';
+            document.getElementById('text-send-picked').textContent = have.length ? `💬 Text the ${have.length} player${have.length === 1 ? '' : 's'} checked below` : '💬 Text the players checked below';
         }
         function sendGroupText() {
             let nums = groupTextList().map(x => x.phone.replace(/[^\d+]/g, '')).filter(Boolean);
@@ -3989,10 +3990,23 @@ function processStep2() {
             let link = final ? shareUrl(page, `round=${encodeURIComponent(rd.roundId || '')}${side === 'b' ? '&om=2' : ''}`) : shareUrl(page, `spectator=true${view}`);
             let course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
             let title = `JB Golf · ${final ? 'Final results' : rd.ourMatch && isOurMatchOnly(rd) ? 'Our Match, live' : 'Live leaderboard'} · ${course}`;
+            if (isAdminView()) { textLinkToPlayers(rd, `${title}\n${link}`, final ? 'Share the results' : 'Share the live leaderboard', side); return; }
             if (navigator.share) { shareWithPreview(`${title}\n${link}`, title); return; }
             document.getElementById('share-modal-title').innerText = 'Share results link';
             document.getElementById('share-text-content').value = `${title}\n${link}`;
             document.getElementById('share-modal').classList.add('active');
+        }
+        // The admin shares a link the same way as after finalizing: the text screen, link in the message,
+        // the round's players with numbers checked (for an Our Match link made for one side, just that side)
+        function isAdminView() { return lockedTeamId === null && new URLSearchParams(location.search).get('spectator') !== 'true' && !new URLSearchParams(location.search).get('round'); }
+        function textLinkToPlayers(rd, body, title, side) {
+            textRound = rd;
+            openGroupText('round', body, title);
+            if (side && rd.ourMatch) {
+                let keys = ourMatchSides(rd.ourMatch)[side === 'b' ? 1 : 0].map(cp => rd.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p)).filter(Boolean).map(p => canonicalKey(p.name.trim().toLowerCase()));
+                textPicked = new Set(textCandidates().filter(([k, v]) => v.phone && keys.includes(k)).map(([k]) => k));
+                renderGroupText();
+            }
         }
         function shareSpectatorLink(side) {
             // Our Match only: the people following along are there for the match, so it's on their page, from their side
@@ -4000,6 +4014,7 @@ function processStep2() {
             if (om && !side) { askOurMatchView(roundData, shareSpectatorLink); return; }
             const spectatorLink = om ? shareUrl('match.html', `spectator=true&om=${side === 'b' ? 2 : 1}`) : shareUrl('live.html', 'spectator=true');
             let st = `JB Golf · ${om ? 'Big Money Match, live' : 'Live leaderboard'} (watch only)\nTap to follow along. Want alerts${om ? ' (birdies, presses, final)' : ' (birdies, skins)'}? In Safari tap Share › Add to Home Screen, then open JB Golf from your Home Screen and tap Turn on alerts.\n${spectatorLink}`;
+            if (isAdminView()) { textLinkToPlayers(roundData, st, 'Share the live leaderboard', om ? side : null); return; }
             if (navigator.share) { shareWithPreview(st, om ? 'JB Golf · Big Money Match' : 'JB Golf · Live leaderboard'); return; }
 
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
