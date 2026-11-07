@@ -598,7 +598,7 @@
         html.revamp .rv-bar-side { width: 64px; height: 54px; border: 0; border-radius: 16px; background: var(--fill-strong); color: var(--text-main); font-size: 22px; font-weight: 800; }
         html.revamp .rv-bar-side:disabled { opacity: .35; }
         html.revamp body:has(.hole-list-row) .rv-bar { display: none; }
-        html.revamp #step-3 #admin-share-btn-container, html.revamp #step-3 #cart-share-row, html.revamp #step-3 > .btn-success, html.revamp #undo-score, html.revamp .key-nav, html.revamp .hole-watermark { display: none !important; }
+        html.revamp #step-3 #admin-share-btn-container, html.revamp #step-3 #cart-share-row, html.revamp #step-3 > .btn-success, html.revamp #undo-score, html.revamp #step-3:not(.cart-hole-view) .key-nav, html.revamp .hole-watermark { display: none !important; }
         html.revamp .rv-avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; color: #fff; font-size: 13px; font-weight: 800; margin-right: 10px; }
         html.revamp .team-card { border-radius: 20px; padding: 8px 10px; background: var(--bg-card); border: 1px solid var(--line); }
         html.revamp .score-row { display: flex; align-items: center; padding: 8px 10px; border-radius: 14px; margin: 2px 0; }
@@ -619,6 +619,20 @@
         .rv-menu-grid button i { font-style: normal; font-size: 20px; }
         .rv-menu-row { display: block; width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 600; text-align: left; }
         .rv-finalize { display: block; width: 100%; height: 52px; margin-bottom: 10px; border: 0; border-radius: 16px; background: rgba(255,107,94,.16); color: #ff8f84; font-size: 16px; font-weight: 800; }
+        /* Test copy, cart entering a hole: everything on one screen like the old look (no bottom bar, sizes follow the screen) */
+        html.revamp body:has(#step-3.cart-hole-view) .rv-bar { display: none !important; }
+        html.revamp body:has(#step-3.cart-hole-view) { padding-bottom: 0; }
+        html.revamp #step-3.cart-hole-view .score-row { padding: clamp(2px, .6vh, 8px) 8px; margin: 0; }
+        html.revamp #step-3.cart-hole-view .rv-avatar { width: clamp(28px, 4.4vh, 36px); height: clamp(28px, 4.4vh, 36px); font-size: 12px; }
+        html.revamp #step-3.cart-hole-view .score-circle { width: clamp(40px, 6vh, 48px) !important; height: clamp(40px, 6vh, 48px) !important; font-size: clamp(20px, 3.1vh, 24px) !important; }
+        html.revamp #step-3.cart-hole-view .score-keypad { gap: 6px; margin-top: 8px; }
+        html.revamp #step-3.cart-hole-view .score-keypad button { height: clamp(40px, 6.2vh, 52px); font-size: clamp(19px, 2.9vh, 22px); }
+        html.revamp #step-3.cart-hole-view .team-card { padding: 4px 8px; }
+        html.revamp .key-nav { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; }
+        html.revamp .key-nav:not(.with-undo) { grid-template-columns: 1fr 1fr; }
+        html.revamp .key-nav button { background: var(--fill-strong); font-size: 15px !important; }
+        html.revamp .key-nav .key-undo { font-size: 20px !important; }
+        html.revamp .key-nav button:disabled { opacity: .35; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -2629,7 +2643,7 @@ function toggle9HoleOptions() {
             el.textContent = c.length === 1 ? `↶ Undo ${who(c[0])}'s ${c[0].to || 'clear'} on hole ${last.hole}` : `↶ Undo the last ${c.length} scores on hole ${last.hole}`;
             el.style.display = '';
         }
-        function renderRvUndo() { let b = document.getElementById('rv-undo'); if (b) b.disabled = !scoreUndo.length; }
+        function renderRvUndo() { ['rv-undo', 'key-undo'].forEach(id => { let b = document.getElementById(id); if (b) b.disabled = !scoreUndo.length; }); }
         function undoLastScore() {
             let last = scoreUndo.pop();
             if (!last) return;
@@ -4626,7 +4640,8 @@ function hideCartHoleHeader() {
             if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
                 let seq = getHoleSequence(), i = seq.indexOf(roundData.currentHole);
                 let prev = seq[i - 1], next = seq[i + 1];
-                nav = `<div class="key-nav"><button type="button" onclick="changeHole(-1)"${prev ? '' : ' disabled'}>‹ ${prev ? 'Hole ' + prev : ''}</button><button type="button" onclick="changeHole(1)"${next ? '' : ' disabled'}>${next ? 'Hole ' + next : ''} ›</button></div>`;
+                let undo = BETA ? `<button type="button" class="key-undo" id="key-undo" onclick="undoLastScore()"${scoreUndo.length ? '' : ' disabled'} aria-label="Undo last score">↶</button>` : '';
+                nav = `<div class="key-nav${BETA ? ' with-undo' : ''}"><button type="button" onclick="changeHole(-1)"${prev ? '' : ' disabled'}>‹ ${prev ? 'Hole ' + prev : ''}</button>${undo}<button type="button" onclick="changeHole(1)"${next ? '' : ' disabled'}>${next ? 'Hole ' + next : ''} ›</button></div>`;
             }
             return `<div class="score-keypad">${keys}
                 <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>${nav}
