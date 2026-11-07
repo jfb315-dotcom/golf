@@ -586,6 +586,39 @@
         body.cart-phone #share-text-btn { display: none !important; }
         .undo-score { display: block; margin: 10px auto 0; font-size: 15px; }
         .row-note { margin-left: auto; margin-right: 8px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
+        /* ===== Test copy: banner and the new scoring look (html.revamp) ===== */
+        .beta-banner { display: none; }
+        html.revamp .beta-banner { display: flex; position: sticky; top: 0; z-index: 60; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 14px; background: #ff8a1f; color: #1a0d02; font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+        html.revamp .beta-banner button { background: #1a0d02; color: #ffd9b0; border: 0; border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 12px; }
+        .rv-bar, .rv-avatar { display: none; }
+        html.revamp body { padding-bottom: 96px; }
+        html.revamp #step-3.active ~ .rv-bar, html.revamp body:has(#step-3.active) .rv-bar { display: flex; }
+        html.revamp .rv-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; gap: 10px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(13,33,26,0), var(--bg-dark) 35%); }
+        html.revamp .rv-bar-main { flex: 1; height: 54px; border: 0; border-radius: 16px; background: var(--accent-gold); color: var(--on-accent); font-size: 17px; font-weight: 800; }
+        html.revamp .rv-bar-side { width: 64px; height: 54px; border: 0; border-radius: 16px; background: var(--fill-strong); color: var(--text-main); font-size: 22px; font-weight: 800; }
+        html.revamp .rv-bar-side:disabled { opacity: .35; }
+        html.revamp body:has(.hole-list-row) .rv-bar { display: none; }
+        html.revamp #step-3 #admin-share-btn-container, html.revamp #step-3 #cart-share-row, html.revamp #step-3 > .btn-success, html.revamp #undo-score, html.revamp .key-nav, html.revamp .hole-watermark { display: none !important; }
+        html.revamp .rv-avatar { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 50%; flex-shrink: 0; color: #fff; font-size: 13px; font-weight: 800; margin-right: 10px; }
+        html.revamp .team-card { border-radius: 20px; padding: 8px 10px; background: var(--bg-card); border: 1px solid var(--line); }
+        html.revamp .score-row { display: flex; align-items: center; padding: 8px 10px; border-radius: 14px; margin: 2px 0; }
+        html.revamp .score-row .player-name { font-size: 17px; font-weight: 700; }
+        html.revamp .score-row.active { background: rgba(255,138,31,.10); box-shadow: inset 0 0 0 2px var(--accent-gold); }
+        html.revamp .score-row .par-indicator { margin-left: auto; margin-right: 10px; font-size: 12px; }
+        html.revamp .score-circle { width: 48px !important; height: 48px !important; border-radius: 14px !important; font-size: 24px !important; font-weight: 900 !important; background: var(--bg-dark) !important; border: 2px solid transparent !important; }
+        html.revamp .score-keypad { display: grid !important; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
+        html.revamp .score-keypad button { height: 54px; border-radius: 15px; border: 0; background: var(--fill-strong); color: var(--text-main); font-size: 22px; font-weight: 800; }
+        html.revamp .score-keypad button.par-key { background: rgba(255,138,31,.16); color: #ffb15e; box-shadow: inset 0 0 0 2px var(--accent-gold); }
+        html.revamp .score-keypad .key-clear { grid-column: span 2; font-size: 15px; color: var(--text-muted); }
+        html.revamp .hole-strip .strip-hole { border-radius: 11px; }
+        html.revamp .rv-om-line { margin-top: 10px; padding: 12px 14px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--line); font-weight: 700; }
+        html.revamp .rv-sheet { position: fixed; left: 0; right: 0; bottom: 0; top: auto; margin: 0; width: auto !important; max-width: none !important; box-sizing: border-box; transform: none !important; border-radius: 26px 26px 0 0; padding: 10px 18px calc(24px + env(safe-area-inset-bottom)); }
+        .rv-grab { width: 40px; height: 5px; border-radius: 3px; background: var(--fill-strong); margin: 0 auto 14px; }
+        .rv-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
+        .rv-menu-grid button { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; height: 84px; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 800; text-align: left; }
+        .rv-menu-grid button i { font-style: normal; font-size: 20px; }
+        .rv-menu-row { display: block; width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 600; text-align: left; }
+        .rv-finalize { display: block; width: 100%; height: 52px; margin-bottom: 10px; border: 0; border-radius: 16px; background: rgba(255,107,94,.16); color: #ff8f84; font-size: 16px; font-weight: 800; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -637,6 +670,8 @@
         <button type="button" aria-label="Dismiss" onclick="dismissSafariBanner()">✕</button>
     </div>
     <img src="logo.png" class="app-logo" alt="JB Golf">
+
+    <div class="beta-banner"><span>🧪 TEST COPY · rounds here don't count</span><button type="button" onclick="leaveBeta()">Leave</button></div>
 
     <div id="step-home" class="screen clean active">
         <div class="clean-eyebrow">JB Golf</div>
@@ -1121,6 +1156,29 @@
         </div>
     </div>
 
+    <div class="rv-bar" id="rv-bar">
+        <button type="button" class="rv-bar-side" id="rv-undo" onclick="undoLastScore()" aria-label="Undo last score">↶</button>
+        <button type="button" class="rv-bar-main" onclick="changeHole(1)">Next hole ›</button>
+        <button type="button" class="rv-bar-side" id="rv-menu-btn" onclick="openRoundMenu()" aria-label="Round menu">☰</button>
+    </div>
+    <div id="rv-menu" class="modal-overlay">
+        <div class="modal-content rv-sheet">
+            <div class="rv-grab"></div>
+            <h2 style="margin: 0 0 12px; color: var(--text-main);">Round menu</h2>
+            <div class="rv-menu-grid">
+                <button type="button" onclick="roundMenu(viewDashboard)"><i>🏆</i>Standings</button>
+                <button type="button" class="rv-admin" onclick="roundMenu(openShareHub)"><i>📣</i>Share &amp; message</button>
+                <button type="button" class="rv-admin" onclick="roundMenu(() => { viewDashboard(); openLiveSideBet(); })"><i>🤝</i>Add side bet</button>
+                <button type="button" class="rv-admin" onclick="roundMenu(editMidRound)"><i>✏️</i>Edit setup</button>
+                <button type="button" class="rv-cart" onclick="roundMenu(showCartHoleList)"><i>📋</i>All holes</button>
+                <button type="button" class="rv-cart" onclick="roundMenu(shareSpectatorLink)"><i>📣</i>Share leaderboard</button>
+            </div>
+            <button type="button" class="rv-menu-row rv-admin" onclick="roundMenu(showHome)">Home · players, money, past rounds</button>
+            <button type="button" class="rv-finalize rv-admin" onclick="roundMenu(validateAndFinalize)">Finalize round</button>
+            <button type="button" class="btn-secondary" onclick="document.getElementById('rv-menu').classList.remove('active')">Close</button>
+        </div>
+    </div>
+
     <div id="share-hub-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Share &amp; message</h2>
@@ -1389,6 +1447,31 @@
 
     <script>
         // ==========================================
+        // TEST COPY: ?beta=1 turns it on for this phone, ?beta=0 turns it off. It has the new look and keeps its
+        // rounds, history, money, sign-ups and phone storage apart from the real app (players and courses are shared).
+        // Alerts are off so nobody gets a test round's alerts.
+        // ==========================================
+        const BETA = (() => {
+            let q = new URLSearchParams(location.search).get('beta');
+            try {
+                if (q === '1') localStorage.setItem('jbBeta', '1');
+                if (q === '0') localStorage.removeItem('jbBeta');
+                return localStorage.getItem('jbBeta') === '1';
+            } catch (e) { return q === '1'; }
+        })();
+        if (BETA) {
+            // Everything this copy saves on the phone gets its own "beta:" name, so test rounds never mix with real ones
+            let get = Storage.prototype.getItem, set = Storage.prototype.setItem, del = Storage.prototype.removeItem;
+            let name = (st, k) => st === window.localStorage && k !== 'jbBeta' ? 'beta:' + k : k;
+            Storage.prototype.getItem = function (k) { return get.call(this, name(this, k)); };
+            Storage.prototype.setItem = function (k, v) { return set.call(this, name(this, k), v); };
+            Storage.prototype.removeItem = function (k) { return del.call(this, name(this, k)); };
+            document.documentElement.classList.add('revamp');
+        }
+        const docName = id => (BETA ? 'beta_' : '') + id;
+        function leaveBeta() { location.href = location.pathname + '?beta=0'; }
+
+        // ==========================================
         // THEMES & POPUPS
         // ==========================================
         // Each theme sets every colour variable; "mode" picks light/dark-specific team colours
@@ -1413,6 +1496,11 @@
                 'bg-table': '#181818', 'border-color': '#3a3a3a', 'on-accent': '#121212',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.15)', 'line': 'rgba(255,255,255,0.10)',
                 'good': '#7ced7e', 'bad': '#ff6b6b', 'band-bg': '#1e1e1e', 'band-text': '#ffffff', 'band-accent': '#ff8200', 'head-bg': '#000000' } },
+            fairway: { mode: 'dark', name: 'Fairway (test copy)', vars: {
+                'bg-dark': '#0d211a', 'bg-card': '#14332a', 'text-main': '#f4efe3', 'text-muted': '#9fb5aa', 'accent-gold': '#ff8a1f',
+                'bg-table': '#10291f', 'border-color': '#24493d', 'on-accent': '#1a0d02',
+                'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.07)', 'fill-strong': 'rgba(255,255,255,0.14)', 'line': 'rgba(255,255,255,0.08)',
+                'good': '#57d38c', 'bad': '#ff6b5e', 'band-bg': '#14332a', 'band-text': '#f4efe3', 'band-accent': '#ff8a1f', 'head-bg': '#081712' } },
             clubhouse: { mode: 'light', name: 'Clubhouse', vars: {
                 'bg-dark': '#f7f6f1', 'bg-card': '#ffffff', 'text-main': '#1d2a22', 'text-muted': '#5b6660', 'accent-gold': '#1f4d33',
                 'bg-table': '#ffffff', 'border-color': '#d6d2c6', 'on-accent': '#ffffff',
@@ -1438,6 +1526,7 @@
         function changeTheme(themeKey = null, fromRound = false) {
             let key = themeKey || document.getElementById('app-theme-selector').value; 
             if (!appThemes[key]) key = 'coastal'; // older saved themes were retired
+            if (BETA) key = 'fairway'; // the test copy always has the new look
             let t = appThemes[key];
             if(t) {
                 Object.entries(t.vars).forEach(([name, value]) => document.documentElement.style.setProperty(`--${name}`, value));
@@ -1509,15 +1598,15 @@ const auth = firebase.auth ? firebase.auth() : null;
 const adminPrivateRef = db.collection("tournaments").doc("admin_private"); // { pin, phones: { playerKey: number } } — only the organizer can read it
 
 // Phone alerts go through the Cloudflare Worker in cloudflare/alerts-worker.js. Left blank, alerts are off.
-const ALERTS_URL = 'https://jbgolf-alerts.jfb315.workers.dev/';
+const ALERTS_URL = BETA ? '' : 'https://jbgolf-alerts.jfb315.workers.dev/';
 const ALERTS_PUBLIC_KEY = 'BJVjffPKtgDolmCvKbTo5jVnxnVh1Da0HylhVjm33N2Ckjoo5hZl0RbNhHF6WlZwDKTV7OdQtbCGJtdeAZeDxik';
 const ALERT_TYPES = ['birdies', 'doubles', 'skins', 'leadChange', 'turn', 'scoreChanged', 'cartDone', 'allDone', 'final', 'presses', 'matchOver', 'missedHole', 'behind'];
-const activeTournamentRef = db.collection("tournaments").doc("active_round");
+const activeTournamentRef = db.collection("tournaments").doc(docName("active_round"));
 const savedPlayersRef = db.collection("tournaments").doc("saved_players");
-const historyRef = db.collection("tournaments").doc("player_history");
-const ledgerRef = db.collection("tournaments").doc("ledger"); // { settledAt }
-const archiveIndexRef = db.collection("tournaments").doc("archive_index"); // { rounds: { id: { date, course, at } } }
-const archiveDocRef = id => db.collection("tournaments").doc("archive_" + id); // one finished round each
+const historyRef = db.collection("tournaments").doc(docName("player_history"));
+const ledgerRef = db.collection("tournaments").doc(docName("ledger")); // { settledAt }
+const archiveIndexRef = db.collection("tournaments").doc(docName("archive_index")); // { rounds: { id: { date, course, at } } }
+const archiveDocRef = id => db.collection("tournaments").doc(docName("archive_" + id)); // one finished round each
 const courseTeesRef = db.collection("tournaments").doc("course_tees");
 
 db.enablePersistence().catch(err => { 
@@ -2511,7 +2600,7 @@ function toggle9HoleOptions() {
         }
 
         // ===== Sign-up link: "Are you in?" =====
-        const signupRef = db.collection("tournaments").doc("signup"); // { date, time, course, courseKey, note, theme, responses: { key: { name, status, at } } }
+        const signupRef = db.collection("tournaments").doc(docName("signup")); // { date, time, course, courseKey, note, theme, responses: { key: { name, status, at } } }
         let signup = null;
         function loadSignup(then) {
             signupRef.get().then(doc => { signup = doc.exists ? doc.data() : null; renderSignupSummary(); if (then) then(); }).catch(() => {});
@@ -2533,12 +2622,14 @@ function toggle9HoleOptions() {
             let el = document.getElementById('undo-score');
             if (!el) return;
             let last = scoreUndo[scoreUndo.length - 1];
+            renderRvUndo();
             if (!last) { el.style.display = 'none'; return; }
             let who = c => firstName(roundData.groups.find(g => g.id == c.g)?.players.find(p => p.id == c.p)?.name || 'Player');
             let c = last.changes;
             el.textContent = c.length === 1 ? `↶ Undo ${who(c[0])}'s ${c[0].to || 'clear'} on hole ${last.hole}` : `↶ Undo the last ${c.length} scores on hole ${last.hole}`;
             el.style.display = '';
         }
+        function renderRvUndo() { let b = document.getElementById('rv-undo'); if (b) b.disabled = !scoreUndo.length; }
         function undoLastScore() {
             let last = scoreUndo.pop();
             if (!last) return;
@@ -2548,6 +2639,15 @@ function toggle9HoleOptions() {
             renderScoreEntry();
             renderUndoScore();
         }
+
+        // Test copy: the round menu that slides up from the bottom bar (admin and cart versions)
+        function openRoundMenu() {
+            let cart = lockedTeamId !== null;
+            document.querySelectorAll('#rv-menu .rv-admin').forEach(b => b.style.display = cart ? 'none' : '');
+            document.querySelectorAll('#rv-menu .rv-cart').forEach(b => b.style.display = cart ? '' : 'none');
+            document.getElementById('rv-menu').classList.add('active');
+        }
+        function roundMenu(fn) { document.getElementById('rv-menu').classList.remove('active'); fn(); }
 
         // Scoring screen: the three ways to send links or messages, behind one row
         function openShareHub() { document.getElementById('share-hub-modal').classList.add('active'); }
@@ -4027,7 +4127,7 @@ function processStep2() {
         // which opens the app with the same details
         function shareUrl(page, query) {
             let dir = location.href.split('#')[0].split('?')[0].replace(/[^/]*$/, '');
-            return `${dir}${page}?${query}`;
+            return `${dir}${page}?${query}${BETA ? '&beta=1' : ''}`;
         }
         // Standings → a link: the final results page once the round is finalized, otherwise the live leaderboard
         // (with Our Match on it when the round has one)
@@ -4446,9 +4546,9 @@ function renderCartHoleHeader(hole, par) {
 function renderAdminHoleStrip() {
     let el = document.getElementById('admin-hole-strip');
     if (!el) return;
-    if (!isOurMatchOnly(roundData) || currentTeamFilter !== "ALL" || lockedTeamId !== null) { el.style.display = 'none'; el.innerHTML = ''; return; }
+    if ((!isOurMatchOnly(roundData) && !BETA) || currentTeamFilter !== "ALL" || lockedTeamId !== null) { el.style.display = 'none'; el.innerHTML = ''; return; }
     let hole = roundData.currentHole;
-    let seats = ourMatchSides(roundData.ourMatch).flat();
+    let seats = isOurMatchOnly(roundData) ? ourMatchSides(roundData.ourMatch).flat() : allRealPlayers();
     el.innerHTML = getHoleSequence().map(h => {
         let done = seats.every(cp => scoresDb[cp.g]?.[cp.p]?.[h]);
         let cls = h === hole ? ' current' : (done ? ' done' : '');
@@ -4497,6 +4597,7 @@ function hideCartHoleHeader() {
             }
             html += `</div>`;
             html += renderScoreKeypad(par);
+            if (BETA && roundData.ourMatch && canSeeOurMatch(roundData)) html += `<div class="rv-om-line">${ourMatchSummaryLine(roundData, scoresDb, matchPresses)}</div>`;
             return html;
         }
 
@@ -4508,7 +4609,8 @@ function hideCartHoleHeader() {
             let circleClass = player.isGhost ? 'score-circle ghost-input' : 'score-circle score-input-field';
             if (currentScore && currentScore < par) circleClass += ' under';
             let inputId = `score-input-${group.id}-${player.id}`;
-            return `<label class="score-row${player.isGhost ? ' ghost' : ''}" for="${inputId}">
+            let initials = BETA ? `<span class="rv-avatar" style="background:${teamColor(group)}">${player.name.split(' ')[0].slice(0, 2).toUpperCase()}</span>` : '';
+            return `<label class="score-row${player.isGhost ? ' ghost' : ''}" for="${inputId}">${initials}
                 <span class="player-name">${scoringName(player)}${teeTag(player.tee)}${tagHTML}${dots}</span>
                 <span class="par-indicator" id="par-ind-${group.id}-${player.id}" style="color: ${getParColor(currentScore, par)};">${getParText(currentScore, par)}</span>
                 <input type="tel" readonly inputmode="none" class="${circleClass}" id="${inputId}" value="${currentScore}" ${hasReadonlyLock ? 'disabled' : ''} onfocus="setActiveScoreInput(this)" oninput="handleInputAdvance(this, ${group.id}, ${player.id}, ${hole}, ${par})">
@@ -6215,7 +6317,7 @@ function hideCartHoleHeader() {
         // ==========================================
         // PHONE ALERTS (web push through the Cloudflare Worker)
         // ==========================================
-        const pushSubsRef = db.collection("tournaments").doc("push_subs");
+        const pushSubsRef = db.collection("tournaments").doc(docName("push_subs"));
         let alertsBannerHtml = ''; // what the alerts tag/card shows right now, for screens drawn later
         let pendingAlertView = (location.hash.match(/view=([\w-]+)/) || [])[1] || null;
 
