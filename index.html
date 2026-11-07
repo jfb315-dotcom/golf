@@ -573,6 +573,16 @@
         .side-bet { padding: 6px 0 12px; border-bottom: 1px solid var(--line); }
         .side-bet:last-child { border-bottom: 0; }
         .side-bet .side-bet-settle { display: block; margin: 6px 0 4px; color: var(--accent-gold); font-size: 16px; }
+        .format-row.fmt-off { opacity: .45; }
+        .format-row .fmt-note { font-size: 12px; font-weight: 500; color: var(--text-muted); }
+        .all-games { margin-top: 10px; padding: 14px 12px; border-radius: 14px; background: var(--fill-soft); border-left: 4px solid var(--accent-gold); }
+        .all-games .settle-row b:first-child { color: var(--text-main); }
+        .all-games-totals { margin-top: 10px; border-top: 1px solid var(--line); }
+        .all-games-row { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: 8px 0; border-bottom: 1px solid var(--line); }
+        .all-games-row span { display: flex; flex-direction: column; }
+        .all-games-row small { font-size: 12px; color: var(--text-muted); }
+        .all-games-row .pos { color: var(--good); }
+        .all-games-row .neg { color: #f85149; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -683,7 +693,7 @@
                 <div class="field-label">Players / team</div>
                 <div class="stepper">
                     <button type="button" aria-label="Fewer players" onclick="stepNumber('players-per-group', -1)">−</button>
-                    <input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric" aria-label="Players per team" onfocus="this.select()" onclick="this.select()">
+                    <input type="number" id="players-per-group" min="1" max="4" value="4" inputmode="numeric" onchange="calculateLiveBuyIn()" aria-label="Players per team" onfocus="this.select()" onclick="this.select()">
                     <button type="button" aria-label="More players" onclick="stepNumber('players-per-group', 1)">+</button>
                 </div>
             </div>
@@ -888,6 +898,7 @@
         <h2 class="clean-title" id="dashboard-title">Standings</h2>
         <p class="clean-sub round-where" id="dashboard-sub"></p>
         <div class="alerts-banner" style="display:none;"></div>
+        <div id="dashboard-all-games"></div>
         <div id="dashboard-cart-progress"></div>
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts"></div>
@@ -1283,6 +1294,7 @@
         <div class="clean-eyebrow" id="archived-eyebrow">Past round</div>
         <h2 class="clean-title">Results</h2>
         <p class="clean-sub" id="archived-sub"></p>
+        <div id="archived-all-games"></div>
         <div id="archived-card-container"></div>
         <div id="archived-payout-summary-container"></div>
         <div id="archived-our-match-container"></div>
@@ -1433,7 +1445,23 @@
         // ==========================================
         // FIREBASE & STATE
         // ==========================================
+        // 3-Ball needs 3 players a team (2-Ball needs 2): bigger formats are greyed out and unchecked
+        function syncFormatsToTeamSize() {
+            let perTeam = parseInt(document.getElementById('players-per-group').value) || 4;
+            [1, 2, 3].forEach(f => {
+                let box = document.getElementById(`fmt-${f}`), row = box.closest('.format-row');
+                let off = f > perTeam;
+                if (off && box.checked) box.checked = false;
+                box.disabled = off;
+                row.classList.toggle('fmt-off', off);
+                let note = row.querySelector('.fmt-note');
+                if (off && !note) row.querySelector('.format-label').insertAdjacentHTML('beforeend', `<span class="fmt-note">needs ${f} a team</span>`);
+                if (!off && note) note.remove();
+            });
+        }
+
         function calculateLiveBuyIn() {
+            syncFormatsToTeamSize();
             let mode = document.getElementById('hole-format').value; 
             let nineType = document.getElementById('nine-hole-type').value || 'nassau';
             let segments = (mode === '9' && nineType === 'straight') ? 1 : 3; 
@@ -3620,7 +3648,7 @@ function processStep2() {
             roundData.birdieRules = {}; 
             
             [1, 2, 3].forEach(f => { 
-                if(document.getElementById(`fmt-${f}`).checked) { 
+                if(document.getElementById(`fmt-${f}`).checked && f <= (parseInt(document.getElementById('players-per-group').value) || 4)) { 
                     roundData.formats.push(f); 
                     roundData.birdieRules[f] = document.getElementById(`fmt-${f}-birdies`).checked; 
                 } 
@@ -4804,7 +4832,7 @@ function hideCartHoleHeader() {
             
             let orderedSegments = getOrderedSegments(roundData); 
             let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
-            let totalBets = roundData.formats.length * betsPerFormat; 
+            let totalBets = playableFormats(roundData).length * betsPerFormat; 
             
             let rulesHTML = '';
             if (!isOurMatchOnly(roundData)) roundData.formats.forEach(f => {
@@ -4849,6 +4877,9 @@ function hideCartHoleHeader() {
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
+            let agEl = document.getElementById('dashboard-all-games');
+            agEl.innerHTML = allGamesHTML(roundData, scoresDb, matchPresses, canSeeOurMatch(roundData));
+            dash.insertBefore(agEl, dash.querySelector('.alerts-banner').nextSibling);
             let sbEl = document.getElementById('dashboard-side-bets');
             sbEl.innerHTML = sideBetsHTML(roundData, scoresDb, 'live-', !spectator && lockedTeamId === null && !showingFinalResults && liveRoundInCloud);
             dash.insertBefore(sbEl, omEl.nextSibling);
@@ -5259,12 +5290,16 @@ function hideCartHoleHeader() {
 
         // Every payout in one place: skins by hole, each team bet's result, and each real player's
         // paid / won / net, all in cents. Skins use gross scores; team bets use net scores.
+        // Formats at least one team can play: 3-Ball needs a team of 3 (counting a blind draw)
+        function playableFormats(rData) { return (rData.formats || []).filter(f => (rData.groups || []).some(g => g.players.length >= f)); }
+
         function calculatePayouts(rData, sDb) {
+            let formats = playableFormats(rData);
             let realPlayers = [];
             rData.groups.forEach(g => g.players.forEach(p => { if (!p.isGhost) realPlayers.push({ key: `${g.id}-${p.id}`, gid: g.id, name: p.name, color: teamColor(g) }); }));
             let totalPlayers = realPlayers.length;
             let orderedSegments = getOrderedSegments(rData);
-            let totalBets = rData.formats.length * (orderedSegments.length > 1 ? 3 : 1);
+            let totalBets = formats.length * (orderedSegments.length > 1 ? 3 : 1);
 
             // Gross skins: lowest score under par, outright
             let skins = [];
@@ -5306,7 +5341,7 @@ function hideCartHoleHeader() {
                 }
                 bets.push(bet);
             };
-            rData.formats.forEach(f => {
+            formats.forEach(f => {
                 orderedSegments.forEach(seg => settleBet(f, seg.label.replace(/\s*\(.*\)/, ''), rData.groups.map(g => ({ id: g.id, ...teamSegNet(g, f, seg) }))));
                 if (orderedSegments.length > 1) {
                     settleBet(f, 'Total', rData.groups.map(g => {
@@ -5917,15 +5952,43 @@ function hideCartHoleHeader() {
             return html + `</section>`;
         }
         // Team bets and Our Match netted into the fewest payments (skins come out of the cash pot)
-        function settleUpHTML(rData, sDb, pay, presses) {
-            let nets = {}, first = n => n.split(' ')[0];
-            pay.players.forEach(p => nets[p.name] = (nets[p.name] || 0) + p.teamCents - pay.teamEntryCents);
-            let m = rData.ourMatch ? calculateOurMatch(rData, sDb, presses || {}) : null;
-            if (m) m.sides.forEach((side, i) => side.forEach(x => nets[x.player.name] = (nets[x.player.name] || 0) + (i === 0 ? 1 : -1) * m.totalMoney * 100));
+        // Every money game in the round, per player (cents): team bets net of the team entry, Our Match, side bets.
+        // Skins aren't in it: they're paid in cash from the pot.
+        function roundSettleUp(rData, sDb, presses, withMatch = true) {
+            let nets = {}, parts = {}, games = [];
+            let add = (name, part, cents) => { nets[name] = (nets[name] || 0) + cents; (parts[name] = parts[name] || {})[part] = (parts[name][part] || 0) + cents; };
+            let pay = hasTournamentMoney(rData) ? calculatePayouts(rData, sDb) : null;
+            if (pay && pay.teamEntryCents) { games.push('team bets'); pay.players.forEach(p => add(p.name, 'team bets', p.teamCents - pay.teamEntryCents)); }
+            let m = rData.ourMatch && withMatch ? calculateOurMatch(rData, sDb, presses || {}) : null;
+            if (m) { games.push('Our Match'); m.sides.forEach((side, i) => side.forEach(x => add(x.player.name, 'Our Match', (i === 0 ? 1 : -1) * m.totalMoney * 100))); }
+            let sbs = (rData.sideBets || []).map(b => calculateSideBet(rData, sDb, b)).filter(Boolean);
+            if (sbs.length) { games.push('side bets'); sbs.forEach(sb => sb.sides.forEach((side, i) => side.forEach(x => add(x.player.name, 'side bets', (i === 0 ? 1 : -1) * sb.totalMoney * 100)))); }
             let payments = calculateSettlements(Object.entries(nets).map(([name, netCents]) => ({ name, netCents })));
+            let finished = (!m || m.finished) && sbs.every(x => x.finished) && (!pay || getHoleSequenceFor(rData).every(h => rData.groups.every(g => g.players.every(p => p.isGhost || sDb[g.id]?.[p.id]?.[h]))));
+            return { nets, parts, games, payments, pay, finished };
+        }
+        // Top of the standings / results when the round has more than one money game: one who-pays-who for all of it
+        function allGamesHTML(rData, sDb, presses, withMatch = true) {
+            let u = roundSettleUp(rData, sDb, presses, withMatch);
+            if (u.games.length < 2) return '';
+            let first = n => n.split(' ')[0];
+            let money = c => `${c > 0 ? '+' : c < 0 ? '−' : ''}${formatDollars(Math.round(c / 100) * 100)}`;
+            let rows = Object.entries(u.nets).sort((a, b) => b[1] - a[1]);
+            return `<section class="dash-section all-games">
+                <div class="dash-section-title team-head"><span>Who pays who · everything</span><span>${u.finished ? 'Final' : 'So far'}</span></div>
+                <p class="om-grid-rules" style="margin:0 0 8px;">${u.games.join(' + ')}${u.pay?.skins?.length ? ' · skins are paid in cash from the pot' : ''}</p>
+                ${u.payments.length ? u.payments.map(pm => `<div class="payout-row settle-row"><span><b>${first(pm.from)}</b> pays <b>${first(pm.to)}</b></span><b class="payout-amount">${formatDollars(pm.cents)}</b></div>`).join('') : '<p class="clean-sub">All square, nobody owes.</p>'}
+                <div class="all-games-totals">${rows.map(([n, c]) => `<div class="all-games-row"><span><b>${first(n)}</b><small>${Object.entries(u.parts[n]).filter(([, v]) => v).map(([k, v]) => `${k} ${money(v)}`).join(' · ')}</small></span><b class="${c > 0 ? 'pos' : c < 0 ? 'neg' : ''}">${money(c)}</b></div>`).join('')}</div>
+            </section>`;
+        }
+
+        function settleUpHTML(rData, sDb, pay, presses) {
+            let first = n => n.split(' ')[0];
+            let u = roundSettleUp(rData, sDb, presses), nets = u.nets, payments = u.payments;
+            let m = rData.ourMatch ? calculateOurMatch(rData, sDb, presses || {}) : null;
             let totals = Object.entries(nets).sort((a, b) => b[1] - a[1]);
             let skins = skinsByPlayer(pay);
-            return `<div class="payout-header" style="margin-top:4px;">Who pays who${m ? ' · team bets + Our Match' : ' · team bets'}</div>
+            return `<div class="payout-header" style="margin-top:4px;">Who pays who · ${u.games.join(' + ')}</div>
                 <div class="payout-sub">${payments.length ? `These ${payments.length} payment${payments.length === 1 ? '' : 's'} square everyone (if nobody paid the team entry up front). Whole dollars.` : 'Nobody owes anybody.'}</div>
                 ${payments.map(pm => `<div class="payout-row settle-row"><span><b>${first(pm.from)}</b> pays <b>${first(pm.to)}</b></span><b class="payout-amount">${formatDollars(pm.cents)}</b></div>`).join('')}
                 ${skins.length ? `<div class="payout-sub" style="margin-top:6px;">💰 Skins are paid in cash from the pot: ${skins.map(sk => `${first(sk.name)} ${formatCents(sk.cents)}`).join(' · ')}</div>` : ''}
@@ -6803,6 +6866,7 @@ function hideCartHoleHeader() {
                 document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(omv.rData, activeViewScoresDb, omv.presses), omHTML) : omHTML;
                 document.getElementById('archived-more').innerHTML = money ? money.more : '';
                 document.getElementById('archived-side-bets').innerHTML = sideBetsHTML(activeViewRoundData, activeViewScoresDb, 'arc-');
+                document.getElementById('archived-all-games').innerHTML = allGamesHTML(activeViewRoundData, activeViewScoresDb, presses);
                 document.getElementById('archived-sub').textContent = [activeViewRoundData.course?.name, formatRoundDate(activeViewRoundData.date || arc.date)].filter(Boolean).join(' · ');
                 return true;
             } catch (error) { 
