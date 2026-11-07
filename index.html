@@ -583,6 +583,9 @@
         .all-games-row small { font-size: 12px; color: var(--text-muted); }
         .all-games-row .pos { color: var(--good); }
         .all-games-row .neg { color: #f85149; }
+        body.cart-phone #share-text-btn { display: none !important; }
+        .undo-score { display: block; margin: 10px auto 0; font-size: 15px; }
+        .row-note { margin-left: auto; margin-right: 8px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -644,12 +647,11 @@
         </div>
         <button type="button" class="home-new" onclick="showScreen('step-1')">＋ New round <span>Course, bets, teams</span></button>
         <div class="home-tiles">
-            <button type="button" class="home-tile" onclick="whosBack = 'step-home'; openWhosPlaying()"><i>✓</i><b>Who's playing</b><span id="tile-whos">Pick players, make teams</span></button>
-            <button type="button" class="home-tile" onclick="openSignupModal()"><i>📨</i><b>Sign-up link</b><span id="tile-signup">Ask who's in</span></button>
+            <button type="button" class="home-tile" onclick="whosBack = 'step-home'; openWhosPlaying()"><i>✓</i><b>Who's playing</b><span id="tile-whos">Sign-up link, pick players, teams</span></button>
             <button type="button" class="home-tile" onclick="openPlayersScreen()"><i>👥</i><b>Players</b><span id="tile-players">Names, tees, stats</span></button>
             <button type="button" class="home-tile" onclick="openMoneyScreen()"><i>💵</i><b>Money</b><span id="tile-money">Season totals</span></button>
             <button type="button" class="home-tile" id="btn-archive" onclick="viewArchiveList()"><i>🗂️</i><b>Past rounds</b><span>Results &amp; sharing</span></button>
-            <button type="button" class="home-tile" onclick="openTeesEditor()"><i>⛳</i><b>Courses &amp; tees</b><span>Ratings, slopes, add a course</span></button>
+            <button type="button" class="home-tile wide" onclick="openTeesEditor()"><i>⛳</i><b>Courses &amp; tees</b><span>Ratings, slopes, add a course</span></button>
  <button type="button" class="home-tile wide" onclick="showScreen('step-help')"><i>❓</i><b>How it works</b><span>Quick guide: sign-ups, teams, scoring, money</span></button>
             <button type="button" class="home-tile wide" id="tile-alerts-wrap" onclick="openAlertsScreen('step-home')"><i>🔔</i><b>Alerts</b><span id="tile-alerts">Turn on for this phone, pick what gets sent</span></button>
         </div>
@@ -872,6 +874,7 @@
         </div>
 
         <div id="entry-container" style="position: relative; z-index: 10;"></div>
+        <button type="button" class="text-link undo-score" id="undo-score" style="display:none;" onclick="undoLastScore()"></button>
         
         <button type="button" class="btn-success" onclick="viewDashboard()">View standings &amp; scorecards <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
 
@@ -881,9 +884,7 @@
         </div>
         
         <div id="admin-share-btn-container" class="list-rows">
-            <button type="button" class="list-row" id="cart-links-row" onclick="openShareMenu()">Text live links to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
-            <button type="button" class="list-row" id="admin-message-row" onclick="openMessageModal()" style="display:none;">📣 Send a message to carts <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
-            <button type="button" class="list-row" onclick="shareSpectatorLink()">Share spectator leaderboard <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" id="share-hub-row" onclick="openShareHub()">📣 Share &amp; message <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="showHome()">Home · players, money, past rounds <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="editMidRound()">Edit setup / rosters <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row danger-row" onclick="validateAndFinalize()">Finalize / archive round <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
@@ -909,7 +910,7 @@
         <div id="dashboard-changes"></div>
         <div class="dash-actions">
             <button type="button" class="bar-primary" onclick="shareStandingsLink()">Share results link</button>
-            <button type="button" class="text-link" onclick="(hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) ? openResultsShareModal() : openOurMatchShareModal()">Share as text instead</button>
+            <button type="button" class="text-link" id="share-text-btn" onclick="(hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) ? openResultsShareModal() : openOurMatchShareModal()">Share as text instead</button>
             <div id="admin-finalize-container">
                 <button type="button" class="text-link danger-link" onclick="validateAndFinalize()">Finalize &amp; archive round</button>
             </div>
@@ -965,7 +966,7 @@
         <p class="clean-sub">A typical week, top to bottom. Tap a section to open it.</p>
 
         <details class="help" open><summary><div>1 · Ask who's in <span>Sign-up link</span></div><span class="fold-hint">Tap to open</span></summary>
-            <p>From <b>Home</b>, tap <b>Sign-up link</b>. Type your message, like <i>"Golf Thursday?"</i>, pick the date, tee time and course, then <b>Next: send it</b>.</p>
+            <p>From <b>Home</b>, tap <b>Who's playing</b>, then <b>📨 Sign-up link</b>. Type your message, like <i>"Golf Thursday?"</i>, pick the date, tee time and course, then <b>Next: send it</b>.</p>
             <p><b>Send to your group chat</b> opens Share. Pick Messages and your golf group text. Everyone gets your message plus a link with the <b>"Are you in?"</b> picture.</p>
             <p>Tapping the link shows <b>every player with In / Out buttons</b>. Each person taps their own. They can also mark a buddy (it asks first and shows who did it). New people can add their name.</p>
             <p>With alerts on for your phone, you get a notification each time someone answers (<i>"✅ Eddie is in · 7 in, 1 out"</i>). Tap it to open Who's playing. Turn it off under Alerts › Sign-up answers.</p>
@@ -982,7 +983,7 @@
         <details class="help"><summary><div>3 · Start the round <span>New round</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>New round</b> sets the course, holes, bets, skins and Our Match. <b>Next: Rosters</b> shows the teams (or use Who's playing), then <b>Start round</b>.</p>
             <p>Tee times start 10 minutes apart. Change one and the rest follow.</p>
-            <p>On the scoring screen, <b>Text live links to carts</b> sends each cart its own scorecard link. <b>Share spectator leaderboard</b> is a watch-only link for anyone else.</p>
+            <p>On the scoring screen, <b>📣 Share &amp; message</b> has <b>Text live links to carts</b> (each cart's own scorecard link), <b>Share spectator leaderboard</b> (watch only, for anyone else) and <b>Send a message to carts</b>.</p>
             <p>Players who saved JB Golf to their Home Screen keep using that icon. Each new round, it asks <i>"Which cart are you in today?"</i> and they tap theirs. A cart link opened in Safari asks once if they have the app, and shows how to add it if not.</p>
         </details>
 
@@ -1117,6 +1118,18 @@
             <div class="format-row"><label class="format-label" for="sbl-birdies">All birdies count</label><input type="checkbox" class="switch" id="sbl-birdies"></div>
             <button type="button" class="btn-primary" onclick="saveLiveSideBet()">Add side bet</button>
             <button type="button" class="btn-secondary" onclick="document.getElementById('sb-modal').classList.remove('active')">Cancel</button>
+        </div>
+    </div>
+
+    <div id="share-hub-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Share &amp; message</h2>
+            <div class="list-rows">
+                <button type="button" class="list-row" id="cart-links-row" onclick="shareHub(openShareMenu)">Text live links to carts <span class="row-note">each cart's scorecard</span></button>
+                <button type="button" class="list-row" onclick="shareHub(shareSpectatorLink)">Share spectator leaderboard <span class="row-note">watch only</span></button>
+                <button type="button" class="list-row" id="admin-message-row" style="display:none;" onclick="shareHub(openMessageModal)">📣 Send a message to carts <span class="row-note">as an alert</span></button>
+            </div>
+            <button type="button" class="btn-secondary" onclick="document.getElementById('share-hub-modal').classList.remove('active')">Cancel</button>
         </div>
     </div>
 
@@ -2516,6 +2529,30 @@ function toggle9HoleOptions() {
                 : `Sign-up for ${formatRoundDate(signup.date)}<br><span class="payout-note">${r.filter(x => x.status === 'in').length} in · ${r.filter(x => x.status === 'out').length} out</span>`;
             document.getElementById('su-cancel-btn').textContent = signup.cancelled ? '↩︎ Un-cancel' : '✕ Cancel round';
         }
+        function renderUndoScore() {
+            let el = document.getElementById('undo-score');
+            if (!el) return;
+            let last = scoreUndo[scoreUndo.length - 1];
+            if (!last) { el.style.display = 'none'; return; }
+            let who = c => firstName(roundData.groups.find(g => g.id == c.g)?.players.find(p => p.id == c.p)?.name || 'Player');
+            let c = last.changes;
+            el.textContent = c.length === 1 ? `↶ Undo ${who(c[0])}'s ${c[0].to || 'clear'} on hole ${last.hole}` : `↶ Undo the last ${c.length} scores on hole ${last.hole}`;
+            el.style.display = '';
+        }
+        function undoLastScore() {
+            let last = scoreUndo.pop();
+            if (!last) return;
+            last.changes.forEach(c => { if (c.from) scoresDb[c.g][c.p][last.hole] = c.from; else delete scoresDb[c.g][c.p][last.hole]; });
+            undoingScore = true;
+            try { saveScoresToCloud(last.changes.map(c => [c.g, c.p]), last.hole); } finally { undoingScore = false; }
+            renderScoreEntry();
+            renderUndoScore();
+        }
+
+        // Scoring screen: the three ways to send links or messages, behind one row
+        function openShareHub() { document.getElementById('share-hub-modal').classList.add('active'); }
+        function shareHub(fn) { document.getElementById('share-hub-modal').classList.remove('active'); fn(); }
+
         function openSignupModal() {
             let keep = signupIsCurrent() ? signup : null;
             document.getElementById('su-date-in').value = keep?.date || document.getElementById('round-date').value || todayISO();
@@ -2844,8 +2881,7 @@ function toggle9HoleOptions() {
             let n = Object.keys(savedPlayers).length;
             document.getElementById('tile-players').textContent = n ? `${n} saved` : 'Names, tees, stats';
             let r = signupIsCurrent() ? Object.values(signup.responses || {}) : null;
-            document.getElementById('tile-signup').textContent = r ? `${formatRoundDate(signup.date)} · ${r.filter(x => x.status === 'in').length} in` : "Ask who's in";
-            document.getElementById('tile-whos').textContent = r ? `${r.filter(x => x.status === 'in').length} signed up` : 'Pick players, make teams';
+            document.getElementById('tile-whos').textContent = r ? `${formatRoundDate(signup.date)} · ${r.filter(x => x.status === 'in').length} in` : 'Sign-up link, pick players, teams';
         }
         // Whatever round is being looked at (live, last, or from Past rounds)
         function shareViewedResults() {
@@ -3636,6 +3672,7 @@ function processStep2() {
                 scoresDb = {};
                 roundData.roundId = Date.now();
                 clearRoundAlertPhones();
+                scoreUndo = []; renderUndoScore();
             } else {
                 // Keep existing scores when editing setup mid-round (bet amounts, formats, etc. can change safely)
             }
@@ -4553,7 +4590,13 @@ function hideCartHoleHeader() {
         }
 
         // Writes only the given players' score on one hole, so carts scoring at the same time can't overwrite each other
+        // Undo: the scores this phone last changed (one entry per save), newest last
+        let scoreUndo = [], undoingScore = false;
         function saveScoresToCloud(players, hole) {
+            if (!undoingScore) {
+                let changes = players.map(([g, p]) => ({ g, p, from: alertBaseScores?.[g]?.[p]?.[hole] || 0, to: scoresDb[g]?.[p]?.[hole] || 0 })).filter(x => x.from !== x.to);
+                if (changes.length) { scoreUndo.push({ hole, changes }); if (scoreUndo.length > 30) scoreUndo.shift(); }
+            }
             let fieldsAndValues = [];
             players.forEach(([g, p]) => {
                 let score = scoresDb[g]?.[p]?.[hole];
@@ -4585,6 +4628,7 @@ function hideCartHoleHeader() {
             let before = alertBaseScores;
             alertBaseScores = JSON.parse(JSON.stringify(scoresDb));
             try { checkScoreAlerts(players, hole, before, scoresDb); } catch (e) { console.log('alert check failed', e); }
+            renderUndoScore();
             updateOurMatchAlert();
             renderAdminHoleStrip();
         }
@@ -4817,6 +4861,7 @@ function hideCartHoleHeader() {
         function viewDashboard() {
             const urlParams = new URLSearchParams(window.location.search);
             let wasOpen = document.getElementById('step-dashboard').classList.contains('active');
+            document.body.classList.toggle('cart-phone', lockedTeamId !== null); // carts share the link only
             activeViewRoundData = roundData; 
             activeViewScoresDb = scoresDb;
 
@@ -5728,7 +5773,7 @@ function hideCartHoleHeader() {
         function sideBetsHTML(rData, sDb, prefix, canEdit) {
             let bets = (rData.sideBets || []).map(b => calculateSideBet(rData, sDb, b)).filter(Boolean);
             let addBtn = canEdit ? `<button type="button" class="text-link side-bet-add" onclick="openLiveSideBet()">+ Add a side bet</button>` : '';
-            if (!bets.length) return addBtn;
+            if (!bets.length) return canEdit ? `<section class="dash-section side-bets" id="side-bets"><div class="dash-section-title team-head"><span>Side bets</span><span>None yet</span></div>${addBtn}</section>` : '';
             let html = `<section class="dash-section side-bets" id="side-bets"><div class="dash-section-title team-head"><span>Side bets</span><span>${bets.every(b => b.finished) ? 'Final' : 'Live'}</span></div>`;
             bets.forEach((sb, i) => {
                 html += `<div class="side-bet">
