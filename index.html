@@ -634,6 +634,16 @@
         html.revamp .key-nav button { background: var(--fill-strong); font-size: 15px !important; }
         html.revamp .key-nav .key-undo { font-size: 20px !important; }
         html.revamp .key-nav button:disabled { opacity: .35; }
+        .live-progress .lp-team { padding: 10px 12px; margin: 8px 0; border-radius: 14px; background: var(--fill-soft); border-left: 4px solid var(--tc); }
+        .lp-team-head { display: flex; justify-content: space-between; align-items: baseline; font-size: 16px; }
+        .lp-team-head b { color: var(--tc); }
+        .lp-games { display: flex; flex-wrap: wrap; gap: 6px 16px; margin: 4px 0 6px; font-size: 14px; color: var(--text-muted); }
+        .lp-games b { font-size: 17px; margin-left: 4px; }
+        .lp-player { display: grid; grid-template-columns: 1fr 44px 78px 64px; align-items: baseline; gap: 6px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 15px; }
+        .lp-player b { text-align: right; font-size: 16px; }
+        .lp-player small { color: var(--text-muted); font-size: 12px; }
+        .live-progress .lp-thru { text-align: right; font-size: 12px; color: var(--text-muted); }
+        .live-progress .pos { color: var(--good); } .live-progress .neg { color: #f85149; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -5041,7 +5051,7 @@ function hideCartHoleHeader() {
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
             let agEl = document.getElementById('dashboard-all-games');
-            agEl.innerHTML = allGamesHTML(roundData, scoresDb, matchPresses, canSeeOurMatch(roundData));
+            agEl.innerHTML = liveProgressHTML(roundData, scoresDb) + allGamesHTML(roundData, scoresDb, matchPresses, canSeeOurMatch(roundData));
             dash.insertBefore(agEl, dash.querySelector('.alerts-banner').nextSibling);
             let sbEl = document.getElementById('dashboard-side-bets');
             sbEl.innerHTML = sideBetsHTML(roundData, scoresDb, 'live-', !spectator && lockedTeamId === null && !showingFinalResults && liveRoundInCloud);
@@ -6130,11 +6140,48 @@ function hideCartHoleHeader() {
             let finished = (!m || m.finished) && sbs.every(x => x.finished) && (!pay || getHoleSequenceFor(rData).every(h => rData.groups.every(g => g.players.every(p => p.isGhost || sDb[g.id]?.[p.id]?.[h]))));
             return { nets, parts, games, payments, pay, finished };
         }
+        // Standings during play: the match at a glance. Teams (best first) with each team game's score to par and how far
+        // they're through; under each, every player's net score to par (gross beside it) and the hole they're through.
+        function liveProgressHTML(rData, sDb) {
+            let seq = getHoleSequenceFor(rData), par = h => rData.course.pars[h - 1];
+            let real = g => g.players.filter(p => !p.isGhost);
+            let scored = (g, p, h) => sDb[g.id]?.[p.id]?.[h];
+            if (!rData.groups.some(g => g.players.some(p => seq.some(h => scored(g, p, h))))) return '';
+            if (seq.every(h => rData.groups.every(g => real(g).every(p => scored(g, p, h))))) return ''; // round over: the results take the top
+            let toPar = n => n === 0 ? 'E' : n > 0 ? `+${n}` : `${n}`;
+            let cls = n => n < 0 ? 'pos' : n > 0 ? 'neg' : '';
+            // "thru" = the last hole in play order with no gap before it
+            let thruOf = has => { let last = null; for (let h of seq) { if (!has(h)) break; last = h; } return last; };
+            let thruText = t => t === null ? 'not started' : t === seq[seq.length - 1] ? 'F' : `thru ${t}`;
+            let formats = playableFormats(rData).filter(() => !isOurMatchOnly(rData));
+            let teams = rData.groups.map(g => {
+                let tThru = thruOf(h => g.players.every(p => scored(g, p, h)));
+                let done = seq.slice(0, tThru === null ? 0 : seq.indexOf(tThru) + 1);
+                let games = formats.map(f => ({ f, net: done.reduce((a, h) => a + (calculateTeamHoleNet(rData, f, par(h), g.players.map(p => getPlayerNetScore(rData, p, h, scored(g, p, h))), !!rData.birdieRules?.[f]) || 0), 0) }));
+                let players = real(g).map(p => {
+                    let holes = seq.filter(h => scored(g, p, h));
+                    return { p, thru: thruOf(h => scored(g, p, h)), n: holes.length,
+                        net: holes.reduce((a, h) => a + getPlayerNetScore(rData, p, h, scored(g, p, h)) - par(h), 0),
+                        gross: holes.reduce((a, h) => a + scored(g, p, h) - par(h), 0) };
+                }).sort((a, b) => a.net - b.net);
+                return { g, tThru, games, players };
+            }).sort((a, b) => (a.games[0]?.net ?? 0) - (b.games[0]?.net ?? 0));
+            let html = `<section class="dash-section live-progress"><div class="dash-section-title team-head"><span>Live</span><span>net to par</span></div>`;
+            teams.forEach(t => {
+                html += `<div class="lp-team" style="--tc:${teamColor(t.g)}">
+                    <div class="lp-team-head"><b>Team ${t.g.id} · ${firstName(t.g.captain)}</b><span class="lp-thru">${thruText(t.tThru)}</span></div>
+                    ${t.games.length ? `<div class="lp-games">${t.games.map(x => `<span>${x.f}-Ball <b class="${cls(x.net)}">${toPar(x.net)}</b></span>`).join('')}</div>` : ''}
+                    ${t.players.map(x => `<div class="lp-player"><span>${scoringName(x.p)}</span><b class="${cls(x.net)}">${x.n ? toPar(x.net) : '–'}</b><small>${x.n ? `${toPar(x.gross)} gross` : ''}</small><span class="lp-thru">${thruText(x.thru)}</span></div>`).join('')}
+                </div>`;
+            });
+            return html + `</section>`;
+        }
+
         // Top of the standings / results when the round has more than one money game: one who-pays-who for all of it
         function allGamesHTML(rData, sDb, presses, withMatch = true) {
             let u = roundSettleUp(rData, sDb, presses, withMatch);
-            // Our Match alone already says who pays who in its box at the top
-            if (!u.games.length || (u.games.length === 1 && u.games[0] !== 'team bets')) return '';
+            // Our Match alone already says who pays who in its box at the top; during play the Live card is up top instead
+            if (!u.finished || !u.games.length || (u.games.length === 1 && u.games[0] !== 'team bets')) return '';
             let first = n => n.split(' ')[0];
             let money = c => `${c > 0 ? '+' : c < 0 ? '−' : ''}${formatDollars(Math.round(c / 100) * 100)}`;
             let rows = Object.entries(u.nets).sort((a, b) => b[1] - a[1]);
@@ -6210,8 +6257,9 @@ function hideCartHoleHeader() {
             let pay = calculatePayouts(rData, sDb);
             if (pay.players.length === 0) return { top: '<p>No data.</p>', more: '' };
             let top = purseHTML(pay) + generateScorecardHTML(scorecardView(rData), sDb, 'leaderboard') + teamBetsWonHTML(rData, pay) + skinsHTML(rData, pay);
+            let over = roundSettleUp(rData, sDb, presses).finished;
             let more = (cardsElsewhere ? '' : fold(prefix + 'cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(rData), sDb, 'cards')))
-                + fold(prefix + 'math', 'See who pays who &amp; all the math', settleUpHTML(rData, sDb, pay, presses) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
+                + fold(prefix + 'math', over ? 'See all the math' : 'See money so far &amp; all the math', (over ? '' : settleUpHTML(rData, sDb, pay, presses)) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
             return { top, more };
         }
 
