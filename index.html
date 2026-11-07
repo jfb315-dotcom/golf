@@ -542,6 +542,11 @@
         .om-grid .om-grid-live, .om-grid .om-grid-none { color: var(--text-muted); font-size: 12px; }
         .om-grid tr.om-grid-sum th, .om-grid tr.om-grid-sum td { border-top: 2px solid var(--text-muted); font-weight: 800; font-size: 16px; color: var(--text-main); }
         .om-view-buttons { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+        .om-rule { border-bottom: 1px solid var(--line); padding-bottom: 8px; }
+        .om-rule .dash-row { border-bottom: 0; padding-bottom: 0; }
+        .om-rule-yes { color: var(--good); }
+        .om-rule-no { color: var(--text-muted); }
+        .om-rule-note { margin: 2px 4px 0; font-size: 13px; line-height: 1.4; color: var(--text-muted); }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -4563,11 +4568,12 @@ function hideCartHoleHeader() {
             });
 
             let finHTML = fold('live-rules', 'See the rules', `
+                ${canSeeOurMatch(roundData) ? ourMatchRulesHTML(roundData) : ''}
                 ${hasTournamentMoney(roundData) ? `<div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
                 <div class="dash-row"><span>Per bet</span><span>$${roundData.betAmount}</span></div>
                 <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>` : `<div class="dash-row"><span>Tournament purse</span><span>None, Our Match only</span></div>`}
                 ${rulesHTML}
-                <p class="dash-footnote">Red dot = player gets a stroke there; scorecards show gross/net. Skins are gross only.</p>
+                <p class="dash-footnote">Red dot = player gets a stroke there; scorecards show gross/net.${hasTournamentMoney(roundData) ? ' Skins are gross only.' : ''}</p>
             `);
 
             // Cart progress is an admin tool; carts and spectators don't need it
@@ -5299,7 +5305,7 @@ function hideCartHoleHeader() {
             let nassauTotal = MATCH_BETS.reduce((a, k) => a + (m.nassau[k]?.money || 0), 0);
             let nassauDone = MATCH_BETS.every(k => !m.nassau[k] || m.nassau[k].finished);
             nassauHTML += `<div class="payout-row om-grand"><span>Nassau total${nassauDone ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nassauTotal)}</b></div>`;
-            html += fold('om-nassau-bets', 'See the Nassau bets &amp; presses', nassauHTML);
+            let nassauBetsFold = fold('om-nassau-bets', 'See the Nassau bets &amp; presses', nassauHTML); // goes after 1st ball goes to 2nd ball
 
             // Nassau hole by hole: low gross each side, then every Nassau bet's running score (+ = side 1 up)
             let ninesNassau = ['front', 'back'].filter(k => m.nassau[k]);
@@ -5347,10 +5353,23 @@ function hideCartHoleHeader() {
                 html += ourMatchBirdiesHTML(m, nine);
                 html += `<div class="payout-row om-subtotal"><span>${title} 1st ball goes to 2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
             });
-            html = outer + fold('om-balls', 'See 1st ball goes to 2nd ball &amp; birdies', html);
+            html = outer + fold('om-balls', 'See 1st ball goes to 2nd ball &amp; birdies', html) + nassauBetsFold;
 
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; 1st ball goes to 2nd ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             return html + nassauFold + `</section>`;
+        }
+
+        // The rules dropdown: each Our Match game, its stakes, and whether strokes count in it
+        function ourMatchRulesHTML(rData) {
+            let om = rData.ourMatch;
+            if (!om) return '';
+            let yes = '<b class="om-rule-yes">Strokes count</b>', no = '<b class="om-rule-no">No strokes</b>';
+            let ball = `$${om.ballBet} front, $${om.ballBet * 2} back`;
+            let row = (game, how, detail) => `<div class="om-rule"><div class="dash-row"><span>${game}</span>${how}</div><p class="om-rule-note">${detail}</p></div>`;
+            return `<div class="payout-sub">Our Match · per person</div>`
+                + row('Nassau', om.nassauNet ? yes : no, `Front, Back and Overall, $${om.nassauBet} a bet. Each side's low ball on every hole, added up${om.nassauNet ? ', after strokes (net)' : ', actual scores only (gross)'}. Each side may press each bet once while behind.`)
+                + row('1st ball goes to 2nd ball', yes, `${ball} a bet. Low net ball wins the hole; if those tie, the 2nd ball (net) decides it. A new bet starts each time the newest one goes 1 down.`)
+                + row('Team birdies', no, `${ball} each. Real birdies only: a stroke never turns a par into a birdie. Eagle counts 2.`);
         }
 
         // Every game by nine in one table, per person, from the first side's view: what each part of the match paid
