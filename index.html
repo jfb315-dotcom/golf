@@ -5305,7 +5305,7 @@ function hideCartHoleHeader() {
             let nassauTotal = MATCH_BETS.reduce((a, k) => a + (m.nassau[k]?.money || 0), 0);
             let nassauDone = MATCH_BETS.every(k => !m.nassau[k] || m.nassau[k].finished);
             nassauHTML += `<div class="payout-row om-grand"><span>Nassau total${nassauDone ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nassauTotal)}</b></div>`;
-            html += fold('om-nassau-bets', 'See the Nassau bets &amp; presses', nassauHTML);
+            let nassauBetsFold = fold('om-nassau-bets', 'See the Nassau bets &amp; presses', nassauHTML); // goes after 1st ball goes to 2nd ball
 
             // Nassau hole by hole: low gross each side, then every Nassau bet's running score (+ = side 1 up)
             let ninesNassau = ['front', 'back'].filter(k => m.nassau[k]);
@@ -5353,7 +5353,7 @@ function hideCartHoleHeader() {
                 html += ourMatchBirdiesHTML(m, nine);
                 html += `<div class="payout-row om-subtotal"><span>${title} 1st ball goes to 2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
             });
-            html = outer + fold('om-balls', 'See 1st ball goes to 2nd ball &amp; birdies', html);
+            html = outer + fold('om-balls', 'See 1st ball goes to 2nd ball &amp; birdies', html) + nassauBetsFold;
 
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; 1st ball goes to 2nd ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             return html + nassauFold + `</section>`;
