@@ -551,6 +551,28 @@
         .om-rule-yes { color: var(--good); }
         .om-rule-no { color: var(--text-muted); }
         .om-rule-note { margin: 2px 4px 0; font-size: 13px; line-height: 1.4; color: var(--text-muted); }
+        .side-bet-card { margin: 10px 0; padding: 10px 12px; border-radius: 14px; background: var(--fill-soft); }
+        .side-bet-card .format-row { min-height: 48px; border-bottom: 0; }
+        .side-bet-opts { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+        .side-bet-opts .money-field { max-width: 140px; }
+        .side-bet-remove { display: block; margin: 2px 0 0; font-size: 14px; }
+        .side-bet-add { display: block; margin: 4px 0 14px; }
+        #side-bets-live input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: var(--fill-strong); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+        #side-bets-live input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        #side-bets-live input.switch:checked { background: var(--accent-gold); }
+        #side-bets-live input.switch:checked::after { transform: translateX(18px); }
+        #side-bets-live .format-row { border-bottom: 0; }
+        #side-bets-live .money-field input { background: transparent; border: 0; box-shadow: none; padding-left: 4px; }
+        #side-bets-live select { font-size: 15px; padding-left: 10px; padding-right: 26px; }
+        #side-bets-live .om-side-name { flex-shrink: 0; }
+        #side-bets-setup { margin-top: 18px; }
+        #side-bets-setup input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: var(--fill-strong); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+        #side-bets-setup input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        #side-bets-setup input.switch:checked { background: var(--accent-gold); }
+        #side-bets-setup input.switch:checked::after { transform: translateX(18px); }
+        .side-bet { padding: 6px 0 12px; border-bottom: 1px solid var(--line); }
+        .side-bet:last-child { border-bottom: 0; }
+        .side-bet .side-bet-settle { display: block; margin: 6px 0 4px; color: var(--accent-gold); font-size: 16px; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -778,6 +800,12 @@
             <option value="yes">NO - Scramble Pairings (Snake Draft)</option>
         </select>
 
+        <div id="side-bets-setup">
+            <div class="field-label">Side bets <span class="payout-note">2 on 2 · low net ball Nassau · any players · optional</span></div>
+            <div id="side-bets-list"></div>
+            <button type="button" class="text-link side-bet-add" onclick="addSideBet()">+ Add a side bet</button>
+        </div>
+
         <div class="bottom-bar">
             <button type="button" class="icon-btn" id="btn-step2-text" onclick="shareRoundInfo()" aria-label="Text round info to the group"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
             <button type="button" class="bar-primary" id="btn-step2-next" onclick="processStep2()">Start round</button>
@@ -864,6 +892,7 @@
         <div id="dashboard-scorecards"></div>
         <div id="dashboard-payouts"></div>
         <div id="dashboard-our-match"></div>
+        <div id="dashboard-side-bets"></div>
         <div id="dashboard-more"></div>
         <div id="dashboard-financial-summary"></div>
         <div id="dashboard-changes"></div>
@@ -1067,6 +1096,19 @@
         </div>
     </div>
 
+    <div id="sb-modal" class="modal-overlay">
+        <div class="modal-content" id="side-bets-live">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Add a side bet</h2>
+            <p class="clean-sub" style="text-align:center;">2 on 2 · low net ball Nassau · same amount every bet, per person</p>
+            <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="sbl-a1" aria-label="Side 1 first player"></select></div><div class="select-wrap slot"><select id="sbl-a2" aria-label="Side 1 second player"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="sbl-b1" aria-label="Side 2 first player"></select></div><div class="select-wrap slot"><select id="sbl-b2" aria-label="Side 2 second player"></select></div></div>
+            <div class="side-bet-opts"><div class="money-field"><span>$</span><input type="number" id="sbl-amount" min="0" inputmode="numeric" value="20" aria-label="Dollars per bet" onfocus="this.select()"></div><span class="payout-note">a bet, per person</span></div>
+            <div class="format-row"><label class="format-label" for="sbl-birdies">All birdies count</label><input type="checkbox" class="switch" id="sbl-birdies"></div>
+            <button type="button" class="btn-primary" onclick="saveLiveSideBet()">Add side bet</button>
+            <button type="button" class="btn-secondary" onclick="document.getElementById('sb-modal').classList.remove('active')">Cancel</button>
+        </div>
+    </div>
+
     <div id="hs-modal" class="modal-overlay">
         <div class="modal-content">
             <div id="hs-ask">
@@ -1141,13 +1183,13 @@
 
     <div id="text-modal" class="modal-overlay">
         <div class="modal-content">
-            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Send to the group</h2>
+            <h2 id="text-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Send to the group</h2>
             <textarea id="text-body" rows="5" style="width: 100%; box-sizing: border-box; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none; margin-bottom: 10px;"></textarea>
             <button class="btn-primary" onclick="sendToGroupChat()">Send to your group chat</button>
             <p class="dash-footnote" style="text-align:center; margin-top: 0;">Opens Share: pick Messages, then your golf group text.</p>
             <details class="text-numbers">
                 <summary><span>Or pick who gets it (new text)</span><span class="fold-hint">Tap to open</span></summary>
-                <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
+                <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-round" style="display:none;" onclick="setTextWho('round')">This round</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
                 <div id="text-pick" class="text-pick"></div>
                 <p class="clean-sub" id="text-to"></p>
                 <button class="btn-secondary" onclick="sendGroupText()">Open Messages with these</button>
@@ -1244,6 +1286,7 @@
         <div id="archived-card-container"></div>
         <div id="archived-payout-summary-container"></div>
         <div id="archived-our-match-container"></div>
+        <div id="archived-side-bets"></div>
         <div id="archived-more"></div>
         <div class="dash-actions" id="archived-actions">
             <button type="button" class="bar-primary" onclick="shareArchivedLink()">Share this page</button>
@@ -1919,6 +1962,7 @@ function toggle9HoleOptions() {
             };
             document.getElementById('is-scrambled').dispatchEvent(new Event('change'));
             renderOurMatchSides();
+            renderSideBets();
             refreshSegments();
             updateTeamTotals();
             document.getElementById('undo-teams').style.display = teamsUndo ? '' : 'none';
@@ -2324,7 +2368,7 @@ function toggle9HoleOptions() {
         // games = team bets + skins less their buy-in; om = Our Match (per person)
         function roundMoney(rData, sDb) {
             let money = {};
-            let add = (name, field, cents) => { let k = name.trim().toLowerCase(); (money[k] = money[k] || { name: name.trim(), games: 0, om: 0 })[field] += cents; };
+            let add = (name, field, cents) => { let k = name.trim().toLowerCase(); (money[k] = money[k] || { name: name.trim(), games: 0, om: 0, side: 0 })[field] += cents; };
             try {
                 // Only when the bets were settled: every dollar paid in was paid out (an unplayed round would show everyone losing)
                 let pl = hasTournamentMoney(rData) ? calculatePayouts(rData, sDb).players : [];
@@ -2334,6 +2378,13 @@ function toggle9HoleOptions() {
                 let m = rData.ourMatch ? calculateOurMatch(rData, sDb, rData.matchPresses || {}) : null;
                 if (m && m.finished) m.sides.forEach((side, i) => side.forEach(x => add(x.player.name, 'om', (i === 0 ? 1 : -1) * Math.round(m.totalMoney * 100))));
             } catch (e) {}
+            try {
+                (rData.sideBets || []).forEach(b => {
+                    let sb = calculateSideBet(rData, sDb, b);
+                    if (sb && sb.finished) sb.sides.forEach((side, i) => side.forEach(x => add(x.player.name, 'side', (i === 0 ? 1 : -1) * Math.round(sb.totalMoney * 100))));
+                });
+            } catch (e) {}
+            Object.values(money).forEach(m => { if (!m.side) delete m.side; });
             return money;
         }
 
@@ -2830,8 +2881,12 @@ function toggle9HoleOptions() {
         // Phone numbers from the players list (and anyone new who left one on the sign-up)
         function phoneFor(key) { return savedPlayers[key]?.phone || signup?.responses?.[key]?.phone || ''; }
         let textWho = 'in', textDefault = '';
-        function openGroupText(who, body) {
+        let textRound = null; // the round a "This round" text is about
+        function openGroupText(who, body, title) {
             textWho = who;
+            document.getElementById('text-modal-title').textContent = title || 'Send to the group';
+            if (who !== 'round') textRound = null;
+            document.getElementById('text-pick-round').style.display = textRound ? '' : 'none';
             textDefault = body || (signupIsCurrent() ? `⛳ JB Golf · ${formatRoundDate(signup.date)}${signup.course ? ' · ' + signup.course : ''}${signup.time ? ' · Tee ' + formatFriendlyTime(signup.time) : ''}\n` : '⛳ JB Golf\n');
             document.getElementById('text-body').value = textDefault;
             textExtra = {};
@@ -2845,13 +2900,20 @@ function toggle9HoleOptions() {
         function textCandidates() {
             let names = whosNames(), list = {};
             Object.keys(names).forEach(k => list[k] = { name: names[k], phone: phoneFor(k) });
+            // a player from the round who isn't on the sign-up list still shows up
+            roundPlayerKeys(textRound).forEach(k => { if (!list[k] && savedPlayers[k]) list[k] = { name: savedPlayers[k].name, phone: phoneFor(k) }; });
             Object.entries(textExtra).forEach(([k, v]) => list[k] = v);
             return Object.entries(list).sort((a, b) => !!b[1].phone - !!a[1].phone || sortByLast([a[0], a[1].name], [b[0], b[1].name]));
+        }
+        // The players in a round, as saved-player keys
+        function roundPlayerKeys(rData) {
+            return (rData?.groups || []).flatMap(g => g.players).filter(p => !p.isGhost && p.name).map(p => canonicalKey(p.name.trim().toLowerCase()));
         }
         function setTextWho(w) {
             textWho = w;
             let inKeys = Object.entries(signup?.responses || {}).filter(([, r]) => r.status === 'in').map(([k]) => k);
-            textPicked = new Set(textCandidates().filter(([k, v]) => v.phone && (w !== 'in' || inKeys.includes(k))).map(([k]) => k));
+            let roundKeys = roundPlayerKeys(textRound);
+            textPicked = new Set(textCandidates().filter(([k, v]) => v.phone && (w === 'in' ? inKeys.includes(k) : w === 'round' ? roundKeys.includes(k) : true)).map(([k]) => k));
             renderGroupText();
         }
         function textPickAll(on) { textPicked = new Set(on ? textCandidates().filter(([, v]) => v.phone).map(([k]) => k) : []); renderGroupText(); }
@@ -2987,15 +3049,15 @@ function toggle9HoleOptions() {
             document.querySelectorAll('#money-range button').forEach(b => b.setAttribute('aria-pressed', b.dataset.range === moneyRange));
             let since = moneyRange === 'season' ? (ledger.settledAt || 0) : 0;
             let at = r => r.at || Date.parse(r.date) || 0;
-            let counts = r => !r.excluded && r.money && Object.keys(r.money).length && (moneySettled(Object.values(r.money).map(m => Number(m.games))) || Object.values(r.money).some(m => Number(m.om)));
+            let counts = r => !r.excluded && r.money && Object.keys(r.money).length && (moneySettled(Object.values(r.money).map(m => Number(m.games))) || Object.values(r.money).some(m => Number(m.om) || Number(m.side)));
             let rounds = Object.values(roundHistory).filter(r => counts(r) && at(r) > since).sort((a, b) => at(b) - at(a));
             let totals = {};
             rounds.forEach(r => Object.entries(r.money).forEach(([rawKey, m]) => {
                 let k = canonicalKey(rawKey);
-                m = { ...m, games: Number(m.games) || 0, om: Number(m.om) || 0 };
-                let t = totals[k] = totals[k] || { name: savedPlayers[k]?.name || m.name, net: 0, games: 0, om: 0, rounds: [] };
-                t.games += m.games; t.om += m.om; t.net += m.games + m.om;
-                t.rounds.push({ date: r.date, course: r.course, cents: m.games + m.om });
+                m = { ...m, games: Number(m.games) || 0, om: Number(m.om) || 0, side: Number(m.side) || 0 };
+                let t = totals[k] = totals[k] || { name: savedPlayers[k]?.name || m.name, net: 0, games: 0, om: 0, side: 0, rounds: [] };
+                t.games += m.games; t.om += m.om; t.side += m.side; t.net += m.games + m.om + m.side;
+                t.rounds.push({ date: r.date, course: r.course, cents: m.games + m.om + m.side });
             }));
             let fmt = c => (c > 0 ? '+' : c < 0 ? '−' : '') + formatCents(c);
             let cls = c => c > 0 ? 'pos' : c < 0 ? 'neg' : '';
@@ -3006,6 +3068,7 @@ function toggle9HoleOptions() {
                     <div class="money-detail">
                         <div><span>Team bets &amp; skins</span><span>${fmt(t.games)}</span></div>
                         ${t.om ? `<div><span>Our Match</span><span>${fmt(t.om)}</span></div>` : ''}
+                        ${t.side ? `<div><span>Side bets</span><span>${fmt(t.side)}</span></div>` : ''}
                         ${t.rounds.map(r => `<div><span>${formatRoundDate(r.date)} · ${r.course.replace(/\s*\(.*\)$/, '')}</span><span>${fmt(r.cents)}</span></div>`).join('')}
                     </div></button>`).join('') || '<p class="clean-sub">No money rounds yet.</p>';
             document.getElementById('money-settle').style.display = moneyRange === 'season' && rows.length ? '' : 'none';
@@ -3185,6 +3248,7 @@ function toggle9HoleOptions() {
                 tempRosterCache[`${k}-ghost`] = '';
             }
             OM_SEATS.forEach(id => { tempRosterCache[id] = ''; }); // Our Match sides start over from the new teams
+            clearSideBetSeats();
             localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
         }
         // Start the roster over: every name, tee and stroke (tee times stay)
@@ -3194,6 +3258,7 @@ function toggle9HoleOptions() {
             if (!confirm('Clear every player off the roster and start over?')) return;
             teamsUndo = JSON.stringify(tempRosterCache);
             Object.keys(tempRosterCache).forEach(k => { if (/^g\d+-p\d+-/.test(k) || OM_SEATS.includes(k)) delete tempRosterCache[k]; });
+            clearSideBetSeats();
             teamsBalanced = false; swapFrom = null;
             localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
             renderRosterScreen();
@@ -3228,6 +3293,7 @@ function toggle9HoleOptions() {
                 [tempRosterCache[a], tempRosterCache[b]] = [tempRosterCache[b] || '', tempRosterCache[a] || ''];
             });
             OM_SEATS.forEach(id => { if (tempRosterCache[id] === from) tempRosterCache[id] = here; else if (tempRosterCache[id] === here) tempRosterCache[id] = from; });
+            swapSideBetSeats(from, here);
             localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache));
             renderRosterScreen();
         }
@@ -3283,6 +3349,7 @@ function toggle9HoleOptions() {
             document.getElementById('players-per-group').value = whosSize;
             // Fresh roster: drop old names, keep tee times
             Object.keys(tempRosterCache).forEach(k => { if (/^g\d+-p\d+-/.test(k) || OM_SEATS.includes(k)) delete tempRosterCache[k]; });
+            clearSideBetSeats();
             // Deal them in order (balanced right after); each gets their tees for this course
             let even = Array.from({ length: teams }, () => []);
             picked.forEach((n, i) => even[i % teams].push(n));
@@ -3347,6 +3414,47 @@ function toggle9HoleOptions() {
             });
             document.getElementById('om-sides').style.display = document.getElementById('om-enabled').checked ? '' : 'none';
         }
+
+        // ===== Side bets: any 2 on 2 inside the round, low net ball Nassau, one amount for every bet =====
+        // On the roster they're kept as roster slots ("team-slot"), like the Our Match sides
+        const SB_SEATS = ['a1', 'a2', 'b1', 'b2'];
+        function sideBetsDraft() { return Array.isArray(tempRosterCache.sideBets) ? tempRosterCache.sideBets : (tempRosterCache.sideBets = []); }
+        function renderSideBets() {
+            let el = document.getElementById('side-bets-list');
+            if (!el) return;
+            const gCount = parseInt(document.getElementById('group-count').value);
+            const pCount = parseInt(document.getElementById('players-per-group').value);
+            let players = [];
+            for (let g = 1; g <= gCount; g++) for (let p = 1; p <= pCount; p++) {
+                let name = (tempRosterCache[`g${g}-p${p}-name`] || '').trim();
+                if (name && !tempRosterCache[`g${g}-p${p}-ghost`]) players.push({ slot: `${g}-${p}`, label: `${name.split(' ')[0]} (T${g})` });
+            }
+            let opts = v => '<option value="">Pick</option>' + players.map(x => `<option value="${x.slot}"${x.slot === v ? ' selected' : ''}>${x.label}</option>`).join('');
+            el.innerHTML = sideBetsDraft().map((b, i) => `<div class="side-bet-card">
+                    <div class="om-side-row"><span class="om-side-name">Side 1</span>${['a1', 'a2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, side 1" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
+                    <div class="om-side-row"><span class="om-side-name">Side 2</span>${['b1', 'b2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, side 2" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
+                    <div class="side-bet-opts">
+                        <div class="money-field"><span>$</span><input type="number" min="0" inputmode="numeric" value="${b.amount || ''}" placeholder="20" aria-label="Side bet ${i + 1}, dollars per bet" onfocus="this.select()" oninput="setSideBet(${i}, 'amount', this.value)"></div>
+                        <span class="payout-note">a bet, per person</span>
+                    </div>
+                    <div class="format-row"><label class="format-label" for="sb-birdies-${i}">All birdies count</label><input type="checkbox" class="switch" id="sb-birdies-${i}"${b.allBirdies ? ' checked' : ''} onchange="setSideBet(${i}, 'allBirdies', this.checked)"></div>
+                    <button type="button" class="text-link danger-link side-bet-remove" onclick="removeSideBet(${i})">Remove this side bet</button>
+                </div>`).join('');
+        }
+        function saveSideBets() { try { localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache)); } catch (e) {} }
+        function addSideBet() { saveRosterCache(); sideBetsDraft().push({ a1: '', a2: '', b1: '', b2: '', amount: 20, allBirdies: false }); saveSideBets(); renderSideBets(); }
+        function removeSideBet(i) { sideBetsDraft().splice(i, 1); saveSideBets(); renderSideBets(); }
+        function setSideBet(i, k, v) {
+            let b = sideBetsDraft()[i];
+            if (!b) return;
+            b[k] = k === 'amount' ? (parseInt(v) || 0) : v;
+            saveSideBets();
+        }
+        // Moving a player on the roster moves them in the side bets too
+        function swapSideBetSeats(from, here) {
+            sideBetsDraft().forEach(b => SB_SEATS.forEach(k => { if (b[k] === from) b[k] = here; else if (b[k] === here) b[k] = from; }));
+        }
+        function clearSideBetSeats() { sideBetsDraft().forEach(b => SB_SEATS.forEach(k => { b[k] = ''; })); }
 
         function saveOurMatchSides() {
             OM_SEATS.forEach(id => { tempRosterCache[id] = document.getElementById(id).value; });
@@ -3485,6 +3593,14 @@ function processStep2() {
                 }
             }
             
+            for (let [i, b] of sideBetsDraft().entries()) {
+                let picked = SB_SEATS.map(k => b[k]);
+                if (picked.some(v => !v) || new Set(picked).size !== 4 || !(b.amount > 0)) {
+                    alert(`Side bet ${i + 1} needs 4 different players, 2 on each side, and a dollar amount. Fix it, or tap "Remove this side bet".`);
+                    return;
+                }
+            }
+
             if (!isEditingMidRound) {
                 if (liveRoundInCloud && !confirm("⚠️ A round is already in progress.\n\nStarting a new round will ERASE all of its scores for every cart. Continue?")) return;
                 // Only wipe scores when starting a brand new round
@@ -3565,6 +3681,11 @@ function processStep2() {
                     nassauNet: document.getElementById('om-nassau-net').checked
                 };
             }
+
+            roundData.sideBets = sideBetsDraft().map((b, i) => {
+                let seat = slot => { let [g] = slot.split('-').map(Number); return { g, p: slotToId[slot] }; };
+                return { id: i + 1, sideA: [seat(b.a1), seat(b.a2)], sideB: [seat(b.b1), seat(b.b2)], amount: b.amount, allBirdies: !!b.allBirdies };
+            });
 
             if(isScrambled) {
                 let cartCount = parseInt(document.getElementById('cart-group-count').value);
@@ -3692,6 +3813,8 @@ function processStep2() {
             });
             if (roundData.isScrambled) document.getElementById('cart-group-count').value = roundData.carts.length;
             OM_SEATS.forEach(id => { delete tempRosterCache[id]; });
+            let slotOf = cp => { let g = roundData.groups.find(x => x.id === cp.g); return g ? `${cp.g}-${g.players.findIndex(p => p.id === cp.p) + 1}` : ''; };
+            tempRosterCache.sideBets = (roundData.sideBets || []).map(b => ({ a1: slotOf(b.sideA[0]), a2: slotOf(b.sideA[1]), b1: slotOf(b.sideB[0]), b2: slotOf(b.sideB[1]), amount: b.amount, allBirdies: !!b.allBirdies }));
             if (roundData.ourMatch) {
                 ourMatchSides(roundData.ourMatch).flat().forEach((cp, i) => {
                     let slot = roundData.groups.find(g => g.id === cp.g).players.findIndex(p => p.id === cp.p) + 1;
@@ -4683,6 +4806,7 @@ function hideCartHoleHeader() {
 
             let finHTML = fold('live-rules', 'See the rules', `
                 ${canSeeOurMatch(roundData) ? ourMatchRulesHTML(roundData) : ''}
+                ${sideBetsRulesHTML(roundData)}
                 ${hasTournamentMoney(roundData) ? `<div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
                 <div class="dash-row"><span>Per bet</span><span>$${roundData.betAmount}</span></div>
                 <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>` : `<div class="dash-row"><span>Tournament purse</span><span>None, Our Match only</span></div>`}
@@ -4710,6 +4834,9 @@ function hideCartHoleHeader() {
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
+            let sbEl = document.getElementById('dashboard-side-bets');
+            sbEl.innerHTML = sideBetsHTML(roundData, scoresDb, 'live-', !spectator && lockedTeamId === null && !showingFinalResults && liveRoundInCloud);
+            dash.insertBefore(sbEl, omEl.nextSibling);
             let cardsEl = document.getElementById('dashboard-scorecards');
             dash.insertBefore(cardsEl, spectator || banner ? dash.querySelector('.alerts-banner').nextSibling : document.getElementById('dashboard-payouts'));
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
@@ -5514,6 +5641,121 @@ function hideCartHoleHeader() {
             return html + `</div>`;
         }
 
+        // One side bet: each side's low net ball every hole (plus every other net birdie when all birdies count),
+        // added up over the first and second nine (first 4 / last 5 in a 9-hole round) and the whole round.
+        // Lower total wins that bet; a tie is a push. Money is per person, from the first side's view.
+        function sideBetNines(rData) {
+            let seq = getHoleSequenceFor(rData);
+            if (seq.length === 9) return [{ key: 'first', label: 'First 4', holes: seq.slice(0, 4) }, { key: 'last', label: 'Last 5', holes: seq.slice(4) }];
+            let nineName = hs => hs[0] >= 10 ? 'Back 9' : 'Front 9';
+            return [{ key: 'first', label: nineName(seq.slice(0, 9)), holes: seq.slice(0, 9) }, { key: 'last', label: nineName(seq.slice(9)), holes: seq.slice(9) }];
+        }
+        function calculateSideBet(rData, sDb, bet) {
+            let lookup = cp => rData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p);
+            let sides = [bet.sideA || [], bet.sideB || []].map(side => side.map(cp => ({ g: cp.g, p: cp.p, player: lookup(cp) })));
+            if (sides.some(side => side.length !== 2 || side.some(x => !x.player))) return null;
+            let names = sides.map(side => side.map(x => firstName(x.player.name)).join(' & '));
+            let gross = (x, h) => sDb[x.g]?.[x.p]?.[h];
+            let complete = h => sides.every(side => side.every(x => gross(x, h)));
+            let low = (si, h) => calculateTeamHoleNet(rData, 1, rData.course.pars[h - 1], sides[si].map(x => getPlayerNetScore(rData, x.player, h, gross(x, h))), !!bet.allBirdies);
+            let seq = getHoleSequenceFor(rData);
+            let done = []; for (let h of seq) { if (!complete(h)) break; done.push(h); } // in order: a gap stops the count
+            let lows = {}; done.forEach(h => { lows[h] = [low(0, h), low(1, h)]; });
+            let segs = [...sideBetNines(rData), { key: 'overall', label: 'Overall', holes: seq }].filter(x => x.holes.length).map(x => {
+                let mine = done.filter(h => x.holes.includes(h));
+                let diff = mine.reduce((a, h) => a + lows[h][0] - lows[h][1], 0); // + = first side has more (behind)
+                let finished = mine.length === x.holes.length;
+                return { ...x, done: mine, diff, finished, money: finished ? (diff < 0 ? bet.amount : diff > 0 ? -bet.amount : 0) : null };
+            });
+            let totalMoney = segs.reduce((a, x) => a + (x.money || 0), 0);
+            return { sides, names, segs, lows, done, totalMoney, finished: segs.every(x => x.finished), amount: bet.amount, allBirdies: !!bet.allBirdies };
+        }
+        function sideBetStanding(sb, x) {
+            if (!x.done.length) return 'not started';
+            return x.diff === 0 ? 'all square' : `${x.diff < 0 ? sb.names[0] : sb.names[1]} up ${Math.abs(x.diff)}`;
+        }
+        // Standings / results: every side bet as a small card, hole by hole folded under it
+        function sideBetsHTML(rData, sDb, prefix, canEdit) {
+            let bets = (rData.sideBets || []).map(b => calculateSideBet(rData, sDb, b)).filter(Boolean);
+            let addBtn = canEdit ? `<button type="button" class="text-link side-bet-add" onclick="openLiveSideBet()">+ Add a side bet</button>` : '';
+            if (!bets.length) return addBtn;
+            let html = `<section class="dash-section side-bets" id="side-bets"><div class="dash-section-title team-head"><span>Side bets</span><span>${bets.every(b => b.finished) ? 'Final' : 'Live'}</span></div>`;
+            bets.forEach((sb, i) => {
+                html += `<div class="side-bet">
+                    <div class="om-sides"><span class="om-side a">${sb.names[0]}</span><span class="om-vs">vs</span><span class="om-side b">${sb.names[1]}</span></div>
+                    <p class="om-grid-rules" style="margin:0 0 6px;">Low net ball${sb.allBirdies ? ', all birdies count' : ''} · $${sb.amount} a bet, per person · + = ${sb.names[0]}</p>`;
+                sb.segs.forEach(x => {
+                    html += `<div class="om-bet-row"><span>${x.label}</span><span class="om-standing">${sideBetStanding(sb, x)}</span><b>${x.finished ? formatMatchMoney(x.money) : `<span class="payout-note">${x.done.length ? `thru ${x.done[x.done.length - 1]}` : ''}</span>`}</b></div>`;
+                });
+                html += `<div class="payout-row om-grand"><span>Total${sb.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(sb.totalMoney)}</b></div>
+                    <b class="om-settle side-bet-settle">${matchSettleLine(sb, sb.totalMoney)}</b>`;
+                if (sb.done.length) {
+                    let chart = `<table class="om-chart"><thead><tr><th>Hole</th><th>Par</th><th>Low net</th><th>${sb.segs.slice(0, -1).map(x => x.label).join(' / ')}</th><th>Overall</th></tr></thead><tbody>`;
+                    let run = (x, h) => x.holes.includes(h) ? -x.done.filter(y => sb.done.indexOf(y) <= sb.done.indexOf(h)).reduce((a, y) => a + sb.lows[y][0] - sb.lows[y][1], 0) : null;
+                    sb.done.forEach(h => {
+                        let [a, b] = sb.lows[h];
+                        let nine = sb.segs.slice(0, -1).find(x => x.holes.includes(h));
+                        chart += `<tr><td><b>${h}</b></td><td class="om-par">${rData.course.pars[h - 1]}</td><td><span class="${a < b ? 'om-a' : ''}">${formatNetToPar(a)}</span> v <span class="${b < a ? 'om-b-win' : ''}">${formatNetToPar(b)}</span></td><td class="om-bets">${formatMatchBet(run(nine, h))}</td><td class="om-bets">${formatMatchBet(run(sb.segs[sb.segs.length - 1], h))}</td></tr>`;
+                    });
+                    chart += `</tbody></table><p class="dash-footnote">Low net ball each hole, to par · bets: + = ${sb.names[0]} up (strokes)</p>`;
+                    html += fold(`${prefix}sb-${i}`, 'See hole by hole', chart);
+                }
+                if (canEdit) html += `<button type="button" class="text-link danger-link side-bet-remove" onclick="removeLiveSideBet(${i})">Remove this side bet</button>`;
+                html += `</div>`;
+            });
+            return html + addBtn + `</section>`;
+        }
+        // The rules dropdown: one line per side bet
+        function sideBetsRulesHTML(rData) {
+            let bets = (rData.sideBets || []).map(b => calculateSideBet(rData, {}, b)).filter(Boolean);
+            if (!bets.length) return '';
+            let nines = sideBetNines(rData).map(x => x.label).join(', ');
+            return `<div class="payout-sub">Side bets · per person</div>` + bets.map(sb => `<div class="om-rule"><div class="dash-row"><span>${sb.names[0]} vs ${sb.names[1]}</span><b class="om-rule-yes">Strokes count</b></div>
+                <p class="om-rule-note">$${sb.amount} a bet on ${nines} and Overall. Each side's low net ball every hole${sb.allBirdies ? ', plus every other net birdie (all birdies count)' : ''}, added up. Lower total wins the bet; a tie is a push. No presses.</p></div>`).join('');
+        }
+
+        // Standings, admin, round in play: add a side bet without going back through setup
+        function openLiveSideBet() {
+            let opts = '<option value="">Pick</option>' + roundData.groups.flatMap(g => g.players.filter(p => !p.isGhost && p.name)
+                .map(p => `<option value="${g.id}-${p.id}">${firstName(p.name)} (T${g.id})</option>`)).join('');
+            ['a1', 'a2', 'b1', 'b2'].forEach(k => { document.getElementById('sbl-' + k).innerHTML = opts; });
+            document.getElementById('sbl-amount').value = 20;
+            document.getElementById('sbl-birdies').checked = false;
+            document.getElementById('sb-modal').classList.add('active');
+        }
+        function saveSideBetsToRound() {
+            trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'sideBets'), JSON.parse(JSON.stringify(roundData.sideBets || []))));
+            viewDashboard();
+        }
+        function saveLiveSideBet() {
+            let picked = ['a1', 'a2', 'b1', 'b2'].map(k => document.getElementById('sbl-' + k).value);
+            let amount = parseInt(document.getElementById('sbl-amount').value) || 0;
+            if (picked.some(v => !v) || new Set(picked).size !== 4 || amount <= 0) { alert('Pick 4 different players, 2 on each side, and a dollar amount.'); return; }
+            let seat = v => { let [g, p] = v.split('-').map(Number); return { g, p }; };
+            let bets = roundData.sideBets = roundData.sideBets || [];
+            bets.push({ id: Math.max(0, ...bets.map(b => b.id || 0)) + 1, sideA: [seat(picked[0]), seat(picked[1])], sideB: [seat(picked[2]), seat(picked[3])], amount, allBirdies: document.getElementById('sbl-birdies').checked });
+            document.getElementById('sb-modal').classList.remove('active');
+            saveSideBetsToRound();
+        }
+        function removeLiveSideBet(i) {
+            let sb = calculateSideBet(roundData, scoresDb, roundData.sideBets[i]);
+            if (!confirm(`Remove the side bet ${sb ? sb.names[0] + ' vs ' + sb.names[1] : ''}?`)) return;
+            roundData.sideBets.splice(i, 1);
+            saveSideBetsToRound();
+        }
+
+        // Text version for the results message
+        function sideBetsText(rData, sDb) {
+            let bets = (rData.sideBets || []).map(b => calculateSideBet(rData, sDb, b)).filter(Boolean);
+            if (!bets.length) return '';
+            let st = `\nSide bets ($ per person)\n`;
+            bets.forEach(sb => {
+                st += `${sb.names[0]} vs ${sb.names[1]} ($${sb.amount}${sb.allBirdies ? ', all birdies' : ''}): ${sb.segs.map(x => `${x.label} ${x.finished ? formatMatchMoney(x.money) : sideBetStanding(sb, x)}`).join(' · ')}\n`;
+                st += `  ${sb.finished ? '' : 'So far: '}${matchSettleLine(sb, sb.totalMoney)}\n`;
+            });
+            return st;
+        }
+
         // Who made each birdie and where: "BREN 1, 7, 10 eagle", then the net per side in dollars
         function ourMatchBirdieHoles(log) { return log.map(b => `${b.hole}${b.units === 2 ? ' eagle' : b.units >= 3 ? ' albatross' : ''}`).join(', '); }
         function omHead(title, sub) { return `<div class="om-head"><b>${title}</b>${sub ? `<span>${sub}</span>` : ''}</div>`; }
@@ -5582,6 +5824,7 @@ function hideCartHoleHeader() {
                 m.sides.forEach((side, si) => side.forEach((x, pi) => { let log = nine.birdieLog[si][pi]; if (log.length) st += `  ${x.player.name.split(' ')[0].slice(0, 4).toUpperCase()} ${ourMatchBirdieHoles(log)}\n`; }));
             });
             st += `\n${m.finished ? 'Final' : 'So far'}: ${matchSettleLine(m, m.totalMoney)}\n`;
+            st += sideBetsText(activeViewRoundData, activeViewScoresDb);
             document.getElementById('share-modal-title').innerText = "Share Our Match";
             document.getElementById('share-text-content').value = st;
             document.getElementById('share-modal').classList.add('active');
@@ -5783,6 +6026,7 @@ function hideCartHoleHeader() {
                 payments.forEach(pm => { st += `${first(pm.from)} → ${first(pm.to)} ${formatDollars(pm.cents)}\n`; });
             }
 
+            st += sideBetsText(rData, sDb);
             document.getElementById('share-modal-title').innerText = "Share Final Results";
             document.getElementById('share-text-content').value = st; 
             document.getElementById('share-modal').classList.add('active');
@@ -6336,9 +6580,10 @@ function hideCartHoleHeader() {
             }).catch(err => console.log(err));
             sendAlert('final', '🏆 Final results are in', `${activeViewRoundData.course?.name || 'JB Golf'} · ${formatRoundDate(activeViewRoundData.date)}`, 'standings', 'final', activeViewRoundData);
 
-            if (hasTournamentMoney(activeViewRoundData) || !activeViewRoundData.ourMatch) openResultsShareModal();
-            else openOurMatchShareModal();
-            document.getElementById('share-modal-title').innerText = "Round finalized · Share results";
+            textRound = activeViewRoundData;
+            let rd = activeViewRoundData, course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
+            let link = shareUrl(rd.ourMatch ? 'match.html' : 'results.html', `round=${encodeURIComponent(rd.roundId || '')}`);
+            openGroupText('round', `🏆 JB Golf final results · ${course} · ${formatRoundDate(rd.date)}\nScores, money and who pays who:\n${link}`, 'Round finalized · text the results');
         }
 
         // Finished rounds live in Firebase (so a lost phone loses nothing) with a copy on this phone for offline viewing
@@ -6542,6 +6787,7 @@ function hideCartHoleHeader() {
                 let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(omv.rData, activeViewScoresDb, omv.presses, false) : '';
                 document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(omv.rData, activeViewScoresDb, omv.presses), omHTML) : omHTML;
                 document.getElementById('archived-more').innerHTML = money ? money.more : '';
+                document.getElementById('archived-side-bets').innerHTML = sideBetsHTML(activeViewRoundData, activeViewScoresDb, 'arc-');
                 document.getElementById('archived-sub').textContent = [activeViewRoundData.course?.name, formatRoundDate(activeViewRoundData.date || arc.date)].filter(Boolean).join(' · ');
                 return true;
             } catch (error) { 
