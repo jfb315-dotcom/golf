@@ -644,6 +644,51 @@
         .lp-player small { color: var(--text-muted); font-size: 12px; }
         .live-progress .lp-thru { text-align: right; font-size: 12px; color: var(--text-muted); }
         .live-progress .pos { color: var(--good); } .live-progress .neg { color: #f85149; }
+
+        /* ===== Test copy: new layouts ===== */
+        .rv-steps { display: none; }
+        html.revamp .rv-steps { display: flex; gap: 6px; margin: 2px 0 14px; }
+        html.revamp .rv-steps span { flex: 1; height: 5px; border-radius: 3px; background: var(--fill-strong); }
+        html.revamp .rv-steps span.on { background: var(--accent-gold); }
+        .rv-only-p1, .rv-only-p2, .rv-only-p3, .rv-only-p4 { }
+        html.revamp #step-1[data-rvpage="1"] .rvp2, html.revamp #step-1[data-rvpage="2"] .rvp1,
+        html.revamp #step-2[data-rvpage="3"] .rvp4, html.revamp #step-2[data-rvpage="4"] .rvp3 { display: none !important; }
+        html:not(.revamp) .rv-only-p1:not([onclick="goToStep2()"]):not(.top-row > :first-child), html:not(.revamp) .rv-only-p3:not(.top-row > :first-child) { }
+        html.revamp #step-1:not([data-rvpage="1"]) .rv-only-p1, html.revamp #step-1:not([data-rvpage="2"]) .rv-only-p2,
+        html.revamp #step-2:not([data-rvpage="3"]) .rv-only-p3, html.revamp #step-2:not([data-rvpage="4"]) .rv-only-p4 { display: none !important; }
+        html.revamp .rv-review-card { background: var(--bg-card); border: 1px solid var(--line); border-radius: 16px; padding: 4px 14px; margin-bottom: 12px; }
+        html.revamp .rv-review-row { display: flex; justify-content: space-between; gap: 12px; padding: 10px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+        html.revamp .rv-review-row:last-child { border-bottom: 0; }
+        html.revamp .rv-review-row span { color: var(--text-muted); }
+        html.revamp .rv-review-row b { text-align: right; }
+        .rv-dtabs { display: none; }
+        html.revamp .rv-dtabs { display: flex; gap: 4px; padding: 4px; margin: 14px 0 10px; border-radius: 14px; background: var(--fill-strong); position: sticky; top: 30px; z-index: 5; }
+        html.revamp .rv-dtabs button { flex: 1; border: 0; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 13px; padding: 9px 0; border-radius: 11px; }
+        html.revamp .rv-dtabs button.on { background: var(--text-main); color: var(--bg-dark); }
+        html.revamp details[data-fold="live-cards"], html.revamp details[data-fold="arc-cards"] { display: none !important; }
+        /* Home */
+        html.revamp #step-home #home-live, html.revamp #step-home .home-new, html.revamp #step-home > .list-rows, html.revamp #step-home .home-tile.wide { display: none !important; }
+        html.revamp .rv-today { margin: 6px 0 12px; padding: 16px; border-radius: 22px; background: linear-gradient(140deg, #ff8a1f, #e06a10); color: #1a0d02; }
+        html.revamp .rv-today-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
+        html.revamp .rv-today h3 { margin: 8px 0 2px; font-size: 24px; font-weight: 900; color: #1a0d02; }
+        html.revamp .rv-today p { margin: 0 0 14px; font-weight: 600; opacity: .8; }
+        html.revamp .rv-today-btns { display: flex; gap: 8px; }
+        html.revamp .rv-today-btns button { flex: 1; height: 50px; border: 0; border-radius: 14px; background: #1a0d02; color: #ffd9b0; font-weight: 800; font-size: 16px; }
+        html.revamp .rv-today-btns button.ghost { background: rgba(26,13,2,.15); color: #1a0d02; }
+        html.revamp .rv-pill { padding: 5px 10px; border-radius: 999px; background: rgba(0,0,0,.15); font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: none; white-space: nowrap; }
+        html.revamp .rv-last { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; padding: 14px 16px; border-radius: 20px; border: 1px solid var(--line); background: var(--bg-card); color: var(--text-main); text-align: left; }
+        html.revamp .rv-last > div { display: flex; flex-direction: column; gap: 3px; }
+        html.revamp .rv-last b { font-size: 17px; }
+        html.revamp .rv-last .rv-pill { background: var(--fill-strong); }
+        html.revamp .rv-eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); font-weight: 800; }
+        html.revamp .rv-top { font-size: 14px; color: var(--text-muted); } html.revamp .rv-top b { color: var(--good); font-size: 15px; }
+        .rv-tabbar { display: none; }
+        html.revamp.rv-has-tabbar .rv-tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; justify-content: space-around; align-items: flex-start; padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); background: rgba(13,33,26,.97); border-top: 1px solid var(--line); }
+        html.revamp.rv-has-tabbar body { padding-bottom: 96px; }
+        html.revamp .rv-tabbar button { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 64px; border: 0; background: none; color: var(--text-muted); font-size: 11px; font-weight: 700; }
+        html.revamp .rv-tabbar button i { font-style: normal; font-size: 20px; line-height: 24px; }
+        html.revamp .rv-tabbar button.on { color: var(--accent-gold); }
+        html.revamp .rv-tabbar .rv-fab i { width: 52px; height: 52px; margin-top: -22px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 24px rgba(255,138,31,.35); }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -7090,6 +7135,173 @@ function hideCartHoleHeader() {
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => { navigator.serviceWorker.register('sw.js').then(refreshAlertsButtons).catch(err => console.log('Offline copy not available:', err)); });
         }
+    </script>
+
+    <script>
+        // ==========================================
+        // TEST COPY: the new layouts (Setup in 4 steps, Standings / Results tabs, Home with a Today card and a tab bar).
+        // Nothing here runs in the real app.
+        // ==========================================
+        (function () {
+            if (!BETA) return;
+            const $ = id => document.getElementById(id);
+            let lastScreen = null;
+
+            // ---------- Setup in 4 steps ----------
+            const PAGE_TITLES = { 1: 'Course & round', 2: 'Games & money', 3: 'Players & teams', 4: 'Extras & review' };
+            const COMMON = el => el.matches('.top-row, .clean-eyebrow, .edit-round-banner, .clean-title, .bottom-bar, datalist, .rv-steps');
+            function splitPages() {
+                let s1 = $('step-1'), s2 = $('step-2');
+                if (s1.dataset.rvSplit) return;
+                s1.dataset.rvSplit = s2.dataset.rvSplit = '1';
+                let second = false;
+                [...s1.children].forEach(el => { if (COMMON(el)) return; if (el.matches('.field-label') && /team games/i.test(el.textContent)) second = true; el.classList.add(second ? 'rvp2' : 'rvp1'); });
+                second = false;
+                [...s2.children].forEach(el => { if (COMMON(el)) return; if (el.id === 'om-sides') second = true; el.classList.add(second ? 'rvp4' : 'rvp3'); });
+                // review card at the end of step 4
+                let rv = document.createElement('div'); rv.id = 'rv-review'; rv.className = 'rvp4 rv-review'; s2.insertBefore(rv, s2.querySelector('.bottom-bar'));
+                [s1, s2].forEach(sc => { let bars = document.createElement('div'); bars.className = 'rv-steps'; bars.innerHTML = '<span></span><span></span><span></span><span></span>'; sc.querySelector('.clean-title').after(bars); });
+                // next / back buttons for the in-between pages
+                s1.querySelector('.bottom-bar').insertAdjacentHTML('beforeend', '<button type="button" class="bar-primary rv-only-p1" onclick="rvPage(\'step-1\', 2)">Next: games &amp; money</button>');
+                s1.querySelector('.bottom-bar .bar-primary[onclick="goToStep2()"]').classList.add('rv-only-p2');
+                s1.querySelector('.bottom-bar .bar-primary[onclick="goToStep2()"]').textContent = 'Next: players & teams';
+                s2.querySelector('.bottom-bar').insertAdjacentHTML('beforeend', '<button type="button" class="bar-primary rv-only-p3" onclick="rvPage(\'step-2\', 4)">Next: extras &amp; review</button>');
+                $('btn-step2-next').classList.add('rv-only-p4');
+                s1.querySelector('.top-row').insertAdjacentHTML('beforeend', '<button type="button" class="text-link back-link-top rv-only-p2" onclick="rvPage(\'step-1\', 1)">‹ Back</button>');
+                s2.querySelector('.top-row').insertAdjacentHTML('beforeend', '<button type="button" class="text-link back-link-top rv-only-p4" onclick="rvPage(\'step-2\', 3)">‹ Back</button>');
+                s1.querySelector('.top-row > :first-child').classList.add('rv-only-p1');
+                s2.querySelector('.top-row > :first-child').classList.add('rv-only-p3');
+            }
+            window.rvPage = function (screen, n) {
+                splitPages();
+                let sc = $(screen);
+                sc.dataset.rvpage = n;
+                sc.querySelector('.clean-title').textContent = (sessionStorage.getItem('isEditingMidRound') === 'true' ? 'Edit · ' : '') + PAGE_TITLES[n];
+                sc.querySelectorAll('.rv-steps span').forEach((b, i) => b.classList.toggle('on', i < n));
+                if (n === 4) renderReview();
+                window.scrollTo(0, 0);
+            };
+            function renderReview() {
+                let v = id => $(id)?.value, txt = id => { let el = $(id); return el?.options?.[el.selectedIndex]?.text || ''; };
+                let formats = [1, 2, 3].filter(f => $('fmt-' + f).checked).map(f => f + '-Ball');
+                let om = $('om-enabled').checked;
+                let sb = (tempRosterCache.sideBets || []).length;
+                let rows = [
+                    ['Course', `${txt('course-selector').replace(/\s*\(.*\)$/, '')} · ${v('hole-format')} holes · start ${v('start-type') === 'back' ? 10 : 1}`],
+                    ['Date', $('round-date')?.value ? formatRoundDate($('round-date').value) : 'Today'],
+                    ['Teams', `${v('group-count')} × ${v('players-per-group')}`],
+                    ['Team games', formats.length && !$('om-only').checked ? `${formats.join(', ')} · $${v('bet-amount')} a bet` : 'None'],
+                    ['Skins', +v('skins-amount') ? `$${v('skins-amount')}` : 'None'],
+                    ['Our Match', om ? `$${v('om-nassau')} Nassau · $${v('om-ball')} 1st→2nd${$('om-nassau-net').checked ? ' · net' : ''}` : 'Off'],
+                    ['Side bets', sb ? `${sb}` : 'None'],
+                    ['Carts', v('is-scrambled') === 'yes' ? 'Scramble' : 'Ride with team'],
+                    ['Entry fee', ($('live-buyin-display')?.innerText || '').replace(/entry fee/i, '').trim()],
+                ];
+                $('rv-review').innerHTML = `<div class="field-label">Review</div><div class="rv-review-card">${rows.map(([k, x]) => `<div class="rv-review-row"><span>${k}</span><b>${x}</b></div>`).join('')}</div>`;
+            }
+
+            // ---------- Standings / Results tabs ----------
+            const TABS = {
+                'step-dashboard': { top: ['dashboard-all-games', 'dashboard-scorecards'], Board: ['dashboard-cart-progress', 'dashboard-payouts', 'dashboard-more'], 'Our Match': ['dashboard-our-match'], 'Side bets': ['dashboard-side-bets'], Cards: ['rv-cards-step-dashboard'] },
+                'step-9': { top: ['archived-all-games', 'archived-card-container'], Board: ['archived-payout-summary-container', 'archived-more'], 'Our Match': ['archived-our-match-container'], 'Side bets': ['archived-side-bets'], Cards: ['rv-cards-step-9'] },
+            };
+            const tabPick = {};
+            window.rvTab = function (screen, name) { tabPick[screen] = name; applyTabs(screen); };
+            function hasContent(id) { let el = $(id); return !!el && el.innerHTML.trim() !== '' && !!el.textContent.trim(); }
+            function applyTabs(screen) {
+                let cfg = TABS[screen], sc = $(screen);
+                let rd = screen === 'step-9' ? activeViewRoundData : roundData, sDb = screen === 'step-9' ? activeViewScoresDb : scoresDb;
+                if (!rd?.groups) return;
+                // Cards get their own tab; the folded copies elsewhere are hidden by CSS
+                let cardsId = 'rv-cards-' + screen, cards = $(cardsId);
+                if (!cards) { cards = document.createElement('div'); cards.id = cardsId; let after = $(cfg['Side bets'][0]); after.after(cards); }
+                cards.innerHTML = generateScorecardHTML(scorecardView(rd), sDb, hasTournamentMoney(rd) ? 'cards' : undefined);
+                // the top box keeps only the Our Match result, not a second set of cards
+                let topCards = $(cfg.top[1]);
+                if (topCards && !topCards.querySelector('.om-final-banner')) topCards.innerHTML = '';
+                let names = ['Board', 'Our Match', 'Side bets', 'Cards'].filter(n => n === 'Cards' || cfg[n].some(hasContent));
+                let spectator = new URLSearchParams(location.search).get('spectator') === 'true';
+                let pick = names.includes(tabPick[screen]) ? tabPick[screen] : spectator ? 'Cards' : names[0];
+                let bar = $('rv-dtabs-' + screen);
+                if (!bar) { bar = document.createElement('div'); bar.id = 'rv-dtabs-' + screen; bar.className = 'rv-dtabs'; $(cfg.Board[0]).before(bar); }
+                bar.innerHTML = names.map(n => `<button type="button" class="${n === pick ? 'on' : ''}" onclick="rvTab('${screen}', '${n}')">${n}</button>`).join('');
+                ['Board', 'Our Match', 'Side bets', 'Cards'].forEach(n => cfg[n].forEach(id => { let el = $(id); if (el) el.style.display = n === pick ? '' : 'none'; }));
+            }
+            let _view = window.viewDashboard;
+            window.viewDashboard = function () { let r = _view.apply(this, arguments); try { applyTabs('step-dashboard'); } catch (e) { console.error(e); } return r; };
+            let _arc = window.renderArchivedRound;
+            window.renderArchivedRound = function () { let r = _arc.apply(this, arguments); try { applyTabs('step-9'); } catch (e) { console.error(e); } return r; };
+
+            // ---------- Home: Today card, last round, tiles, bottom tab bar ----------
+            function homeCards() {
+                let home = $('step-home');
+                let box = $('rv-home');
+                if (!box) { box = document.createElement('div'); box.id = 'rv-home'; home.querySelector('.clean-title').after(box); }
+                let today = '';
+                if (liveRoundInCloud && roundData?.course) {
+                    let everyone = allRealPlayers(), seq = getHoleSequence();
+                    let thru = 0; for (let h of seq) { if (!everyone.every(x => scoresDb[x.g]?.[x.p]?.[h])) break; thru++; }
+                    today = `<div class="rv-today"><div class="rv-today-top"><span>Round in progress</span><span class="rv-pill">${thru ? `thru ${thru}` : 'just started'}</span></div>
+                        <h3>${roundData.course.name.replace(/\s*\(.*\)$/, '')}</h3><p>${formatRoundDate(roundData.date)} · ${roundData.groups.length} teams of ${Math.max(...roundData.groups.map(g => g.players.length))}${roundData.ourMatch ? ' · Our Match on' : ''}</p>
+                        <div class="rv-today-btns"><button type="button" onclick="goLiveScoring()">Continue scoring</button><button type="button" class="ghost" onclick="goLiveStandings()">Standings</button></div></div>`;
+                } else if (signupIsCurrent()) {
+                    let r = Object.values(signup.responses || {}), ins = r.filter(x => x.status === 'in').length, outs = r.filter(x => x.status === 'out').length;
+                    today = `<div class="rv-today"><div class="rv-today-top"><span>Next round · ${formatRoundDate(signup.date)}</span><span class="rv-pill">${ins} in · ${outs} out</span></div>
+                        <h3>${(signup.course || 'Course not set').replace(/\s*\(.*\)$/, '')}</h3><p>${signup.time ? 'Tee ' + formatFriendlyTime(signup.time) : 'Tee time not set'}</p>
+                        <div class="rv-today-btns"><button type="button" onclick="showScreen('step-1')">Start round</button><button type="button" class="ghost" onclick="whosBack = 'step-home'; openWhosPlaying()">Who's playing</button></div></div>`;
+                } else {
+                    today = `<div class="rv-today"><div class="rv-today-top"><span>No round going</span></div><h3>Ready when you are</h3><p>Send a sign-up link from Who's playing, or start one now.</p>
+                        <div class="rv-today-btns"><button type="button" onclick="showScreen('step-1')">＋ New round</button></div></div>`;
+                }
+                let last = Object.entries(roundHistory).filter(([, r]) => !r.excluded).sort((a, b) => (b[1].at || 0) - (a[1].at || 0))[0];
+                let lastHTML = '';
+                if (last) {
+                    let r = last[1], top = Object.values(r.money || {}).map(m => ({ name: m.name, c: (+m.games || 0) + (+m.om || 0) + (+m.side || 0) })).sort((a, b) => b.c - a.c)[0];
+                    lastHTML = `<button type="button" class="rv-last" onclick="viewArchiveList()"><div><span class="rv-eyebrow">Last round · ${formatRoundDate(r.date)}</span><b>${(r.course || '').replace(/\s*\(.*\)$/, '')}</b>
+                        ${top && top.c > 0 ? `<span class="rv-top">Top: ${firstName(top.name)} <b>+${formatDollars(Math.round(top.c / 100) * 100)}</b></span>` : ''}</div><span class="rv-pill">Results ›</span></button>`;
+                }
+                box.innerHTML = today + lastHTML;
+            }
+            let _home = window.renderHome;
+            window.renderHome = function () { let r = _home.apply(this, arguments); try { homeCards(); } catch (e) { console.error(e); } return r; };
+
+            document.body.insertAdjacentHTML('beforeend', `
+                <nav class="rv-tabbar" id="rv-tabbar">
+                    <button type="button" data-s="step-home" onclick="showScreen('step-home')"><i>⌂</i>Home</button>
+                    <button type="button" data-s="step-money" onclick="openMoneyScreen()"><i>💵</i>Money</button>
+                    <button type="button" class="rv-fab" onclick="showScreen('step-1')"><i>＋</i></button>
+                    <button type="button" data-s="step-players" onclick="openPlayersScreen()"><i>👥</i>Players</button>
+                    <button type="button" data-s="more" onclick="document.getElementById('rv-more').classList.add('active')"><i>☰</i>More</button>
+                </nav>
+                <div id="rv-more" class="modal-overlay"><div class="modal-content rv-sheet">
+                    <div class="rv-grab"></div><h2 style="margin:0 0 12px;color:var(--text-main);">More</h2>
+                    <div class="rv-menu-grid">
+                        <button type="button" onclick="rvMore(viewArchiveList)"><i>🗂️</i>Past rounds</button>
+                        <button type="button" onclick="rvMore(openTeesEditor)"><i>⛳</i>Courses &amp; tees</button>
+                        <button type="button" onclick="rvMore(() => openAlertsScreen('step-home'))"><i>🔔</i>Alerts</button>
+                        <button type="button" onclick="rvMore(() => showScreen('step-help'))"><i>❓</i>How it works</button>
+                    </div>
+                    <button type="button" class="rv-menu-row" onclick="rvMore(changeAdminPin)">Change PIN</button>
+                    <button type="button" class="rv-menu-row" onclick="rvMore(adminSignOut)">Sign out</button>
+                    <button type="button" class="rv-menu-row" onclick="leaveBeta()">Leave the test copy</button>
+                    <button type="button" class="btn-secondary" onclick="document.getElementById('rv-more').classList.remove('active')">Close</button>
+                </div></div>`);
+            window.rvMore = fn => { $('rv-more').classList.remove('active'); fn(); };
+
+            // ---------- whichever screen opens ----------
+            const TABBAR_ON = ['step-home', 'step-money', 'step-players', 'step-8'];
+            function onScreen(id) {
+                if (id === 'step-1') rvPage('step-1', lastScreen === 'step-2' ? 2 : 1);
+                if (id === 'step-2') rvPage('step-2', lastScreen === 'step-2-half' ? 4 : 3);
+                document.documentElement.classList.toggle('rv-has-tabbar', TABBAR_ON.includes(id));
+                document.querySelectorAll('#rv-tabbar [data-s]').forEach(b => b.classList.toggle('on', b.dataset.s === id));
+                lastScreen = id;
+            }
+            let seen = null;
+            new MutationObserver(() => { let a = document.querySelector('.screen.active')?.id; if (a && a !== seen) { seen = a; onScreen(a); } })
+                .observe(document.body, { subtree: true, attributes: true, attributeFilter: ['class'] });
+            let first = document.querySelector('.screen.active')?.id; if (first) { seen = first; onScreen(first); }
+        })();
     </script>
 </body>
 </html>
