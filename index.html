@@ -5970,7 +5970,8 @@ function hideCartHoleHeader() {
         // Top of the standings / results when the round has more than one money game: one who-pays-who for all of it
         function allGamesHTML(rData, sDb, presses, withMatch = true) {
             let u = roundSettleUp(rData, sDb, presses, withMatch);
-            if (u.games.length < 2) return '';
+            // Our Match alone already says who pays who in its box at the top
+            if (!u.games.length || (u.games.length === 1 && u.games[0] !== 'team bets')) return '';
             let first = n => n.split(' ')[0];
             let money = c => `${c > 0 ? '+' : c < 0 ? '−' : ''}${formatDollars(Math.round(c / 100) * 100)}`;
             let rows = Object.entries(u.nets).sort((a, b) => b[1] - a[1]);
