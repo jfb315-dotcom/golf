@@ -179,6 +179,7 @@
         #step-3.cart-hole-view .hole-watermark .wm-num { font-size: 170px; }
         #step-3.cart-hole-view .hole-watermark .wm-hole, #step-3.cart-hole-view .hole-watermark .wm-par { font-size: 32px; }
         #step-3.cart-hole-view #sync-status { display: none; }
+        #step-3.cart-hole-view #admin-hole-strip { display: none !important; } /* the admin's strip doesn't belong on a cart's hole */
         .hole-top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 6px; }
         .hole-top-row .back-link { margin: 0; }
         .hole-top-row .alerts-banner { margin: 0; }
@@ -588,8 +589,8 @@
         .row-note { margin-left: auto; margin-right: 8px; font-size: 13px; color: var(--text-muted); font-weight: 500; }
         /* ===== Test copy: banner and the new scoring look (html.revamp) ===== */
         .beta-banner { display: none; }
-        html.revamp .beta-banner { display: flex; position: sticky; top: 0; z-index: 60; align-items: center; justify-content: space-between; gap: 10px; padding: 6px 14px; background: #ff8a1f; color: #1a0d02; font-size: 12px; font-weight: 800; letter-spacing: .04em; }
-        html.revamp .beta-banner button { background: #1a0d02; color: #ffd9b0; border: 0; border-radius: 999px; padding: 4px 12px; font-weight: 800; font-size: 12px; }
+        html.revamp .beta-banner { display: flex; position: sticky; top: 0; z-index: 60; align-items: center; justify-content: space-between; gap: 10px; padding: calc(3px + env(safe-area-inset-top)) 14px 3px; white-space: nowrap; background: #ff8a1f; color: #1a0d02; font-size: 12px; font-weight: 800; letter-spacing: .04em; }
+        html.revamp .beta-banner button { background: #1a0d02; color: #ffd9b0; border: 0; border-radius: 999px; padding: 2px 12px; font-weight: 800; font-size: 12px; }
         .rv-bar, .rv-avatar { display: none; }
         html.revamp body { padding-bottom: 96px; }
         html.revamp #step-3.active ~ .rv-bar, html.revamp body:has(#step-3.active) .rv-bar { display: flex; }
@@ -685,7 +686,7 @@
     </div>
     <img src="logo.png" class="app-logo" alt="JB Golf">
 
-    <div class="beta-banner"><span>🧪 TEST COPY · rounds here don't count</span><button type="button" onclick="leaveBeta()">Leave</button></div>
+    <div class="beta-banner"><span>🧪 TEST COPY</span><button type="button" onclick="leaveBeta()">Leave</button></div>
 
     <div id="step-home" class="screen clean active">
         <div class="clean-eyebrow">JB Golf</div>
