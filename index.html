@@ -594,7 +594,7 @@
         .rv-bar, .rv-avatar { display: none; }
         html.revamp body { padding-bottom: 96px; }
         html.revamp #step-3.active ~ .rv-bar, html.revamp body:has(#step-3.active) .rv-bar { display: flex; }
-        html.revamp .rv-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; gap: 10px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, rgba(13,33,26,0), var(--bg-dark) 35%); }
+        html.revamp .rv-bar { position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; gap: 10px; padding: 12px 16px calc(14px + env(safe-area-inset-bottom)); background: linear-gradient(180deg, transparent, var(--bg-dark) 35%); }
         html.revamp .rv-bar-main { flex: 1; height: 54px; border: 0; border-radius: 16px; background: var(--accent-gold); color: var(--on-accent); font-size: 17px; font-weight: 800; }
         html.revamp .rv-bar-side { width: 64px; height: 54px; border: 0; border-radius: 16px; background: var(--fill-strong); color: var(--text-main); font-size: 22px; font-weight: 800; }
         html.revamp .rv-bar-side:disabled { opacity: .35; }
@@ -604,12 +604,12 @@
         html.revamp .team-card { border-radius: 20px; padding: 8px 10px; background: var(--bg-card); border: 1px solid var(--line); }
         html.revamp .score-row { display: flex; align-items: center; padding: 8px 10px; border-radius: 14px; margin: 2px 0; }
         html.revamp .score-row .player-name { font-size: 17px; font-weight: 700; }
-        html.revamp .score-row.active { background: rgba(255,138,31,.10); box-shadow: inset 0 0 0 2px var(--accent-gold); }
+        html.revamp .score-row.active { background: color-mix(in srgb, var(--accent-gold) 10%, transparent); box-shadow: inset 0 0 0 2px var(--accent-gold); }
         html.revamp .score-row .par-indicator { margin-left: auto; margin-right: 10px; font-size: 12px; }
         html.revamp .score-circle { width: 48px !important; height: 48px !important; border-radius: 14px !important; font-size: 24px !important; font-weight: 900 !important; background: var(--bg-dark) !important; border: 2px solid transparent !important; }
         html.revamp .score-keypad { display: grid !important; grid-template-columns: repeat(5, 1fr); gap: 8px; margin-top: 10px; }
         html.revamp .score-keypad button { height: 54px; border-radius: 15px; border: 0; background: var(--fill-strong); color: var(--text-main); font-size: 22px; font-weight: 800; }
-        html.revamp .score-keypad button.par-key { background: rgba(255,138,31,.16); color: #ffb15e; box-shadow: inset 0 0 0 2px var(--accent-gold); }
+        html.revamp .score-keypad button.par-key { background: color-mix(in srgb, var(--accent-gold) 16%, transparent); color: var(--accent-gold); box-shadow: inset 0 0 0 2px var(--accent-gold); }
         html.revamp .score-keypad .key-clear { grid-column: span 2; font-size: 15px; color: var(--text-muted); }
         html.revamp .hole-strip .strip-hole { border-radius: 11px; }
         html.revamp .rv-om-line { margin-top: 10px; padding: 12px 14px; border-radius: 16px; background: var(--bg-card); border: 1px solid var(--line); font-weight: 700; }
@@ -618,6 +618,8 @@
         .rv-menu-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px; }
         .rv-menu-grid button { display: flex; flex-direction: column; align-items: flex-start; gap: 10px; height: 84px; padding: 14px; border-radius: 18px; border: 1px solid var(--line); background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 800; text-align: left; }
         .rv-menu-grid button i { font-style: normal; font-size: 20px; }
+        .rv-theme-row { display: flex !important; align-items: center; justify-content: space-between; gap: 10px; }
+        .rv-theme-row select { width: auto; max-width: 60%; margin: 0; padding: 6px 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--bg-card); color: var(--text-main); font-size: 15px; }
         .rv-menu-row { display: block; width: 100%; padding: 14px; margin-bottom: 10px; border-radius: 14px; border: 1px solid var(--line); background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 600; text-align: left; }
         .rv-finalize { display: block; width: 100%; height: 52px; margin-bottom: 10px; border: 0; border-radius: 16px; background: rgba(255,107,94,.16); color: #ff8f84; font-size: 16px; font-weight: 800; }
         /* Test copy, cart entering a hole: everything on one screen like the old look (no bottom bar, sizes follow the screen) */
@@ -668,13 +670,13 @@
         html.revamp details[data-fold="live-cards"], html.revamp details[data-fold="arc-cards"] { display: none !important; }
         /* Home */
         html.revamp #step-home #home-live, html.revamp #step-home .home-new, html.revamp #step-home > .list-rows, html.revamp #step-home .home-tile.wide { display: none !important; }
-        html.revamp .rv-today { margin: 6px 0 12px; padding: 16px; border-radius: 22px; background: linear-gradient(140deg, #ff8a1f, #e06a10); color: #1a0d02; }
+        html.revamp .rv-today { margin: 6px 0 12px; padding: 16px; border-radius: 22px; background: linear-gradient(140deg, var(--accent-gold), color-mix(in srgb, var(--accent-gold) 82%, #000)); color: var(--on-accent); }
         html.revamp .rv-today-top { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; opacity: .75; }
-        html.revamp .rv-today h3 { margin: 8px 0 2px; font-size: 24px; font-weight: 900; color: #1a0d02; }
+        html.revamp .rv-today h3 { margin: 8px 0 2px; font-size: 24px; font-weight: 900; color: var(--on-accent); }
         html.revamp .rv-today p { margin: 0 0 14px; font-weight: 600; opacity: .8; }
         html.revamp .rv-today-btns { display: flex; gap: 8px; }
-        html.revamp .rv-today-btns button { flex: 1; height: 50px; border: 0; border-radius: 14px; background: #1a0d02; color: #ffd9b0; font-weight: 800; font-size: 16px; }
-        html.revamp .rv-today-btns button.ghost { background: rgba(26,13,2,.15); color: #1a0d02; }
+        html.revamp .rv-today-btns button { flex: 1; height: 50px; border: 0; border-radius: 14px; background: var(--on-accent); color: var(--accent-gold); font-weight: 800; font-size: 16px; }
+        html.revamp .rv-today-btns button.ghost { background: color-mix(in srgb, var(--on-accent) 18%, transparent); color: var(--on-accent); }
         html.revamp .rv-pill { padding: 5px 10px; border-radius: 999px; background: rgba(0,0,0,.15); font-size: 12px; font-weight: 800; letter-spacing: 0; text-transform: none; white-space: nowrap; }
         html.revamp .rv-last { display: flex; width: 100%; justify-content: space-between; align-items: center; gap: 10px; margin-bottom: 12px; padding: 14px 16px; border-radius: 20px; border: 1px solid var(--line); background: var(--bg-card); color: var(--text-main); text-align: left; }
         html.revamp .rv-last > div { display: flex; flex-direction: column; gap: 3px; }
@@ -683,12 +685,12 @@
         html.revamp .rv-eyebrow { font-size: 11px; letter-spacing: .12em; text-transform: uppercase; color: var(--text-muted); font-weight: 800; }
         html.revamp .rv-top { font-size: 14px; color: var(--text-muted); } html.revamp .rv-top b { color: var(--good); font-size: 15px; }
         .rv-tabbar { display: none; }
-        html.revamp.rv-has-tabbar .rv-tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; justify-content: space-around; align-items: flex-start; padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); background: rgba(13,33,26,.97); border-top: 1px solid var(--line); }
+        html.revamp.rv-has-tabbar .rv-tabbar { display: flex; position: fixed; left: 0; right: 0; bottom: 0; z-index: 50; justify-content: space-around; align-items: flex-start; padding: 8px 6px calc(10px + env(safe-area-inset-bottom)); background: color-mix(in srgb, var(--bg-dark) 97%, transparent); border-top: 1px solid var(--line); }
         html.revamp.rv-has-tabbar body { padding-bottom: 96px; }
         html.revamp .rv-tabbar button { display: flex; flex-direction: column; align-items: center; gap: 3px; width: 64px; border: 0; background: none; color: var(--text-muted); font-size: 11px; font-weight: 700; }
         html.revamp .rv-tabbar button i { font-style: normal; font-size: 20px; line-height: 24px; }
         html.revamp .rv-tabbar button.on { color: var(--accent-gold); }
-        html.revamp .rv-tabbar .rv-fab i { width: 52px; height: 52px; margin-top: -22px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 24px rgba(255,138,31,.35); }
+        html.revamp .rv-tabbar .rv-fab i { width: 52px; height: 52px; margin-top: -22px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 24px color-mix(in srgb, var(--accent-gold) 35%, transparent); }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -1571,6 +1573,11 @@
                 'bg-table': '#10291f', 'border-color': '#24493d', 'on-accent': '#1a0d02',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.07)', 'fill-strong': 'rgba(255,255,255,0.14)', 'line': 'rgba(255,255,255,0.08)',
                 'good': '#57d38c', 'bad': '#ff6b5e', 'band-bg': '#14332a', 'band-text': '#f4efe3', 'band-accent': '#ff8a1f', 'head-bg': '#081712' } },
+            augustawhite: { mode: 'light', name: 'Augusta White', vars: {
+                'bg-dark': '#ffffff', 'bg-card': '#f3f7f4', 'text-main': '#0f2a1d', 'text-muted': '#5a6b61', 'accent-gold': '#006747',
+                'bg-table': '#ffffff', 'border-color': '#cfded5', 'on-accent': '#ffffff',
+                'fill-soft': 'rgba(0,103,71,0.04)', 'fill': 'rgba(0,103,71,0.07)', 'fill-strong': 'rgba(0,103,71,0.12)', 'line': 'rgba(15,42,29,0.10)',
+                'good': '#1a7f3c', 'bad': '#c0392b', 'band-bg': '#006747', 'band-text': '#ffffff', 'band-accent': '#ffd200', 'head-bg': '#e6efe9' } },
             clubhouse: { mode: 'light', name: 'Clubhouse', vars: {
                 'bg-dark': '#f7f6f1', 'bg-card': '#ffffff', 'text-main': '#1d2a22', 'text-muted': '#5b6660', 'accent-gold': '#1f4d33',
                 'bg-table': '#ffffff', 'border-color': '#d6d2c6', 'on-accent': '#ffffff',
@@ -1593,10 +1600,11 @@
         };
 
         // fromRound: applying the round's theme on a cart/spectator phone (don't send it back)
+        const BETA_THEMES = ['fairway', 'augustawhite', 'clubhouse', 'coastal'];
         function changeTheme(themeKey = null, fromRound = false) {
             let key = themeKey || document.getElementById('app-theme-selector').value; 
             if (!appThemes[key]) key = 'coastal'; // older saved themes were retired
-            if (BETA) key = 'fairway'; // the test copy always has the new look
+            if (BETA && !BETA_THEMES.includes(key)) key = 'fairway'; // the test copy has its own four looks; Fairway unless one was picked here
             let t = appThemes[key];
             if(t) {
                 Object.entries(t.vars).forEach(([name, value]) => document.documentElement.style.setProperty(`--${name}`, value));
@@ -1605,6 +1613,7 @@
                 localStorage.setItem('savedTheme', key); 
                 let sel = document.getElementById('app-theme-selector');
                 if(sel) sel.value = key;
+                let rvSel = document.getElementById('rv-theme'); if (rvSel) rvSel.value = key;
                 // The admin's theme is the round's theme: carts and spectators follow it
                 let isAdminPhone = lockedTeamId === null && new URLSearchParams(location.search).get('spectator') !== 'true';
                 if (!fromRound && isAdminPhone && typeof liveRoundInCloud !== 'undefined' && liveRoundInCloud && roundData.theme !== key) {
@@ -1723,6 +1732,7 @@ let myClientId = Math.random().toString(36).substr(2, 9);
 let hasReadonlyLock = false;
 let liveRoundInCloud = false; // true while an unarchived round exists in Firestore
 let hasLoadedRound = false;
+let routeToLiveNext = false;
 let loadedRoundId = null;
 
 let allAvailableCourses = {}; 
@@ -1805,7 +1815,7 @@ function toggle9HoleOptions() {
 
         window.onload = () => {
             sessionStorage.removeItem('isEditingMidRound');
-            let savedTheme = localStorage.getItem('savedTheme') || 'coastal'; 
+            let savedTheme = localStorage.getItem('savedTheme') || (BETA ? 'fairway' : 'coastal'); 
             changeTheme(savedTheme);
 
             let savedRosterData = localStorage.getItem('jbGolfRosterCache');
@@ -1918,6 +1928,7 @@ function toggle9HoleOptions() {
                             roundData.currentHole = roundData.currentHoles[getViewKey()] || incomingRound.currentHole || roundData.startHole;
                         }
                         let newRoundHere = loadedRoundId !== null && incomingRound.roundId !== loadedRoundId;
+                        let firstLoad = !hasLoadedRound;
                         hasLoadedRound = true;
                         lastCloudRound = JSON.parse(JSON.stringify(roundData));
                         loadedRoundId = incomingRound.roundId;
@@ -1966,11 +1977,14 @@ function toggle9HoleOptions() {
                                 shouldRouteToLive = true;
                             }
                         } else {
-                            if (!document.getElementById('step-3').classList.contains('active') && !document.getElementById('step-dashboard').classList.contains('active') && !isEditing) {
+                            // the organizer goes to scoring when the app opens or a new round starts, not on every update
+                            // (a cart's score or a theme change shouldn't pull them off Money, Players, etc.)
+                            if ((firstLoad || newRoundHere || routeToLiveNext) && !document.getElementById('step-3').classList.contains('active') && !document.getElementById('step-dashboard').classList.contains('active') && !isEditing) {
                                 shouldRouteToLive = true;
                             }
                         }
 
+                        routeToLiveNext = false;
                         if (shouldRouteToLive) {
                             renderPillNav(); 
                             renderScoreEntry();
@@ -7066,7 +7080,8 @@ function hideCartHoleHeader() {
             if (!reopenable) return;
             if (!(await askPin('Enter PIN to reopen the round'))) return;
             if (!confirm('Reopen the last round? Scores can be changed again and every cart link works again. Finalize it again when done.')) return;
-            activeTournamentRef.update({ isArchived: false, archivedAt: firebase.firestore.FieldValue.delete() }).catch(err => alert('Could not reopen: ' + err.message));
+            routeToLiveNext = true; // the reopened round opens on scoring
+            activeTournamentRef.update({ isArchived: false, archivedAt: firebase.firestore.FieldValue.delete() }).catch(err => { routeToLiveNext = false; alert('Could not reopen: ' + err.message); });
         }
 
         // A round can stay in Past rounds but be left out of the season money and everyone's stats
@@ -7281,11 +7296,19 @@ function hideCartHoleHeader() {
                         <button type="button" onclick="rvMore(() => openAlertsScreen('step-home'))"><i>🔔</i>Alerts</button>
                         <button type="button" onclick="rvMore(() => showScreen('step-help'))"><i>❓</i>How it works</button>
                     </div>
+                    <label class="rv-menu-row rv-theme-row">Color theme
+                        <select id="rv-theme" onchange="changeTheme(this.value)">
+                            <option value="fairway">Fairway (dark green)</option>
+                            <option value="augustawhite">Augusta White</option>
+                            <option value="clubhouse">Clubhouse</option>
+                            <option value="coastal">Coastal Links</option>
+                        </select></label>
                     <button type="button" class="rv-menu-row" onclick="rvMore(changeAdminPin)">Change PIN</button>
                     <button type="button" class="rv-menu-row" onclick="rvMore(adminSignOut)">Sign out</button>
                     <button type="button" class="rv-menu-row" onclick="leaveBeta()">Leave the test copy</button>
                     <button type="button" class="btn-secondary" onclick="document.getElementById('rv-more').classList.remove('active')">Close</button>
                 </div></div>`);
+            $('rv-theme').value = BETA_THEMES.includes(localStorage.getItem('savedTheme')) ? localStorage.getItem('savedTheme') : 'fairway';
             window.rvMore = fn => { $('rv-more').classList.remove('active'); fn(); };
 
             // ---------- whichever screen opens ----------
