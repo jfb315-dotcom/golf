@@ -1009,7 +1009,7 @@
         <p class="dash-footnote">Your picks carry over to the next round. Everyone turns alerts on for their own phone from their cart link.</p>
         <div class="field-label" style="margin-top:22px;">Phones with alerts on</div>
         <div id="alerts-phones" class="list-rows"><p class="clean-sub">Checking…</p></div>
-        <p class="dash-footnote">A phone never gets the alerts it sets off: when you enter a birdie or send a message, it goes to everyone else.</p>
+        <p class="dash-footnote">Only phones in today's round get alerts. Starting a new round clears the cart and spectator phones; each comes back as soon as it opens a link for the new round. A phone never gets the alerts it sets off: when you enter a birdie or send a message, it goes to everyone else.</p>
         <button type="button" class="btn-secondary" id="alerts-test" onclick="sendTestAlert()">🔔 Send a test alert to my phones</button>
     </div>
 
@@ -1663,9 +1663,11 @@ function toggle9HoleOptions() {
                         } else {
                             roundData.currentHole = roundData.currentHoles[getViewKey()] || incomingRound.currentHole || roundData.startHole;
                         }
+                        let newRoundHere = loadedRoundId !== null && incomingRound.roundId !== loadedRoundId;
                         hasLoadedRound = true;
                         lastCloudRound = JSON.parse(JSON.stringify(roundData));
                         loadedRoundId = incomingRound.roundId;
+                        if (newRoundHere && isSpectator && window.Notification?.permission === 'granted') { refreshAlertsButtons.saved = false; refreshAlertsButtons(); }
 
                         if(!roundData.groups) roundData.groups = [];
                         if(!roundData.carts && roundData.groups.length > 0) { 
@@ -3406,6 +3408,7 @@ function processStep2() {
                 // Only wipe scores when starting a brand new round
                 scoresDb = {};
                 roundData.roundId = Date.now();
+                clearRoundAlertPhones();
             } else {
                 // Keep existing scores when editing setup mid-round (bet amounts, formats, etc. can change safely)
             }
@@ -5811,7 +5814,7 @@ function hideCartHoleHeader() {
         function alertsCartTag() {
             let q = new URLSearchParams(location.search);
             if (lockedTeamId !== null) return String(lockedTeamId);
-            return q.get('spectator') || q.get('signup') || q.get('round') ? '' : 'admin';
+            return q.get('spectator') || q.get('signup') || q.get('round') || q.get('cart') || linkCart !== null ? '' : 'admin';
         }
         function signupAlertsOn() { try { return localStorage.getItem('jbGolfSignupAlerts') !== 'off'; } catch (e) { return true; } }
         function saveSignupAlertPref() {
@@ -5830,6 +5833,16 @@ function hideCartHoleHeader() {
             fetch(ALERTS_URL, { method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ title, body, view: 'whos', tag: `su-${key}`, from: alertsDeviceId(), cart: 'admin' }) }).catch(() => {});
         }
+        // A new round starts with only the admin phones on the alerts list; every cart and spectator phone
+        // puts itself back the moment it opens a link for the new round (see refreshAlertsButtons)
+        function clearRoundAlertPhones() {
+            pushSubsRef.get().then(doc => {
+                let subs = (doc.exists && doc.data().subs) || {};
+                let gone = Object.keys(subs).filter(id => subs[id]?.cart !== 'admin');
+                if (gone.length) return pushSubsRef.update(...gone.flatMap(id => [new firebase.firestore.FieldPath('subs', id), firebase.firestore.FieldValue.delete()]));
+            }).catch(err => console.error('Clearing alert phones failed', err));
+        }
+
         function saveAlertSubscription(sub) {
             let j = sub.toJSON();
             return pushSubsRef.set({ subs: { [alertsDeviceId()]: { endpoint: j.endpoint, p256dh: j.keys.p256dh, auth: j.keys.auth, url: location.href.split('#')[0], cart: alertsCartTag(), at: Date.now() } } }, { merge: true });
