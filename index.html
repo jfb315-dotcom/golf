@@ -1185,14 +1185,14 @@
         <div class="modal-content">
             <h2 id="text-modal-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Send to the group</h2>
             <textarea id="text-body" rows="5" style="width: 100%; box-sizing: border-box; background: var(--bg-dark); color: var(--text-main); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; font-family: inherit; font-size: 16px; resize: none; margin-bottom: 10px;"></textarea>
-            <button class="btn-primary" onclick="sendToGroupChat()">Send to your group chat</button>
-            <p class="dash-footnote" style="text-align:center; margin-top: 0;">Opens Share: pick Messages, then your golf group text.</p>
-            <details class="text-numbers">
-                <summary><span>Or pick who gets it (new text)</span><span class="fold-hint">Tap to open</span></summary>
+            <button class="btn-primary" id="text-send-picked" onclick="sendGroupText()">💬 Text the players checked below</button>
+            <button class="btn-secondary" onclick="sendToGroupChat()">Send to your own group text</button>
+            <p class="dash-footnote" style="text-align:center; margin-top: 0;">Your own group text: opens Share, pick Messages, then your golf group.</p>
+            <details class="text-numbers" open>
+                <summary><span>Who gets the text</span><span class="fold-hint">Tap to open</span></summary>
                 <div class="text-quick"><button type="button" class="text-link" onclick="textPickAll(true)">All</button><button type="button" class="text-link" onclick="textPickAll(false)">None</button><button type="button" class="text-link" id="text-pick-round" style="display:none;" onclick="setTextWho('round')">This round</button><button type="button" class="text-link" id="text-pick-in" onclick="textPickIn()">Who's in</button><button type="button" class="text-link contacts-btn" style="display:none;" onclick="textPickContacts()">📇 Add from contacts</button></div>
                 <div id="text-pick" class="text-pick"></div>
                 <p class="clean-sub" id="text-to"></p>
-                <button class="btn-secondary" onclick="sendGroupText()">Open Messages with these</button>
             </details>
             <button class="btn-secondary" onclick="document.getElementById('text-modal').classList.remove('active')">Cancel</button>
         </div>
@@ -2940,6 +2940,7 @@ function toggle9HoleOptions() {
             }).join('');
             let have = groupTextList().filter(x => x.phone);
             document.getElementById('text-to').textContent = have.length ? `${have.length} selected` : 'Nobody selected';
+            document.getElementById('text-send-picked').textContent = have.length ? `💬 Text the ${have.length} player${have.length === 1 ? '' : 's'} checked below` : '💬 Text the players checked below';
         }
         function sendGroupText() {
             let nums = groupTextList().map(x => x.phone.replace(/[^\d+]/g, '')).filter(Boolean);
