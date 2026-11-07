@@ -557,6 +557,15 @@
         .side-bet-opts .money-field { max-width: 140px; }
         .side-bet-remove { display: block; margin: 2px 0 0; font-size: 14px; }
         .side-bet-add { display: block; margin: 4px 0 14px; }
+        #side-bets-live input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: var(--fill-strong); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
+        #side-bets-live input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
+        #side-bets-live input.switch:checked { background: var(--accent-gold); }
+        #side-bets-live input.switch:checked::after { transform: translateX(18px); }
+        #side-bets-live .format-row { border-bottom: 0; }
+        #side-bets-live .money-field input { background: transparent; border: 0; box-shadow: none; padding-left: 4px; }
+        #side-bets-live select { font-size: 15px; padding-left: 10px; padding-right: 26px; }
+        #side-bets-live .om-side-name { flex-shrink: 0; }
+        #side-bets-setup { margin-top: 18px; }
         #side-bets-setup input.switch { -webkit-appearance: none; appearance: none; width: 44px; height: 26px; border-radius: 13px; background: var(--fill-strong); position: relative; cursor: pointer; transition: background 0.2s; flex-shrink: 0; }
         #side-bets-setup input.switch::after { content: ""; position: absolute; top: 3px; left: 3px; width: 20px; height: 20px; border-radius: 50%; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.3); transition: transform 0.2s; }
         #side-bets-setup input.switch:checked { background: var(--accent-gold); }
@@ -784,18 +793,18 @@
             <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="om-b1" aria-label="Side 2 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-b2" aria-label="Side 2 second player" onchange="saveOurMatchSides()"></select></div></div>
         </div>
 
-        <div id="side-bets-setup">
-            <div class="field-label">Side bets <span class="payout-note">2 on 2 · low net ball Nassau · any players</span></div>
-            <div id="side-bets-list"></div>
-            <button type="button" class="text-link side-bet-add" onclick="addSideBet()">+ Add a side bet</button>
-        </div>
-
         <div class="field-label">Carts</div>
         <div class="segmented" data-select="is-scrambled"><button type="button" data-value="no">Ride with team</button><button type="button" data-value="yes">Scramble carts</button></div>
         <select id="is-scrambled" class="segmented-source">
             <option value="no">YES - Standard Pairings</option>
             <option value="yes">NO - Scramble Pairings (Snake Draft)</option>
         </select>
+
+        <div id="side-bets-setup">
+            <div class="field-label">Side bets <span class="payout-note">2 on 2 · low net ball Nassau · any players · optional</span></div>
+            <div id="side-bets-list"></div>
+            <button type="button" class="text-link side-bet-add" onclick="addSideBet()">+ Add a side bet</button>
+        </div>
 
         <div class="bottom-bar">
             <button type="button" class="icon-btn" id="btn-step2-text" onclick="shareRoundInfo()" aria-label="Text round info to the group"><svg aria-hidden="true" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg></button>
@@ -1084,6 +1093,19 @@
                 <li>Open <b>JB Golf</b> from your Home Screen and tap <b>Turn on alerts</b>.</li>
             </ol>
             <button type="button" class="bar-primary" style="width:100%;" onclick="document.getElementById('spec-hs-modal').classList.remove('active')">Got it</button>
+        </div>
+    </div>
+
+    <div id="sb-modal" class="modal-overlay">
+        <div class="modal-content" id="side-bets-live">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Add a side bet</h2>
+            <p class="clean-sub" style="text-align:center;">2 on 2 · low net ball Nassau · same amount every bet, per person</p>
+            <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="sbl-a1" aria-label="Side 1 first player"></select></div><div class="select-wrap slot"><select id="sbl-a2" aria-label="Side 1 second player"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="sbl-b1" aria-label="Side 2 first player"></select></div><div class="select-wrap slot"><select id="sbl-b2" aria-label="Side 2 second player"></select></div></div>
+            <div class="side-bet-opts"><div class="money-field"><span>$</span><input type="number" id="sbl-amount" min="0" inputmode="numeric" value="20" aria-label="Dollars per bet" onfocus="this.select()"></div><span class="payout-note">a bet, per person</span></div>
+            <div class="format-row"><label class="format-label" for="sbl-birdies">All birdies count</label><input type="checkbox" class="switch" id="sbl-birdies"></div>
+            <button type="button" class="btn-primary" onclick="saveLiveSideBet()">Add side bet</button>
+            <button type="button" class="btn-secondary" onclick="document.getElementById('sb-modal').classList.remove('active')">Cancel</button>
         </div>
     </div>
 
@@ -4802,7 +4824,7 @@ function hideCartHoleHeader() {
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
             let sbEl = document.getElementById('dashboard-side-bets');
-            sbEl.innerHTML = sideBetsHTML(roundData, scoresDb, 'live-');
+            sbEl.innerHTML = sideBetsHTML(roundData, scoresDb, 'live-', !spectator && lockedTeamId === null && !showingFinalResults && liveRoundInCloud);
             dash.insertBefore(sbEl, omEl.nextSibling);
             let cardsEl = document.getElementById('dashboard-scorecards');
             dash.insertBefore(cardsEl, spectator || banner ? dash.querySelector('.alerts-banner').nextSibling : document.getElementById('dashboard-payouts'));
@@ -5642,9 +5664,10 @@ function hideCartHoleHeader() {
             return x.diff === 0 ? 'all square' : `${x.diff < 0 ? sb.names[0] : sb.names[1]} up ${Math.abs(x.diff)}`;
         }
         // Standings / results: every side bet as a small card, hole by hole folded under it
-        function sideBetsHTML(rData, sDb, prefix) {
+        function sideBetsHTML(rData, sDb, prefix, canEdit) {
             let bets = (rData.sideBets || []).map(b => calculateSideBet(rData, sDb, b)).filter(Boolean);
-            if (!bets.length) return '';
+            let addBtn = canEdit ? `<button type="button" class="text-link side-bet-add" onclick="openLiveSideBet()">+ Add a side bet</button>` : '';
+            if (!bets.length) return addBtn;
             let html = `<section class="dash-section side-bets" id="side-bets"><div class="dash-section-title team-head"><span>Side bets</span><span>${bets.every(b => b.finished) ? 'Final' : 'Live'}</span></div>`;
             bets.forEach((sb, i) => {
                 html += `<div class="side-bet">
@@ -5666,9 +5689,10 @@ function hideCartHoleHeader() {
                     chart += `</tbody></table><p class="dash-footnote">Low net ball each hole, to par · bets: + = ${sb.names[0]} up (strokes)</p>`;
                     html += fold(`${prefix}sb-${i}`, 'See hole by hole', chart);
                 }
+                if (canEdit) html += `<button type="button" class="text-link danger-link side-bet-remove" onclick="removeLiveSideBet(${i})">Remove this side bet</button>`;
                 html += `</div>`;
             });
-            return html + `</section>`;
+            return html + addBtn + `</section>`;
         }
         // The rules dropdown: one line per side bet
         function sideBetsRulesHTML(rData) {
@@ -5677,6 +5701,36 @@ function hideCartHoleHeader() {
             let nines = sideBetNines(rData).map(x => x.label).join(', ');
             return `<div class="payout-sub">Side bets · per person</div>` + bets.map(sb => `<div class="om-rule"><div class="dash-row"><span>${sb.names[0]} vs ${sb.names[1]}</span><b class="om-rule-yes">Strokes count</b></div>
                 <p class="om-rule-note">$${sb.amount} a bet on ${nines} and Overall. Each side's low net ball every hole${sb.allBirdies ? ', plus every other net birdie (all birdies count)' : ''}, added up. Lower total wins the bet; a tie is a push. No presses.</p></div>`).join('');
+        }
+
+        // Standings, admin, round in play: add a side bet without going back through setup
+        function openLiveSideBet() {
+            let opts = '<option value="">Pick</option>' + roundData.groups.flatMap(g => g.players.filter(p => !p.isGhost && p.name)
+                .map(p => `<option value="${g.id}-${p.id}">${firstName(p.name)} (T${g.id})</option>`)).join('');
+            ['a1', 'a2', 'b1', 'b2'].forEach(k => { document.getElementById('sbl-' + k).innerHTML = opts; });
+            document.getElementById('sbl-amount').value = 20;
+            document.getElementById('sbl-birdies').checked = false;
+            document.getElementById('sb-modal').classList.add('active');
+        }
+        function saveSideBetsToRound() {
+            trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'sideBets'), JSON.parse(JSON.stringify(roundData.sideBets || []))));
+            viewDashboard();
+        }
+        function saveLiveSideBet() {
+            let picked = ['a1', 'a2', 'b1', 'b2'].map(k => document.getElementById('sbl-' + k).value);
+            let amount = parseInt(document.getElementById('sbl-amount').value) || 0;
+            if (picked.some(v => !v) || new Set(picked).size !== 4 || amount <= 0) { alert('Pick 4 different players, 2 on each side, and a dollar amount.'); return; }
+            let seat = v => { let [g, p] = v.split('-').map(Number); return { g, p }; };
+            let bets = roundData.sideBets = roundData.sideBets || [];
+            bets.push({ id: Math.max(0, ...bets.map(b => b.id || 0)) + 1, sideA: [seat(picked[0]), seat(picked[1])], sideB: [seat(picked[2]), seat(picked[3])], amount, allBirdies: document.getElementById('sbl-birdies').checked });
+            document.getElementById('sb-modal').classList.remove('active');
+            saveSideBetsToRound();
+        }
+        function removeLiveSideBet(i) {
+            let sb = calculateSideBet(roundData, scoresDb, roundData.sideBets[i]);
+            if (!confirm(`Remove the side bet ${sb ? sb.names[0] + ' vs ' + sb.names[1] : ''}?`)) return;
+            roundData.sideBets.splice(i, 1);
+            saveSideBetsToRound();
         }
 
         // Text version for the results message
