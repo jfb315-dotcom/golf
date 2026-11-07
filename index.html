@@ -5902,8 +5902,17 @@ function hideCartHoleHeader() {
             };
             let who = (id, x) => {
                 let view = /[?&]om=2/.test(x.url || '') ? ' · other side\'s view' : '';
-                let what = x.cart === 'admin' ? 'Admin' : x.cart ? `Cart ${x.cart}` : `Spectator${view}`;
+                let what = x.cart === 'admin' ? 'Admin' : x.cart ? cartWho(x) : `Spectator${view}`;
                 return id === me ? `This phone (${what.toLowerCase()})` : what;
+            };
+            // A cart phone from this round: the players on that cart, so you can tell whose phone it is
+            let rid = liveRoundInCloud && roundData?.carts ? String(roundData.roundId || '') : '';
+            let cartWho = x => {
+                let linkRound = (/[?&]r=([^&#]+)/.exec(x.url || '') || [])[1];
+                let thisRound = rid && (linkRound ? linkRound === rid : (x.at || 0) >= Number(rid));
+                let cart = thisRound && roundData.carts.find(c => String(c.id) === String(x.cart));
+                let names = cart ? realPlayersOf(cart).map(cp => firstName(cp.player.name)).join(', ') : '';
+                return names ? `Cart ${x.cart} · ${names}` : `Cart ${x.cart} · earlier round`;
             };
             let rows = Object.entries(subs).filter(([, x]) => x && x.endpoint).sort(([, a], [, b]) => (b.at || 0) - (a.at || 0));
             el.innerHTML = rows.map(([id, x]) => `<div class="alerts-phone"><b>${who(id, x)}</b><span>last opened ${when(x.at)}</span></div>`).join('')
