@@ -504,6 +504,10 @@
         .alerts-all .text-link { padding: 6px 0; }
         .alerts-group { margin: 14px 4px 6px; font-size: 12px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
         .alerts-banner { margin: 12px 0 4px; }
+        .alerts-phone { display: flex; flex-direction: column; gap: 2px; padding: 10px 4px; border-bottom: 1px solid var(--line); }
+        .alerts-phone b { font-size: 16px; font-weight: 600; color: var(--text-main); }
+        .alerts-phone span { font-size: 13px; color: var(--text-muted); }
+        #alerts-test { margin-top: 14px; }
         .counts-row { margin: 18px 0 0; padding: 12px 14px; border-radius: 14px; background: var(--fill-soft); }
         .counts-row input.switch { flex-shrink: 0; margin: 0 0 0 12px; }
         #om-options input.switch { flex-shrink: 0; margin: 0 0 0 12px; }
@@ -1003,6 +1007,10 @@
             <div class="format-row"><label class="format-label" for="alert-signups">Sign-up answers (who's in or out) 🙋</label><input type="checkbox" class="switch" id="alert-signups" checked onchange="saveSignupAlertPref()"></div>
         </div>
         <p class="dash-footnote">Your picks carry over to the next round. Everyone turns alerts on for their own phone from their cart link.</p>
+        <div class="field-label" style="margin-top:22px;">Phones with alerts on</div>
+        <div id="alerts-phones" class="list-rows"><p class="clean-sub">Checking…</p></div>
+        <p class="dash-footnote">A phone never gets the alerts it sets off: when you enter a birdie or send a message, it goes to everyone else.</p>
+        <button type="button" class="btn-secondary" id="alerts-test" onclick="sendTestAlert()">🔔 Send a test alert to my phones</button>
     </div>
 
     <div id="signin-gate" style="display:none;">
@@ -1036,6 +1044,19 @@
                 <button type="button" class="bar-primary" onclick="pickOurMatchView('b')" id="om-view-b"></button>
             </div>
             <button type="button" class="text-link" style="display:block; margin: 10px auto 0;" onclick="pickOurMatchView(null)">Cancel</button>
+        </div>
+    </div>
+
+    <div id="spec-hs-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Want alerts for this match?</h2>
+            <p class="clean-sub" style="text-align:center;">Birdies, presses and the final result, right on your phone. On iPhone they only work from the Home Screen app:</p>
+            <ol class="hs-steps">
+                <li>Tap <b>Share</b> at the bottom of Safari.</li>
+                <li>Tap <b>Add to Home Screen</b>. Already have JB Golf there from another link? Delete it first, so the new one opens this match.</li>
+                <li>Open <b>JB Golf</b> from your Home Screen and tap <b>Turn on alerts</b>.</li>
+            </ol>
+            <button type="button" class="bar-primary" style="width:100%;" onclick="document.getElementById('spec-hs-modal').classList.remove('active')">Got it</button>
         </div>
     </div>
 
@@ -2525,6 +2546,14 @@ function toggle9HoleOptions() {
             document.getElementById('hs-ask').style.display = ''; document.getElementById('hs-yes').style.display = 'none'; document.getElementById('hs-no').style.display = 'none';
             document.getElementById('hs-modal').classList.add('active');
         }
+        // Opened a spectator link in Safari on an iPhone while the round is on: how to get alerts (once per round)
+        function maybeAskSpectatorHomeScreen() {
+            if (!ALERTS_URL || !isIPhone() || isHomeScreenApp() || new URLSearchParams(location.search).get('spectator') !== 'true') return;
+            if (!document.getElementById('step-dashboard').classList.contains('active') || document.getElementById('step-dashboard').classList.contains('round-over')) return;
+            let k = 'jbSpecHsAsked_' + roundData.roundId;
+            try { if (localStorage.getItem(k)) return; localStorage.setItem(k, '1'); } catch (e) { return; }
+            document.getElementById('spec-hs-modal').classList.add('active');
+        }
         function answerHomeScreen(yes) {
             document.getElementById('hs-ask').style.display = 'none';
             document.getElementById(yes ? 'hs-yes' : 'hs-no').style.display = '';
@@ -2640,7 +2669,7 @@ function toggle9HoleOptions() {
         }
         let whosBack = 'step-1';
         let alertsBack = 'step-home';
-        function openAlertsScreen(back) { alertsBack = back; document.getElementById('alert-signups').checked = signupAlertsOn(); updateAlertsCount(); showScreen('step-alerts'); }
+        function openAlertsScreen(back) { alertsBack = back; document.getElementById('alert-signups').checked = signupAlertsOn(); updateAlertsCount(); showScreen('step-alerts'); renderAlertPhones(); }
         function backToHome() { if (sessionStorage.getItem('isEditingMidRound') === 'true') cancelMidRoundEdit(); else showScreen('step-home'); }
         function showHome() { showScreen('step-home'); }
         function goLiveScoring() { renderPillNav(); renderScoreEntry(); showScreen('step-3'); }
@@ -3762,7 +3791,7 @@ function processStep2() {
             let om = roundData.ourMatch && isOurMatchOnly(roundData);
             if (om && !side) { askOurMatchView(roundData, shareSpectatorLink); return; }
             const spectatorLink = om ? shareUrl('match.html', `spectator=true&om=${side === 'b' ? 2 : 1}`) : shareUrl('live.html', 'spectator=true');
-            let st = `JB Golf · ${om ? 'Big Money Match, live' : 'Live leaderboard'} (watch only)\nTap to follow along. Want birdie & skins alerts? Tap Share at the bottom of your browser › Add to Home Screen.\n${spectatorLink}`;
+            let st = `JB Golf · ${om ? 'Big Money Match, live' : 'Live leaderboard'} (watch only)\nTap to follow along. Want alerts${om ? ' (birdies, presses, final)' : ' (birdies, skins)'}? In Safari tap Share › Add to Home Screen, then open JB Golf from your Home Screen and tap Turn on alerts.\n${spectatorLink}`;
             if (navigator.share) { shareWithPreview(st, om ? 'JB Golf · Big Money Match' : 'JB Golf · Live leaderboard'); return; }
 
             document.getElementById('share-modal-title').innerText = "Share Spectator Link";
@@ -4601,7 +4630,7 @@ function hideCartHoleHeader() {
             document.querySelectorAll('.screen').forEach(s => s.classList.remove('active')); 
             document.getElementById('step-dashboard').classList.add('active');
             // Opening the page starts at its top; a live refresh while you're reading it leaves you where you are
-            if (!wasOpen) window.scrollTo(0, 0);
+            if (!wasOpen) { window.scrollTo(0, 0); setTimeout(maybeAskSpectatorHomeScreen, 800); }
         }
         // Per cart: how far they've scored ("Thru") and any earlier holes still missing a score
         // Minutes per hole from the tee time (or first hole) to the last hole the cart finished, and when they'll be done
@@ -5857,6 +5886,40 @@ function hideCartHoleHeader() {
                 document.getElementById('message-modal').classList.remove('active');
                 alert(r.sent ? `Sent to ${r.sent} phone${r.sent === 1 ? '' : 's'}.` : 'Sent, but no phones on that cart have alerts turned on yet.');
             }).catch(() => alert("Couldn't send. Check your signal and try again."));
+        }
+
+        // Who has alerts on: every phone saved in push_subs, by what it follows, and when it last opened the app
+        async function renderAlertPhones() {
+            let el = document.getElementById('alerts-phones');
+            let subs = {};
+            try { let doc = await pushSubsRef.get(); subs = (doc.exists && doc.data().subs) || {}; }
+            catch (e) { el.innerHTML = '<p class="clean-sub">Couldn\'t load the list. Check your signal.</p>'; return; }
+            let me = alertsDeviceId();
+            let when = t => {
+                if (!t) return '';
+                let d = new Date(t), today = new Date().toDateString() === d.toDateString();
+                return (today ? 'today ' : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' · ') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
+            };
+            let who = (id, x) => {
+                let view = /[?&]om=2/.test(x.url || '') ? ' · other side\'s view' : '';
+                let what = x.cart === 'admin' ? 'Admin' : x.cart ? `Cart ${x.cart}` : `Spectator${view}`;
+                return id === me ? `This phone (${what.toLowerCase()})` : what;
+            };
+            let rows = Object.entries(subs).filter(([, x]) => x && x.endpoint).sort(([, a], [, b]) => (b.at || 0) - (a.at || 0));
+            el.innerHTML = rows.map(([id, x]) => `<div class="alerts-phone"><b>${who(id, x)}</b><span>last opened ${when(x.at)}</span></div>`).join('')
+                || '<p class="clean-sub">No phones have alerts on yet.</p>';
+        }
+
+        // A test alert to the phones on this one's link (the admin's phones), this one included
+        function sendTestAlert() {
+            if (!ALERTS_URL) return;
+            fetch(ALERTS_URL, {
+                method: 'POST', headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ title: '🔔 JB Golf test alert', body: 'Alerts are working on this phone.', view: 'scoring', tag: `test-${Date.now()}`, from: alertsDeviceId(), cart: alertsCartTag(), self: true })
+            }).then(r => r.json()).then(r => {
+                alert(r.sent ? `Sent to ${r.sent} phone${r.sent === 1 ? '' : 's'}. It should show up in a few seconds. Nothing on this phone? Check Settings › Notifications › JB Golf.`
+                    : 'Sent, but no phone here has alerts on. Turn on alerts on this phone first.');
+            }).catch(() => alert("Couldn't reach the alerts service. Check your signal and try again."));
         }
 
         function alertsLater() {
