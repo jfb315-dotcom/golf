@@ -193,7 +193,9 @@
         .hole-top-row .alerts-banner:has(.ab-big) { display: none !important; }
         .key-nav { grid-column: 1 / -1; display: flex; justify-content: space-between; gap: 8px; }
         .score-keypad .key-nav button { height: 36px; flex: 1; border: 1px solid var(--border-color); border-radius: 18px; background: transparent; color: var(--text-muted); font-size: 15px; font-weight: 700; }
-        .score-keypad .key-nav button:disabled { opacity: 0.3; } /* shown inside the band instead */
+        .score-keypad .key-nav button:disabled { opacity: 0.3; }
+        .score-keypad .key-nav .key-undo { flex: 0 0 60px; font-size: 20px; color: var(--text-main); }
+        #step-3:has(.key-undo) #undo-score { display: none !important; } /* the ↶ between the hole buttons does it */ /* shown inside the band instead */
 
         /* Cart hole list */
         .hole-list-row { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; margin: 0; padding: 0 12px; border: none; border-bottom: 1px solid var(--line); border-radius: 0; background: transparent; color: var(--text-main); text-align: left; cursor: pointer; }
@@ -4726,8 +4728,9 @@ function hideCartHoleHeader() {
             if (currentTeamFilter !== "ALL" || lockedTeamId !== null) {
                 let seq = getHoleSequence(), i = seq.indexOf(roundData.currentHole);
                 let prev = seq[i - 1], next = seq[i + 1];
-                let undo = BETA ? `<button type="button" class="key-undo" id="key-undo" onclick="undoLastScore()"${scoreUndo.length ? '' : ' disabled'} aria-label="Undo last score">↶</button>` : '';
-                nav = `<div class="key-nav${BETA ? ' with-undo' : ''}"><button type="button" onclick="changeHole(-1)"${prev ? '' : ' disabled'}>‹ ${prev ? 'Hole ' + prev : ''}</button>${undo}<button type="button" onclick="changeHole(1)"${next ? '' : ' disabled'}>${next ? 'Hole ' + next : ''} ›</button></div>`;
+                // Undo sits between the hole buttons (no extra line under the keypad)
+                let undo = `<button type="button" class="key-undo" id="key-undo" onclick="undoLastScore()"${scoreUndo.length ? '' : ' disabled'} aria-label="Undo last score">↶</button>`;
+                nav = `<div class="key-nav with-undo"><button type="button" onclick="changeHole(-1)"${prev ? '' : ' disabled'}>‹ ${prev ? 'Hole ' + prev : ''}</button>${undo}<button type="button" onclick="changeHole(1)"${next ? '' : ' disabled'}>${next ? 'Hole ' + next : ''} ›</button></div>`;
             }
             return `<div class="score-keypad">${keys}
                 <button type="button" class="key-clear" onclick="pressScoreKey('')">Clear</button>${nav}
