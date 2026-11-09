@@ -4749,7 +4749,9 @@ function hideCartHoleHeader() {
             let r = row.getBoundingClientRect();
             let top = document.querySelector('#step-3 .sticky-top')?.getBoundingClientRect().bottom || 0;
             let keys = document.querySelector('.score-keypad')?.getBoundingClientRect().top || window.innerHeight;
-            if (r.top >= top + 12 && r.bottom <= keys - 70) return; // already comfortable, don't move the page
+            // Only move the page if the player is actually hidden (under the header or behind the keypad).
+            // Moving it when they're already visible shifts the keypad under your thumb mid-hole.
+            if (r.top >= top && r.bottom <= keys) return;
             let target = top + (keys - top) * 0.4 - r.height / 2;
             window.scrollBy({ top: r.top - target, behavior: 'smooth' });
         }
