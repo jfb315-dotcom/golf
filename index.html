@@ -182,6 +182,10 @@
         #step-3.cart-hole-view #admin-hole-strip { display: none !important; } /* the admin's strip doesn't belong on a cart's hole */
         .hole-top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 6px; }
         .hole-top-row .back-link { margin: 0; }
+        .hole-top-row .ab-chip .rv-bell { width: 44px; height: 40px; padding: 0; border-radius: 999px; font-size: 19px; }
+        .hole-top-row .ab-chip.on .rv-bell { border-color: var(--good); }
+        .hole-top-row .alerts-banner:has(.rv-bell) { margin-left: auto; }
+        .hole-top-row .alerts-banner:has(.rv-bell) + .rv-stand-pill { margin-left: 0; }
         .rv-stand-pill { margin-left: auto; flex-shrink: 0; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill-strong); color: var(--text-main); font-size: 15px; font-weight: 800; }
         .hole-top-row .alerts-banner { margin: 0; }
         /* on a cart's hole the small tag sits on the back-link line; the big card stays full width above */
@@ -626,12 +630,17 @@
         /* Test copy, cart entering a hole: everything on one screen like the old look (no bottom bar, sizes follow the screen) */
         html.revamp body:has(#step-3.cart-hole-view) .rv-bar { display: none !important; }
         html.revamp body:has(#step-3.cart-hole-view) { padding-bottom: 0; }
-        html.revamp #step-3.cart-hole-view .score-row { padding: clamp(2px, .6vh, 8px) 8px; margin: 0; }
-        html.revamp #step-3.cart-hole-view .rv-avatar { width: clamp(28px, 4.4vh, 36px); height: clamp(28px, 4.4vh, 36px); font-size: 12px; }
+        html.revamp #step-3.cart-hole-view .score-row { min-height: 0; padding: clamp(2px, .7vh, 6px) 8px; margin: 0 0 1px; }
+        html.revamp #step-3.cart-hole-view .rv-avatar { width: clamp(28px, 4.2vh, 34px); height: clamp(28px, 4.2vh, 34px); font-size: 12px; }
         html.revamp #step-3.cart-hole-view .score-circle { width: clamp(40px, 6vh, 48px) !important; height: clamp(40px, 6vh, 48px) !important; font-size: clamp(20px, 3.1vh, 24px) !important; }
         html.revamp #step-3.cart-hole-view .score-keypad { gap: 6px; margin-top: 8px; }
-        html.revamp #step-3.cart-hole-view .score-keypad button { height: clamp(40px, 6.2vh, 52px); font-size: clamp(19px, 2.9vh, 22px); }
-        html.revamp #step-3.cart-hole-view .team-card { padding: 4px 8px; }
+        html.revamp #step-3.cart-hole-view .score-keypad button { height: clamp(40px, 6vh, 48px); font-size: clamp(19px, 2.9vh, 22px); }
+        html.revamp #step-3.cart-hole-view .team-card { padding: 2px 6px; }
+        html.revamp #step-3.cart-hole-view .score-keypad .key-nav button { height: 38px; }
+        /* the standings bar sits under the keypad again, like the original */
+        html.revamp #step-3.cart-hole-view > .btn-success { display: flex !important; margin-top: 12px; }
+        html.revamp #step-3.cart-hole-view .rv-stand-pill { display: none; }
+        @media (max-height: 700px) { html.revamp #step-3.cart-hole-view > .btn-success { display: none !important; } html.revamp #step-3.cart-hole-view .rv-stand-pill { display: block; } }
         html.revamp .key-nav { grid-column: 1 / -1; display: grid; grid-template-columns: 1fr 64px 1fr; gap: 6px; }
         html.revamp .key-nav:not(.with-undo) { grid-template-columns: 1fr 1fr; }
         html.revamp .key-nav button { background: var(--fill-strong); font-size: 15px !important; }
@@ -769,6 +778,7 @@
             <label class="list-row" for="app-theme-selector">Color theme
                 <select id="app-theme-selector" onchange="changeTheme()">
                     <option value="coastal" selected>Coastal Links</option>
+                    <option value="fairway">Fairway (green &amp; orange)</option>
                     <option value="augusta">Augusta</option>
                     <option value="slate">Slate</option>
                     <option value="clubhouse">Clubhouse</option>
@@ -1569,7 +1579,7 @@
                 'bg-table': '#181818', 'border-color': '#3a3a3a', 'on-accent': '#121212',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.08)', 'fill-strong': 'rgba(255,255,255,0.15)', 'line': 'rgba(255,255,255,0.10)',
                 'good': '#7ced7e', 'bad': '#ff6b6b', 'band-bg': '#1e1e1e', 'band-text': '#ffffff', 'band-accent': '#ff8200', 'head-bg': '#000000' } },
-            fairway: { mode: 'dark', name: 'Fairway (test copy)', vars: {
+            fairway: { mode: 'dark', name: 'Fairway', vars: {
                 'bg-dark': '#0d211a', 'bg-card': '#14332a', 'text-main': '#f4efe3', 'text-muted': '#9fb5aa', 'accent-gold': '#ff8a1f',
                 'bg-table': '#10291f', 'border-color': '#24493d', 'on-accent': '#1a0d02',
                 'fill-soft': 'rgba(255,255,255,0.04)', 'fill': 'rgba(255,255,255,0.07)', 'fill-strong': 'rgba(255,255,255,0.14)', 'line': 'rgba(255,255,255,0.08)',
@@ -4614,7 +4624,7 @@ function openHoleForScoring(holeNum) {
     renderCartHoleHeader(holeNum, par);
 
     // Back link and the Alerts on tag share one line
-    let html = `<div class="hole-top-row"><button type="button" class="back-link" onclick="showCartHoleList()">‹ All holes / scores</button><div class="alerts-banner inline"${alertsBannerHtml ? '' : ' style="display:none;"'}>${alertsBannerHtml}</div>${BETA ? '<button type="button" class="rv-stand-pill" onclick="viewDashboard()">Standings ›</button>' : ''}</div>`;
+    let html = `<div class="hole-top-row"><button type="button" class="back-link" onclick="showCartHoleList()">‹ All holes / scores</button><div class="alerts-banner inline"${alertsBannerHtml ? '' : ' style="display:none;"'}>${BETA ? alertsBannerHtml.replace(/<button([^>]*)>\s*(🔔|🔕)([^<]*)<\/button>/u, (m, at, icon, txt) => `<button${at} class="rv-bell" aria-label="${icon}${txt}" title="${txt.trim()}">${icon}</button>`) : alertsBannerHtml}</div>${BETA ? '<button type="button" class="rv-stand-pill" onclick="viewDashboard()">Standings ›</button>' : ''}</div>`;
     html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
