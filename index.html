@@ -182,6 +182,10 @@
         #step-3.cart-hole-view #admin-hole-strip { display: none !important; } /* the admin's strip doesn't belong on a cart's hole */
         .hole-top-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 4px 0 6px; }
         .hole-top-row .back-link { margin: 0; }
+        .hole-top-row .ab-chip .rv-bell { width: 44px; height: 40px; padding: 0; border-radius: 999px; font-size: 19px; }
+        .hole-top-row .ab-chip.on .rv-bell { border-color: var(--good); }
+        .hole-top-row .alerts-banner:has(.rv-bell) { margin-left: auto; }
+        .hole-top-row .alerts-banner:has(.rv-bell) + .rv-stand-pill { margin-left: 0; }
         .rv-stand-pill { margin-left: auto; flex-shrink: 0; padding: 8px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill-strong); color: var(--text-main); font-size: 15px; font-weight: 800; }
         .hole-top-row .alerts-banner { margin: 0; }
         /* on a cart's hole the small tag sits on the back-link line; the big card stays full width above */
@@ -4614,7 +4618,7 @@ function openHoleForScoring(holeNum) {
     renderCartHoleHeader(holeNum, par);
 
     // Back link and the Alerts on tag share one line
-    let html = `<div class="hole-top-row"><button type="button" class="back-link" onclick="showCartHoleList()">‹ All holes / scores</button><div class="alerts-banner inline"${alertsBannerHtml ? '' : ' style="display:none;"'}>${alertsBannerHtml}</div>${BETA ? '<button type="button" class="rv-stand-pill" onclick="viewDashboard()">Standings ›</button>' : ''}</div>`;
+    let html = `<div class="hole-top-row"><button type="button" class="back-link" onclick="showCartHoleList()">‹ All holes / scores</button><div class="alerts-banner inline"${alertsBannerHtml ? '' : ' style="display:none;"'}>${BETA ? alertsBannerHtml.replace(/<button([^>]*)>\s*(🔔|🔕)([^<]*)<\/button>/u, (m, at, icon, txt) => `<button${at} class="rv-bell" aria-label="${icon}${txt}" title="${txt.trim()}">${icon}</button>`) : alertsBannerHtml}</div>${BETA ? '<button type="button" class="rv-stand-pill" onclick="viewDashboard()">Standings ›</button>' : ''}</div>`;
     html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
