@@ -4467,7 +4467,6 @@ function setTeamFilter(filterValue) {
                 trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'currentHoles', String(viewKey)), roundData.currentHole));
                 if (cartHoleOpen && (currentTeamFilter !== "ALL" || lockedTeamId !== null)) {
                     openHoleForScoring(roundData.currentHole);
-                    window.scrollTo({ top: 0, behavior: 'smooth' });
                     return;
                 }
 
@@ -4603,13 +4602,16 @@ function showCartHoleList() {
     // Pin the name row just under the app's own pinned header
     document.documentElement.style.setProperty('--list-names-top', document.querySelector('#step-3 .sticky-top').offsetHeight + 'px');
 
-    // Auto-scroll to current hole
-    setTimeout(() => {
+    // Auto-scroll to current hole (straight there, no slide that could carry on into the hole screen)
+    clearTimeout(holeListScrollTimer);
+    holeListScrollTimer = setTimeout(() => {
+        if (!cartListOpen) return;
         const currentRow = document.querySelector('#cart-scorecard-list .hole-list-row.current');
-        if (currentRow) currentRow.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        if (currentRow) currentRow.scrollIntoView({ behavior: 'instant', block: 'center' });
     }, 100);
 }
 let cartHoleOpen = false; // a cart is on one hole's score entry rather than its hole list
+let holeListScrollTimer = null;
 let cartListOpen = false; // a cart is looking at All scores
 // The move to the next hole after the last score; cancelled if the scorer goes somewhere else first
 let autoAdvanceTimer = null;
@@ -4630,6 +4632,9 @@ function openHoleForScoring(holeNum) {
     html += renderFullHoleDetail(holeNum);
 
     document.getElementById('entry-container').innerHTML = html;
+    // A hole always opens at the top, straight away (the list may have been scrolled down)
+    clearTimeout(holeListScrollTimer);
+    window.scrollTo({ top: 0, behavior: 'instant' });
     activateFirstOpenScore();
 }
 // Cart header band: cart, hole and par, with Alerts on / Synced
@@ -4749,6 +4754,7 @@ function hideCartHoleHeader() {
         // Keep the selected player in the open space between the header and the keypad, not jammed against the keypad
         function keepScoreRowInView(row) {
             if (!row) return;
+            if (document.getElementById('step-3').classList.contains('cart-hole-view')) return; // one hole, all players on screen: never move it
             let r = row.getBoundingClientRect();
             let top = document.querySelector('#step-3 .sticky-top')?.getBoundingClientRect().bottom || 0;
             let keys = document.querySelector('.score-keypad')?.getBoundingClientRect().top || window.innerHeight;
