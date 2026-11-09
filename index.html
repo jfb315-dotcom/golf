@@ -2720,7 +2720,12 @@ function toggle9HoleOptions() {
             last.changes.forEach(c => { if (c.from) scoresDb[c.g][c.p][last.hole] = c.from; else delete scoresDb[c.g][c.p][last.hole]; });
             undoingScore = true;
             try { saveScoresToCloud(last.changes.map(c => [c.g, c.p]), last.hole); } finally { undoingScore = false; }
-            renderScoreEntry();
+            // Undo takes you back to where that score was: its hole (even if the app already moved on) and that player's box
+            cancelAutoAdvance();
+            if (last.hole !== roundData.currentHole && getHoleSequence().includes(last.hole)) goToHole(last.hole);
+            else renderScoreEntry();
+            let c = last.changes[0], box = document.getElementById(`score-input-${c.g}-${c.p}`);
+            if (box) { setActiveScoreInput(box); keepScoreRowInView(box.closest('.score-row')); }
             renderUndoScore();
         }
 
