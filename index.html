@@ -704,6 +704,11 @@
         html.revamp .rv-tabbar button.on { color: var(--accent-gold); }
         html.revamp .rv-tabbar .rv-fab i { width: 52px; height: 52px; margin-top: -22px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 24px color-mix(in srgb, var(--accent-gold) 35%, transparent); }
         .om-press-made { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 8px 12px; border-radius: 12px; background: var(--fill-soft); font-size: 14px; color: var(--text-muted); }
+        /* iPhones zoom the whole page in when you tap a typing box with text under 16px, and don't zoom back out.
+           These boxes were smaller, so they get 16px. */
+        .roster-stroke-input, #round-date, input[type="time"], select[id$="-tee"], .tee-edit-row input,
+        #sb-modal select, #app-theme-selector, #rv-theme { font-size: 16px !important; }
+        .roster-stroke-input::placeholder { font-size: 13px; } /* the hint can stay small; only the typing size matters */
         .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
