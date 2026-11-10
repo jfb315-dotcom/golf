@@ -862,7 +862,7 @@
                     <div class="money-field"><span>$</span><input type="number" id="om-ball" min="0" value="25" inputmode="numeric" aria-label="1st ball goes to 2nd ball dollars per bet on the front nine" onfocus="this.select()" onclick="this.select()"></div>
                 </div>
             </div>
-            <p class="clean-sub" style="margin: 8px 4px 0;">All amounts are per person. Back nine is double. Each team birdie pays that nine's 1st ball goes to 2nd ball amount (eagle = 2).</p>
+            <p class="clean-sub" style="margin: 8px 4px 0;">All amounts are per person. The second nine you play is double. Each team birdie pays that nine's 1st ball goes to 2nd ball amount (eagle = 2).</p>
             <div class="format-row"><label class="format-label" for="om-nassau-net">Strokes count on the Nassau <span class="payout-note">net Nassau · birdies stay gross</span></label><input type="checkbox" class="switch" id="om-nassau-net" aria-label="Strokes count on the Nassau"></div>
             <div class="format-row"><label class="format-label" for="om-only">Only Our Match <span class="payout-note">no tournament purse</span></label><input type="checkbox" class="switch" id="om-only" aria-label="Only Our Match, no tournament purse" onchange="toggleOurMatchOnly()"></div>
         </div>
@@ -5651,7 +5651,7 @@ function hideCartHoleHeader() {
         //  - Nassau (gross, or net when ourMatch.nassauNet): low ball, stroke play, Front / Back / Overall; each side may press each bet once,
         //    whenever it is behind in that bet or in a press on it. A press covers the holes after it's made.
         //  - First ball, then second ball (net): low balls decide the hole, second balls only if low balls tie.
-        //    A new bet starts automatically whenever the newest bet goes 1 down. Front amount, back doubles.
+        //    A new bet starts automatically whenever the newest bet goes 1 down. First nine played at the amount, second nine played doubles.
         //  - Birdies (gross): each birdie is worth that nine's ball amount; an eagle counts as two.
         // ==========================================
         const MATCH_BETS = ['front', 'back', 'overall'];
@@ -5711,9 +5711,10 @@ function hideCartHoleHeader() {
             });
 
             // ---- First ball / second ball and birdies, per nine ----
-            let nines = ['front', 'back'].filter(k => segHoles[k].length).sort((x, y) => pos(segHoles[x][0]) - pos(segHoles[y][0])).map(key => {
+            let nines = ['front', 'back'].filter(k => segHoles[k].length).sort((x, y) => pos(segHoles[x][0]) - pos(segHoles[y][0])).map((key, nineIdx) => {
                 let holes = segHoles[key];
-                let amount = key === 'back' ? om.ballBet * 2 : om.ballBet;
+                // The second nine played is double, whichever holes it is (starting on 10: 10-18 single, 1-9 double)
+                let amount = nineIdx === 1 ? om.ballBet * 2 : om.ballBet;
                 let done = doneUpTo(holes);
                 let finished = done.length === holes.length;
                 let bets = [0];
@@ -5914,7 +5915,7 @@ function hideCartHoleHeader() {
             let om = rData.ourMatch;
             if (!om) return '';
             let yes = '<b class="om-rule-yes">Strokes count</b>', no = '<b class="om-rule-no">No strokes</b>';
-            let ball = `$${om.ballBet} front, $${om.ballBet * 2} back`;
+            let ball = rData.playMode === '9' ? `$${om.ballBet}` : rData.startType === 'back' ? `$${om.ballBet} on 10–18 (played first), $${om.ballBet * 2} on 1–9` : `$${om.ballBet} front, $${om.ballBet * 2} back`;
             let row = (game, how, detail) => `<div class="om-rule"><div class="dash-row"><span>${game}</span>${how}</div><p class="om-rule-note">${detail}</p></div>`;
             return `<div class="payout-sub">Our Match · per person</div>`
                 + row('Nassau', om.nassauNet ? yes : no, `Front, Back and Overall, $${om.nassauBet} a bet. Each side's low ball on every hole, added up${om.nassauNet ? ', after strokes (net)' : ', actual scores only (gross)'}. Each side may press each bet once while behind.`)
