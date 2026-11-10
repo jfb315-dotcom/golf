@@ -703,6 +703,8 @@
         html.revamp .rv-tabbar button i { font-style: normal; font-size: 20px; line-height: 24px; }
         html.revamp .rv-tabbar button.on { color: var(--accent-gold); }
         html.revamp .rv-tabbar .rv-fab i { width: 52px; height: 52px; margin-top: -22px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 24px color-mix(in srgb, var(--accent-gold) 35%, transparent); }
+        .om-press-made { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 8px 12px; border-radius: 12px; background: var(--fill-soft); font-size: 14px; color: var(--text-muted); }
+        .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -5833,6 +5835,10 @@ function hideCartHoleHeader() {
             });
 
             let pressList = ourMatchPressList(m);
+            // While live, each press made shows up top with an Undo, in case it was tapped by mistake
+            if (live) pressList.forEach(pr => {
+                html += `<div class="om-press-made"><span>⤴ ${pr.text} · from hole ${pr.start}</span><button type="button" class="om-unpress" onclick="unpressOurMatch('${pr.key}','${pr.by}')">Undo</button></div>`;
+            });
             let nassauHTML = '';
             if (pressList.length) {
                 nassauHTML += `<div class="payout-sub">Presses</div>`;
@@ -5945,7 +5951,7 @@ function hideCartHoleHeader() {
             });
             html += `<tr class="om-grid-sum"><th>Total</th>${nines.map((n, i) => `<td>${formatMatchMoney(colTotal(i))}</td>`).join('')}${overall ? `<td>${formatMatchMoney(typeof nassauMoney(overall) === 'number' ? nassauMoney(overall) : 0)}</td>` : ''}<td class="om-grid-total">${formatMatchMoney(m.totalMoney)}</td></tr>`;
             html += `</tbody></table>`;
-            html += `<p class="om-grid-rules">Per person · Nassau ${om.nassauNet ? 'net (strokes count)' : 'gross'} · $${om.nassauBet} a bet · 1st ball goes to 2nd ball and birdies $${nines[0]?.amount ?? om.ballBet}${nines[1] ? ` front, $${nines[1].amount} back` : ''}</p>`;
+            html += `<p class="om-grid-rules">Per person · Nassau ${om.nassauNet ? 'net (strokes count)' : 'gross'} · $${om.nassauBet} a bet · 1st ball goes to 2nd ball and birdies ${nines.length > 1 ? nines.map(n => `$${n.amount} ${n.key === 'back' ? 'back' : 'front'}`).join(', ') : `$${nines[0]?.amount ?? om.ballBet}`}</p>`; // in play order: a round starting on 10 reads "$25 back, $50 front"
             // The Our Match only page already says who pays who at the very top
             if (!isOurMatchOnly(rData)) html += `<b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>`;
             return html + `</div>`;
@@ -6081,7 +6087,25 @@ function hideCartHoleHeader() {
             return html + `</div>`;
         }
 
+        function realOurMatchSide(side) { return new URLSearchParams(location.search).get('om') === '2' ? (side === 'A' ? 'B' : 'A') : side; }
+
+        // Take back a press made by mistake (the side can press again later)
+        function unpressOurMatch(key, side) {
+            side = realOurMatchSide(side);
+            if (matchPresses?.[key]?.[side] == null) return;
+            let m = calculateOurMatch(roundData, scoresDb, matchPresses);
+            if (!m) return;
+            let name = m.names[side === 'A' ? 0 : 1];
+            let label = { front: 'front 9', back: 'back 9', overall: 'overall' }[key];
+            if (!confirm(`Remove ${name}'s press on the ${label}?\n\nIt comes off the money straight away. They can still press later.`)) return;
+            matchPresses = { ...matchPresses, [key]: { ...(matchPresses[key] || {}), [side]: null } };
+            trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('matchPresses', key, side), firebase.firestore.FieldValue.delete()));
+            viewDashboard();
+            document.getElementById('our-match')?.scrollIntoView({ block: 'start' });
+        }
+
         function pressOurMatch(key, side) {
+            side = realOurMatchSide(side);
             let m = calculateOurMatch(roundData, scoresDb, matchPresses);
             let n = m && m.nassau[key];
             if (!n || !n.canPress[side]) return;
