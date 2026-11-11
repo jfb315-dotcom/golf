@@ -27,12 +27,14 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(await page.isVisible(pressBtn), 'side B can press the front');
   await page.click(pressBtn); await page.waitForTimeout(200);
   ok(await page.evaluate(() => matchPresses.front?.B === 3 && window.__docs.active_round.matchPresses?.front?.B === 3), 'press saved (after hole 3)');
-  ok(await page.isVisible('.om-press-made .om-unpress'), 'pressed: Undo shows beside it');
+  ok(await page.isVisible('details[data-fold="om-presses"]') && !(await page.isVisible('.om-press-made')), 'pressed: Presses made (folded) at the bottom');
+  await page.evaluate(() => { document.querySelector('details[data-fold="om-presses"]').open = true; });
+  ok(await page.isVisible('.om-press-made .om-unpress'), 'open it: Undo beside the press');
   await page.screenshot({ path: __dirname + '/shots/unpress.png' });
   await page.click('.om-press-made .om-unpress'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => matchPresses.front?.B == null && window.__docs.active_round.matchPresses?.front?.B == null), 'Undo removes the press here and in the cloud');
   console.log(await page.evaluate(() => JSON.stringify({ mp: matchPresses, can: calculateOurMatch(roundData, scoresDb, matchPresses).nassau.front.canPress, btns: [...document.querySelectorAll('.om-press')].map(b => b.textContent), screen: document.querySelector('.screen.active').id })));
-  ok(!(await page.isVisible('.om-press-made')) && await page.isVisible(pressBtn), 'press gone from the list; side B can press again');
+  ok(!(await page.$('details[data-fold="om-presses"]')) && await page.isVisible(pressBtn), 'no presses left (the dropdown goes away); side B can press again');
   // the second side's link (om=2) shows their side first; pressing there is side B's press
   const docs = await page.evaluate(() => JSON.parse(JSON.stringify(window.__docs)));
   const rid = docs.active_round.roundData.roundId;
@@ -44,6 +46,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(await page.isVisible(flippedBtn), 'their link: their own press button shows');
   await page.click(flippedBtn); await page.waitForTimeout(200);
   ok(await page.evaluate(() => matchPresses.front?.B === 3 && matchPresses.front?.A == null), 'their link: the press is recorded for Jordia & Mike, not the other side');
+  await page.evaluate(() => { let f = document.querySelector('details[data-fold="om-presses"]'); if (f) f.open = true; });
   await page.click('.om-press-made .om-unpress'); await page.waitForTimeout(200);
   ok(await page.evaluate(() => matchPresses.front?.B == null), 'their link: Undo removes their press');
   // final results: no Undo

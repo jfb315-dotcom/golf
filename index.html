@@ -1175,7 +1175,8 @@
                 <li><b>Team birdies:</b> real birdies only, no strokes; eagle counts 2. Each one pays that nine's 1st ball amount.</li>
                 <li><b>The second nine you play is double.</b> Start on 1: $25 on 1–9, $50 on 10–18. Start on 10: $25 on 10–18, $50 on 1–9.</li>
             </ul>
-            <p>You keep all four scores. When a pair can press, a <b>PRESS</b> button shows on Standings. Pressed by mistake? The press shows right under the buttons with <b>Undo</b>.</p>
+            <p><b>On Standings:</b> the trending box and the <b>money so far</b> are on top. Under them, tap <b>1st ball → 2nd</b>, <b>Nassau</b> or <b>Scorecards</b> to see that part. The nine you're playing shows first (once the match is over, the front nine is first again). The number that won each hole is in bold. <b>↑ Pick another view</b> at the end takes you back up to the buttons.</p>
+            <p>You keep all four scores. When a pair can press, a <b>PRESS</b> button shows under the money table. Pressed by mistake? Open <b>Presses made</b> at the bottom and tap <b>Undo</b> (only you see that).</p>
             <p><b>Let the others follow along:</b> on the scoring screen, <b>📣 Share &amp; message › Send the match to the other players</b>. Tap <b>💬 Text</b> next to each player; each gets a short text with <b>his own link</b>. A player with no number in Players gets <b>Copy link</b> instead.</p>
             <p>His link always shows the match <b>from his pair's side</b> (his names first, + when they're up), whoever he's partnered with that day. It's watch only: no scoring, no presses, no alerts. See <b>JB Watch</b> below to keep it on his Home Screen.</p>
         </details>
@@ -5336,7 +5337,7 @@ function hideCartHoleHeader() {
             let cardsView = scorecardView(roundData);
             if (isOurMatchOnly(roundData) && omViewerFlipped(roundData)) cardsView = { ...cardsView, groups: [...cardsView.groups].reverse() };
             let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(cardsView, scoresDb, money ? 'cards' : undefined), spectator && !isOurMatchOnly(roundData) && !banner.startsWith('<div class="om-final-banner">')); // open for tournament spectators until the match is over; an Our Match link looks like the organizer's page
-            let omOnlyRound = BETA && isOurMatchOnly(roundData);
+            let omOnlyRound = isOurMatchOnly(roundData);
             document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (omOnlyRound ? '' : spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             if (omOnlyRound) document.getElementById('dashboard-financial-summary').innerHTML = ''; // the rules are in How it works
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
@@ -6037,110 +6038,9 @@ function hideCartHoleHeader() {
             return `${diff < 0 ? m.names[0] : m.names[1]} up ${Math.abs(diff)}`;
         }
 
-        function generateOurMatchHTMLClassic(rData, sDb, presses, live) {
-            let m = calculateOurMatch(rData, sDb, presses);
-            if (!m) return '';
-            let om = rData.ourMatch;
-            let labels = { front: 'Front 9', back: 'Back 9', overall: 'Overall' };
-            let html = `<section class="dash-section om-section" id="our-match">
-                <div class="dash-section-title team-head"><span>Our Match</span><span>${m.finished ? 'Final' : 'Live'}</span></div>
-                <div class="om-sides"><span class="om-side a">${m.names[0]}</span><span class="om-vs">vs</span><span class="om-side b">${m.names[1]}</span></div>`;
-            html += ourMatchMoneyTable(m, rData);
-
-            // Press buttons stay up top while the match is live
-            if (live) MATCH_BETS.forEach(key => {
-                let n = m.nassau[key];
-                if (n) ['A', 'B'].forEach((side, i) => {
-                    if (n.canPress[side]) html += `<button type="button" class="om-press" onclick="pressOurMatch('${key}','${side}')">PRESS ${labels[key].toUpperCase()} · ${m.names[i]}</button>`;
-                });
-            });
-
-            let pressList = ourMatchPressList(m);
-            // While live, each press made shows up top with an Undo, in case it was tapped by mistake
-            if (live) pressList.forEach(pr => {
-                html += `<div class="om-press-made"><span>⤴ ${pr.text} · from hole ${pr.start}</span><button type="button" class="om-unpress" onclick="unpressOurMatch('${pr.key}','${pr.by}')">Undo</button></div>`;
-            });
-            let nassauHTML = '';
-            if (pressList.length) {
-                nassauHTML += `<div class="payout-sub">Presses</div>`;
-                pressList.forEach(pr => { nassauHTML += `<div class="payout-row sub om-press-log"><span>⤴ ${pr.text.replace(' pressed the ', ' · ')}</span><span>starts hole ${pr.start}</span></div>`; });
-            }
-
-            // Nassau
-            nassauHTML += omHead('Nassau', `low ball ${om.nassauNet ? 'net (strokes count)' : 'gross'}, stroke play · $${om.nassauBet} a bet, per person`);
-            MATCH_BETS.forEach(key => {
-                let n = m.nassau[key];
-                if (!n) return;
-                nassauHTML += `<div class="om-bet"><div class="payout-row"><b>${labels[key]}</b><span class="payout-note">${n.finished ? 'final' : (n.done.length ? `thru ${n.lastDone}` : 'not started')}</span></div>`;
-                n.bets.forEach(b => {
-                    let money = n.finished ? (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0) : null;
-                    let label = b.label === 'Main' ? 'Main' : `Press · starts hole ${n.holes[n.holes.indexOf(b.from) + 1] ?? b.from + 1}`;
-                    nassauHTML += `<div class="om-bet-row"><span>${label}</span><span class="om-standing">${nassauText(m, b.diff)}</span><b>${money !== null ? formatMatchMoney(money) : ''}</b></div>`;
-                });
-                nassauHTML += `<div class="payout-row om-subtotal"><span>${labels[key]} Nassau${n.bets.length > 1 ? ` (${n.bets.length} bets)` : ''}</span>${n.finished ? `<b class="payout-amount">${formatMatchMoney(n.money)}</b>` : '<span class="payout-note">in play</span>'}</div>`;
-                nassauHTML += `</div>`;
-            });
-            let nassauTotal = MATCH_BETS.reduce((a, k) => a + (m.nassau[k]?.money || 0), 0);
-            let nassauDone = MATCH_BETS.every(k => !m.nassau[k] || m.nassau[k].finished);
-            nassauHTML += `<div class="payout-row om-grand"><span>Nassau total${nassauDone ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nassauTotal)}</b></div>`;
-            let nassauBetsFold = fold('om-nassau-bets', 'See the Nassau bets &amp; presses', nassauHTML); // goes after 1st ball goes to 2nd ball
-
-            // Nassau hole by hole: low gross each side, then every Nassau bet's running score (+ = side 1 up)
-            let ninesNassau = ['front', 'back'].filter(k => m.nassau[k]);
-            let overall = m.nassau.overall, nassauFold = '';
-            let playedNassau = ninesNassau.flatMap(k => m.nassau[k].done.map(h => ({ h, key: k }))).sort((x, y) => m.pos(x.h) - m.pos(y.h));
-            if (playedNassau.length) {
-                let running = (n, b, h) => b.from != null && m.pos(h) <= m.pos(b.from) ? null
-                    : -n.done.filter(x => m.pos(x) <= m.pos(h) && (b.from == null || m.pos(x) > m.pos(b.from))).reduce((a, x) => a + n.lows[x][0] - n.lows[x][1], 0);
-                let cell = (n, h) => n.bets.map(b => running(n, b, h)).filter(v => v !== null).map(formatMatchBet).join(' ');
-                let chart = `<p class="payout-sub" style="margin-top:0;">Low ${om.nassauNet ? 'net' : 'gross'} each hole · + = ${m.names[0]} up (strokes)</p><table class="om-chart"><thead><tr><th>Hole</th><th>Par</th><th>Low</th><th>9 bets</th>${overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
-                let cols = overall ? 5 : 4;
-                playedNassau.forEach(({ h, key }, i) => {
-                    let n = m.nassau[key], [a, b] = n.lows[h];
-                    // Clean break at the turn: a header row for each nine
-                    if (ninesNassau.length > 1 && (i === 0 || playedNassau[i - 1].key !== key)) {
-                        chart += `<tr class="om-nine-break${i === 0 ? ' first' : ''}"><td colspan="${cols}">${key === 'back' ? 'Back 9' : 'Front 9'}</td></tr>`;
-                    }
-                    let low = `<span class="${a < b ? 'om-a' : ''}">${a}</span> v <span class="${b < a ? 'om-b-win' : ''}">${b}</span>`;
-                    chart += `<tr><td><b>${h}</b></td><td class="om-par">${rData.course.pars[h - 1]}</td><td>${low}</td><td class="om-bets">${cell(n, h)}</td>${overall ? `<td class="om-bets">${cell(overall, h)}</td>` : ''}</tr>`;
-                    pressList.filter(pr => pr.after === h).forEach(pr => { chart += `<tr class="om-press-mark"><td colspan="${cols}">⤴ ${pr.text} · starts hole ${pr.start}</td></tr>`; });
-                });
-                chart += `</tbody></table>`;
-                nassauFold = fold('om-nassau-holes', 'See Nassau hole by hole', chart); // goes at the bottom, above the rules
-            }
-
-            // First ball / second ball and birdies, one chart per nine, together in one dropdown
-            let outer = html; html = '';
-            m.nines.forEach(nine => {
-                let title = nine.key === 'back' ? 'Back 9' : 'Front 9';
-                html += omHead(`1st ball goes to 2nd ball · ${title}`, `net · $${nine.amount} a bet per person · + = ${m.names[0]} up`);
-                if (nine.rows.length === 0) {
-                    html += `<div class="payout-row muted">No holes finished yet</div>`;
-                } else {
-                    html += `<table class="om-chart"><thead><tr><th>Hole</th><th>Par</th><th>Net</th><th>Won</th><th>Bets</th><th>Birdies</th></tr></thead><tbody>`;
-                    nine.rows.forEach(r => {
-                        let won = r.result > 0 ? `<span class="om-a">${m.names[0].split(' ')[0]}</span>` : (r.result < 0 ? `<span class="om-b">${m.names[1].split(' ')[0]}</span>` : '–');
-                        let bird = [r.units[0] ? `<span class="om-a">${'●'.repeat(r.units[0])}</span>` : '', r.units[1] ? `<span class="om-b">${'●'.repeat(r.units[1])}</span>` : ''].filter(Boolean).join(' ') || '';
-                        html += `<tr><td><b>${r.hole}</b></td><td class="om-par">${rData.course.pars[r.hole - 1]}</td><td>${r.lowNets[0]} v ${r.lowNets[1]}${r.lowNets[0] === r.lowNets[1] ? `<div class="om-second">2nd ${r.secondNets[0]} v ${r.secondNets[1]}</div>` : ''}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
-                    });
-                    html += `</tbody></table>`;
-                }
-                if (nine.rows.length === 0) return;
-                let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
-                html += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
-                html += ourMatchBirdiesHTML(m, nine);
-                html += `<div class="payout-row om-subtotal"><span>${title} 1st ball goes to 2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
-            });
-            html = outer + fold('om-balls', 'See 1st ball goes to 2nd ball &amp; birdies', html) + nassauBetsFold;
-
-            html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; 1st ball goes to 2nd ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
-            return html + nassauFold + `</section>`;
-        }
-
-        // Our Match with buttons (test copy for now): trending + money on top, then 1st ball / Nassau / Scorecards
-        // views, the nine being played first; presses with Undo folded at the bottom. The real app keeps the classic layout.
+        // Our Match on Standings: trending + money on top, then 1st ball / Nassau / Scorecards buttons (one view at a time,
+        // the nine being played first); presses with Undo folded at the bottom
         function generateOurMatchHTML(rData, sDb, presses, live, opts = {}) {
-            if (!BETA) return generateOurMatchHTMLClassic(rData, sDb, presses, live);
             let m = calculateOurMatch(rData, sDb, presses);
             if (!m) return '';
             let om = rData.ourMatch;
@@ -7547,7 +7447,7 @@ function hideCartHoleHeader() {
                 let presses = activeViewRoundData.matchPresses || {};
                 let money = hasTournamentMoney(activeViewRoundData) ? standingsSections(activeViewRoundData, activeViewScoresDb, presses, 'arc-') : null;
                 let omv = ourMatchForViewer(activeViewRoundData, presses);
-                let arcOmOnly = BETA && isOurMatchOnly(activeViewRoundData);
+                let arcOmOnly = isOurMatchOnly(activeViewRoundData);
                 let arcCards = scorecardView(activeViewRoundData);
                 if (arcOmOnly && omViewerFlipped(activeViewRoundData)) arcCards = { ...arcCards, groups: [...arcCards.groups].reverse() };
                 document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(omv.rData, activeViewScoresDb, omv.presses, true) + (arcOmOnly ? '' : isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', CARDS_FOLD_TITLE, generateScorecardHTML(arcCards, activeViewScoresDb)) : generateScorecardHTML(arcCards, activeViewScoresDb));
