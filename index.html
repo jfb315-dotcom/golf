@@ -737,6 +737,8 @@
         .match-send-btn.sent { background: var(--fill-strong); color: var(--good); }
         .match-send-btn.ghost { background: var(--fill-strong); color: var(--text-main); }
         body.om-link .alerts-banner { display: none !important; }
+        .help-list { margin: 6px 0 10px; padding-left: 20px; }
+        .help-list li { margin: 4px 0; line-height: 1.45; }
         .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
@@ -1127,52 +1129,87 @@
 
         <details class="help" open><summary><div>1 · Ask who's in <span>Sign-up link</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>From <b>Home</b>, tap <b>Who's playing</b>, then <b>📨 Sign-up link</b>. Type your message, like <i>"Golf Thursday?"</i>, pick the date, tee time and course, then <b>Next: send it</b>.</p>
-            <p><b>Send to your group chat</b> opens Share. Pick Messages and your golf group text. Everyone gets your message plus a link with the <b>"Are you in?"</b> picture.</p>
-            <p>Tapping the link shows <b>every player with In / Out buttons</b>. Each person taps their own. They can also mark a buddy (it asks first and shows who did it). New people can add their name.</p>
-            <p>With alerts on for your phone, you get a notification each time someone answers (<i>"✅ Eddie is in · 7 in, 1 out"</i>). Tap it to open Who's playing. Turn it off under Alerts › Sign-up answers.</p>
-            <p>Plans change? On <b>Who's playing</b>: <b>Text everyone who's in</b>, <b>Start over</b> (clears answers) or <b>Cancel round</b> (the link then says it's cancelled).</p>
+            <p><b>Send to your group chat</b> opens Share. Pick Messages and your golf group text. Everyone gets a link with the <b>"Are you in?"</b> picture, and each person taps <b>In</b> or <b>Out</b>. They can mark a buddy too, and new people can add their name.</p>
+            <p>With alerts on, you get a notification each time someone answers (<i>"✅ Eddie is in · 7 in, 1 out"</i>).</p>
+            <p>Plans change? On <b>Who's playing</b>: <b>Text everyone who's in</b>, <b>Start over</b> (clears answers) or <b>Cancel round</b>.</p>
         </details>
 
         <details class="help"><summary><div>2 · Make the teams <span>Who's playing</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Who's playing</b> is your own checklist. Everyone who tapped In is already checked. Check or uncheck anyone else.</p>
-            <p>Pick <b>players per team</b> and tap <b>Make teams</b>. The teams come out balanced by handicap, with each team's total next to its name.</p>
-            <p>On the roster: tap a player's <b>number</b>, then another's, to swap them. <b>Try another</b> deals a different even split. <b>Undo</b> takes back the last change. <b>Clear all</b> starts over.</p>
-            <p>The sign-up link is for the group. Who's playing is for you.</p>
+            <p>Pick <b>players per team</b> and tap <b>Make teams</b>. The teams come out balanced by handicap.</p>
+            <p>On the roster: tap a player's <b>number</b>, then another's, to swap them. <b>Try another</b> deals a different even split, <b>Undo</b> takes back the last change, and <b>Clear all</b> starts over.</p>
         </details>
 
-        <details class="help"><summary><div>3 · Start the round <span>New round</span></div><span class="fold-hint">Tap to open</span></summary>
-            <p><b>New tournament</b> sets the course, holes, team games, bets, skins and side bets, and Our Match if you add it at the bottom. <b>Next: Rosters</b> shows the teams (or use Who's playing), then <b>Start round</b>.</p><p><b>Our Match</b> (under New tournament on Home) is just the four of you: course, the Nassau and 1st ball amounts, then the four players.</p>
-            <p>Tee times start 10 minutes apart. Change one and the rest follow.</p>
-            <p>On the scoring screen, <b>📣 Share &amp; message</b> has <b>Text live links to carts</b> (each cart's own scorecard link), <b>Share spectator leaderboard</b> (watch only, for anyone else) and <b>Send a message to carts</b>.</p>
-            <p>Players who saved JB Golf to their Home Screen keep using that icon. Each new round, it asks <i>"Which cart are you in today?"</i> and they tap theirs. A cart link opened in Safari asks once if they have the app, and shows how to add it if not.</p>
+        <details class="help"><summary><div>3 · Start a tournament <span>＋ New tournament</span></div><span class="fold-hint">Tap to open</span></summary>
+            <p>Home has two starts: <b>＋ New tournament</b> (teams, bets, skins, side bets) and <b>⛳ Our Match</b> (just the four of you, see 4).</p>
+            <p><b>Setup:</b> course, teams and players per team, holes and where you start, team games (1-, 2-, 3-Ball, and whether all birdies count), <b>Per bet</b> and <b>Skins</b>. The entry fee adds up as you go.</p>
+            <p>Last on the page: <b>Our Match within this tournament?</b> Leave it off for a normal tournament. Turn it on to run Our Match for 4 of the players on the side; its amounts open right under it.</p>
+            <p><b>Next: Rosters</b> shows the teams. Each player has <b>Tees</b> and <b>Strokes</b> (the hole numbers he gets a stroke on, like <i>3, 7, 12</i>). Use <b>Balance teams</b> or a <b>blind draw</b> for an odd number, pick <b>Ride with team</b> or <b>Scramble carts</b>, and add any <b>side bets</b>.</p>
+            <p><b>Side bets</b> are 2 on 2 between any four players, low net ball Nassau. Each row is a pair of partners, labeled with their initials once picked (<i>JS &amp; JB</i>). You can also add one during the round from Standings.</p>
+            <p>Tee times start 10 minutes apart. Change one and the rest follow. Then <b>Start round</b>.</p>
         </details>
 
-        <details class="help"><summary><div>4 · During the round <span>Scoring</span></div><span class="fold-hint">Tap to open</span></summary>
-            <p>Each cart enters its scores on its own phone. You can score any team from your phone too.</p>
-            <p><b>Standings</b> shows the leaderboard, skins, money, cart progress with pace of play, and a list of any scores that were changed.</p>
-            <p>📣 sends a message to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
+        <details class="help"><summary><div>4 · Our Match <span>⛳ the four of you</span></div><span class="fold-hint">Tap to open</span></summary>
+            <p>Tap <b>⛳ Our Match</b> on Home. Setup is just the course, 18 or 9 holes and where you start, the <b>Nassau</b> amount, the <b>1st ball goes to 2nd ball</b> amount, and whether <b>strokes count on the Nassau</b>. Then the four players: <b>Team 1 plays Team 2</b>, with tees and strokes.</p>
+            <p><b>The money, per person:</b></p>
+            <ul class="help-list">
+                <li><b>Nassau:</b> front, back and overall, low ball of each pair (net if strokes count). Each pair can press each bet once while behind.</li>
+                <li><b>1st ball goes to 2nd ball:</b> low net ball wins the hole; if those tie, the 2nd ball decides it. A new bet starts each time the newest one goes 1 down.</li>
+                <li><b>Team birdies:</b> real birdies only, no strokes; eagle counts 2. Each one pays that nine's 1st ball amount.</li>
+                <li><b>The second nine you play is double.</b> Start on 1: $25 on 1–9, $50 on 10–18. Start on 10: $25 on 10–18, $50 on 1–9.</li>
+            </ul>
+            <p>You keep all four scores. When a pair can press, a <b>PRESS</b> button shows on Standings. Pressed by mistake? The press shows right under the buttons with <b>Undo</b>.</p>
+            <p><b>Let the others follow along:</b> on the scoring screen, <b>📣 Share &amp; message › Send the match to the other players</b>. Tap <b>💬 Text</b> next to each player; each gets a short text with <b>his own link</b>. A player with no number in Players gets <b>Copy link</b> instead.</p>
+            <p>His link always shows the match <b>from his pair's side</b> (his names first, + when they're up), whoever he's partnered with that day. It's watch only: no scoring, no presses, no alerts. See <b>JB Watch</b> below to keep it on his Home Screen.</p>
         </details>
 
-        <details class="help"><summary><div>5 · Finish up <span>Finalize</span></div><span class="fold-hint">Tap to open</span></summary>
-            <p><b>Finalize</b> locks the round, saves it to <b>Past rounds</b>, adds everyone's score to their stats, and opens the results to share.</p>
+        <details class="help"><summary><div>5 · During the round <span>Scoring</span></div><span class="fold-hint">Tap to open</span></summary>
+            <p>Each cart enters its own scores. You can score any team from your phone with the <b>CART</b> tabs.</p>
+            <p><b>Keypad:</b> tap the number and it moves to the next player, then the next hole once everyone has a score. Tap a player's box and a new number to fix a score. <b>Clear</b> empties the box you're on.</p>
+            <p><b>↶ Undo</b> (between the hole buttons under the keypad) takes back the last score you entered, even after it moved to the next hole: it goes back to that hole and that player so you can tap the right number.</p>
+            <p><b>All holes / scores</b> lists every hole; tap one to open it. <b>Standings</b> is on the scoring screen too.</p>
+            <p><b>Standings:</b> during play, the <b>Live</b> box at the top shows each team's score in each game and how far through they are. When the round is over, <b>who pays who</b> takes the top. The team scorecards, Our Match and side bets are below.</p>
+            <p><b>📣 Share &amp; message</b> sends links to carts and messages to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
+        </details>
+
+        <details class="help"><summary><div>6 · Links and Home Screen icons <span>JB Golf · JB Watch</span></div><span class="fold-hint">Tap to open</span></summary>
+            <p>A link in a text always opens in <b>Safari</b>. To keep the app on the Home Screen: open the link in Safari, tap <b>Share › Add to Home Screen</b>. The icon remembers the link it was saved from.</p>
+            <p><b>JB Golf</b> (the regular logo) is for scoring. A <b>cart link</b> saved this way opens the cart's scoring; each new round it asks <i>"Which cart are you in today?"</i>.</p>
+            <p><b>JB Watch</b> (the logo with the orange <b>WATCH</b> band) is for following along. Our Match links, spectator links and results links save as JB Watch on their own, so it's never mixed up with the scoring icon.</p>
+            <ul class="help-list">
+                <li><b>Once it's on his phone, he doesn't need the link.</b> He opens JB Watch and it shows whatever round is being played right then.</li>
+                <li>Save it from a <b>live match link</b> (the one you text during the round), not a results link. A results link always opens that one finished round.</li>
+                <li>Our Match players should save it from <b>your Our Match text</b>: that link knows who he is, so it shows every match from his pair's side.</li>
+                <li>When no round is being played, it says the round is over, and picks up again when the next round starts.</li>
+            </ul>
+        </details>
+
+        <details class="help"><summary><div>7 · Finish up <span>Finalize</span></div><span class="fold-hint">Tap to open</span></summary>
+            <p><b>Finalize</b> locks the round, saves it to <b>Past rounds</b>, adds everyone's score to their stats, and opens the results to text. For Our Match it opens <b>Send the results</b>, so each player gets his own results link from his side.</p>
             <p>Finalized too early? Open it in <b>Past rounds</b> and tap <b>Reopen</b> (within 24 hours).</p>
-            <p>Want to keep a round but not have it count (a practice round, a rained-out one)? Open it in <b>Past rounds</b> and turn off <b>Count in money &amp; stats</b>. It stays in Past rounds and its results link still works.</p>
-            <p>In Past rounds, <b>Share this page</b> sends a link to that round's results with the <b>"Final results"</b> picture.</p>
+            <p>Want to keep a round but not have it count (a practice round, a rained-out one)? Open it in <b>Past rounds</b> and turn off <b>Count in money &amp; stats</b>.</p>
+            <p>In Past rounds, <b>Share this page</b> sends a link to that round's results.</p>
         </details>
 
         <details class="help"><summary><div>Players <span>names, numbers, stats</span></div><span class="fold-hint">Tap to open</span></summary>
-            <p>Each player has first and last name, a nickname for the scoring screen, usual tees, a <b>mobile number</b> (green dot when saved) and <b>Usually shoots</b> until they have rounds.</p>
+            <p>Each player has first and last name, a nickname for the scoring screen, usual tees, a <b>mobile number</b> (green dot when saved; needed for the Text buttons) and <b>Usually shoots</b> until they have rounds.</p>
             <p>Tap a player for their <b>index</b>, average, best score and recent rounds. The index is handicap-style: the best of their last 20 rounds, adjusted for the tees. It isn't an official USGA index.</p>
-            <p>Add numbers fast: in Contacts make a list of the guys, export it, then <b>Add phone numbers from a contacts file</b>.</p>
+            <p>Add numbers fast: in Contacts make a list of the guys, export it, then <b>Add phone numbers from a contacts file</b>. Two cards for the same person? Merge them from the duplicates box.</p>
         </details>
 
         <details class="help"><summary><div>Money <span>season totals</span></div><span class="fold-hint">Tap to open</span></summary>
-            <p>Every finalized round adds each player's winnings: team bets and skins less their buy-in, plus Our Match. Tap a name to see each round.</p>
+            <p>Every finalized round adds each player's winnings: team bets and skins less their buy-in, plus Our Match and side bets. Tap a name to see each round.</p>
             <p><b>Settle up</b> is for when everyone has paid up. The season totals start back at $0, and <b>All time</b> still has every round. Nothing is deleted.</p>
         </details>
 
         <details class="help"><summary><div>Alerts <span>phone notifications</span></div><span class="fold-hint">Tap to open</span></summary>
-            <p><b>Alerts</b> on Home turns notifications on for your phone and picks what gets sent each round. Each player turns them on from their own cart link (iPhone: add it to the Home Screen first).</p>
+            <p><b>Alerts</b> on Home turns notifications on for your phone and picks what gets sent each round. Each player turns them on from his own cart link (iPhone: add it to the Home Screen first). The Alerts screen lists every phone that has them on and can send a test alert.</p>
+            <p>Our Match links don't ask about alerts: the players are with you.</p>
+        </details>
+
+        <details class="help"><summary><div>Look and test copy <span>Color theme</span></div><span class="fold-hint">Tap to open</span></summary>
+            <p><b>Color theme</b> at the bottom of Home: Coastal Links, Augusta, Slate, Clubhouse, Neyland Night or <b>Fairway</b> (green and orange). Carts and spectators see the theme you pick.</p>
+            <p>The <b>test copy</b> (the app's address with <i>?beta=1</i> on the end) tries out new layouts with an orange <b>TEST COPY</b> strip. Its rounds are kept apart from the real ones and it sends no alerts. Tap <b>Leave</b> to go back.</p>
         </details>
     </div>
 
