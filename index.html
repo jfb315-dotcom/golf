@@ -405,6 +405,8 @@
         .select-wrap.slot { flex-grow: 1; min-width: 0; }
         .clean .select-wrap.slot select { height: 44px; font-size: 16px; padding-left: 14px; }
         .om-label { gap: 8px; letter-spacing: 0.04em; font-weight: 800; }
+        .om-switch-row .om-label { display: block; letter-spacing: 0; }
+        .om-switch-row .om-label .payout-note { display: block; margin-top: 3px; font-weight: 600; }
         .om-side-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .om-sides-note { margin: -4px 4px 10px; font-size: 13px; color: var(--text-muted); }
         .om-side-name { width: 52px; flex-shrink: 0; font-size: 13px; font-weight: bold; color: var(--text-muted); }
@@ -877,7 +879,7 @@
         </div>
 
         <div class="format-container om-switch-row" style="margin-top: 18px;">
-            <div class="format-row"><label class="format-label om-label" for="om-enabled">ADD OUR MATCH <span class="payout-note">4 of the players, 2 on 2, on the side</span></label><input type="checkbox" class="switch" id="om-enabled" aria-label="Our Match" onchange="toggleOurMatchOptions()"></div>
+            <div class="format-row"><label class="format-label om-label" for="om-enabled">Our Match within this tournament? <span class="payout-note">4 of the players, 2 on 2</span></label><input type="checkbox" class="switch" id="om-enabled" aria-label="Our Match" onchange="toggleOurMatchOptions()"></div>
         </div>
         <div id="om-options" style="display: none;">
             <div class="clean-grid-2">
