@@ -27,7 +27,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.goto('http://app.test/'); await page.waitForTimeout(300); await page.evaluate(() => { if (document.getElementById('step-home')?.classList.contains('active')) showScreen('step-1'); });
   ok(await page.isVisible('#alerts-row'), 'setup shows a Phone alerts row');
   await page.evaluate(() => { document.getElementById('group-count').value = 2; document.getElementById('players-per-group').value = 2; });
-  await page.evaluate(() => startNewRound('om'));
+  await page.evaluate(() => { startNewRound('tournament'); document.getElementById('group-count').value = 2; document.getElementById('players-per-group').value = 2; let e = document.getElementById('om-enabled'); e.checked = true; toggleOurMatchOptions(); }); // Our Match inside a tournament (an Our Match-only round has no alerts)
   await page.screenshot({ path: __dirname + '/shots/alerts-setup.png', fullPage: true });
   await page.click('#step-1 .bar-primary[onclick="goToStep2()"]');
   for (const [id, n] of [['g1-p1','Brent'],['g1-p2','John'],['g2-p1','Jordia'],['g2-p2','Mike']]) await page.fill(`#${id}-name`, n);
@@ -54,7 +54,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   // Birdie: Brent 4 on par 5 hole 1, others par
   await page.evaluate(() => { [[1,1,4],[1,2,5],[2,1,5],[2,2,3]].forEach(([g,p,v]) => { scoresDb[g][p][1] = v; }); saveScoresToCloud([[1,1],[1,2],[2,1],[2,2]], 1); });
   await page.waitForTimeout(300);
-  ok(sent.some(a => a.title === '🐦 Brent birdie on 1' && a.body === '4 on a par 5 · Our Match' && a.view === 'standings' && a.from === ids[0]), 'birdie alert sent: ' + JSON.stringify(sent.map(a => a.title)));
+  ok(sent.some(a => a.title === '🐦 Brent birdie on 1' && a.body.startsWith('4 on a par 5') && a.view === 'standings' && a.from === ids[0]), 'birdie alert sent: ' + JSON.stringify(sent.map(a => a.title)));
   ok(sent.some(a => a.title === '🦅 Mike eagle on 1'), 'eagle alert sent');
   const n1 = sent.length;
   await page.evaluate(() => saveScoresToCloud([[1,1],[1,2],[2,1],[2,2]], 1)); await page.waitForTimeout(200);

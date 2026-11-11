@@ -737,7 +737,7 @@
         .match-send-btn { flex-shrink: 0; min-width: 104px; height: 44px; border: 0; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 16px; font-weight: 800; }
         .match-send-btn.sent { background: var(--fill-strong); color: var(--good); }
         .match-send-btn.ghost { background: var(--fill-strong); color: var(--text-main); }
-        body.om-link .alerts-banner { display: none !important; }
+        body.om-link .alerts-banner, body.om-round .alerts-banner { display: none !important; }
         .help-list { margin: 6px 0 10px; padding-left: 20px; }
         .help-list li { margin: 4px 0; line-height: 1.45; }
         .cart-send-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 18px 4px 2px; }
@@ -937,7 +937,7 @@
             <div class="format-row om-only-row"><label class="format-label" for="om-only">Only Our Match <span class="payout-note">no tournament purse</span></label><input type="checkbox" class="switch" id="om-only" aria-label="Only Our Match, no tournament purse" onchange="toggleOurMatchOnly()"></div>
         </div>
 
-        <button type="button" class="list-row" id="alerts-row" style="display:none;" onclick="openAlertsScreen('step-1')">Phone alerts <span class="row-note" id="alerts-count"></span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        <button type="button" class="list-row tourn-only" id="alerts-row" style="display:none;" onclick="openAlertsScreen('step-1')">Phone alerts <span class="row-note" id="alerts-count"></span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
 
 
         <div class="bottom-bar">
@@ -1223,7 +1223,7 @@
 
         <details class="help"><summary><div>Alerts <span>phone notifications</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Alerts</b> on Home turns notifications on for your phone and picks what gets sent each round. Each player turns them on from his own cart link (iPhone: add it to the Home Screen first). The Alerts screen lists every phone that has them on and can send a test alert.</p>
-            <p>Our Match links don't ask about alerts: the players are with you.</p>
+            <p><b>Our Match has no alerts</b>, for you or the others: you're all playing together. Tournaments work as above.</p>
         </details>
 
         <details class="help"><summary><div>Look and test copy <span>Color theme</span></div><span class="fold-hint">Tap to open</span></summary>
@@ -4699,6 +4699,7 @@ function setTeamFilter(filterValue) {
         }
 
 function renderScoreEntry() {
+    document.body.classList.toggle('om-round', !!roundData?.ourMatch && isOurMatchOnly(roundData)); // no alerts offered in an Our Match round
     const container = document.getElementById('entry-container');
     if (!container) return;
     updateOurMatchAlert();
@@ -5330,6 +5331,7 @@ function hideCartHoleHeader() {
             let spectator = urlParams.get('spectator') === 'true';
             // An Our Match link is for the guys in the match: no alerts prompt
             document.body.classList.toggle('om-link', spectator && isOurMatchOnly(roundData));
+            document.body.classList.toggle('om-round', isOurMatchOnly(roundData)); // no alerts offered in an Our Match round, organizer included
             let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
             // Our Match over: who pays who goes first, with the scorecards folded under it
             let omv = ourMatchForViewer(roundData, matchPresses);
@@ -6990,6 +6992,7 @@ function hideCartHoleHeader() {
         function sendAlert(type, title, body, view, tag, rData, opts = {}) {
             rData = rData || roundData;
             if (!ALERTS_URL || rData.alerts?.[type] === false) return;
+            if (isOurMatchOnly(rData)) return; // Our Match: everyone's playing together, so no alerts
             if (!alertOnce(`${rData.roundId}|${tag}`)) return;
             fetch(ALERTS_URL, {
                 method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },

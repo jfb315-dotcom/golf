@@ -27,7 +27,7 @@ Served by GitHub Pages at `jfb315-dotcom.github.io/golf/`. Data in Firebase (pro
 - **The second nine played is double** (start on 10: 10–18 single, 1–9 double).
 - Say **pair**, never "side" (side sounds like front/back nine). Pair pickers show the players' initials once picked.
 - John keeps the score. The others follow with **per-person links** (`match.html?spectator=true&me=<full name>`): the link finds which pair that player is in for that match and shows it from his pair's side (names first, + when they're up). Sent one text per player from **Share & message › Send the match to the other players** (also Share results link and after Finalize). Old pair links (`om=2`) still work.
-- Our Match links are short (three lines) and never pitch alerts: the players are on the course with John.
+- **No alerts in Our Match** (they're all playing together): nothing is sent (`sendAlert` returns for an Our Match round), no alerts chip on the organizer's scoring screen or Standings, no Phone alerts row in its setup, and the links are short (three lines) with no alerts pitch.
 - **Standings layout:** trending box and money table on top, PRESS buttons under them (when a pair can press), then three buttons — **1st ball → 2nd / Nassau / Scorecards** — that open one view at a time (the nine being played first; play order once it's over; "↑ Pick another view" at the end scrolls back up to the buttons). No colour coding in the charts: the winning score is bold and bigger. **Presses made** (with Undo) is a folded dropdown at the bottom, organizer only. No rules dropdown on Our Match rounds (they're in How it works).
 
 ## Home Screen icons (iPhone) — how it really works
