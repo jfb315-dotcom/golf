@@ -32,7 +32,7 @@ Served by GitHub Pages at `jfb315-dotcom.github.io/golf/`. Data in Firebase (pro
 ## Home Screen icons (iPhone) — how it really works
 - A link in a text always opens in **Safari**, never in a Home Screen icon.
 - A Home Screen icon remembers **the link it was saved from** (no `start_url` in the manifests). Adding again makes a second icon.
-- **JB Golf** icon: scoring. Saved from a cart link it opens that cart; each new round it asks "Which cart are you in today?".
+- **JB Golf** icon: scoring. Cart links are **per person** too (`cart.html?cart=2&r=<round>&me=<full name>`, sent one text per player from **Share & message › Text live links to carts**). Saved to the Home Screen, it finds his cart by name in every later round: when a tournament starts he just opens JB Golf, no link, no question. It asks "Which cart are you in today?" only if he isn't in any cart that round (or the icon came from an older one-link-per-cart text, which has no name).
 - **JB Watch** icon: following along. Spectator, Our Match and results links save as "JB Watch" with the WATCH logo automatically.
   - Once JB Watch is on a player's phone he doesn't need the link: opening it shows whatever round is being played right then.
   - Save it from a **live** link, not a results link (a results link always opens that one finished round).

@@ -56,5 +56,5 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.evaluate(() => { roundData = { groups: [] }; }); 
   ok(await page.evaluate(() => document.getElementById('btn-pairings-start').innerText === 'Start round'), 'buttons say Start round again when not editing');
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();

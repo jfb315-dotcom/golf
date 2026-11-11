@@ -739,6 +739,10 @@
         body.om-link .alerts-banner { display: none !important; }
         .help-list { margin: 6px 0 10px; padding-left: 20px; }
         .help-list li { margin: 4px 0; line-height: 1.45; }
+        .cart-send-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 18px 4px 2px; }
+        .cart-send-head b { font-size: 18px; color: var(--accent-gold); white-space: nowrap; }
+        .cart-send-head span { font-size: 13px; color: var(--text-muted); text-align: right; }
+        .cart-send-group { display: block; margin: 8px 4px 4px; font-size: 14px; }
         .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
@@ -1080,9 +1084,9 @@
     </div>
 
     <div id="step-7" class="screen card">
-        <h2>Share Live Scoring Links</h2>
-        <p style="font-size: 14px; color: var(--text-muted);">Send these links so each cart driver can enter their group's scores.</p>
-        <div id="share-buttons-container" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;"></div>
+        <h2>Cart scorecard links</h2>
+        <p style="font-size: 14px; color: var(--text-muted);">Each player gets his own link. Saved to his Home Screen, JB Golf finds his cart by itself every round after.</p>
+        <div id="share-buttons-container" style="display: flex; flex-direction: column; margin-top: 10px;"></div>
         <button class="btn-secondary" onclick="switchScreen('step-7', 'step-3')" style="margin-top: 30px;">← Back to Scoring</button>
     </div>
 
@@ -1169,12 +1173,13 @@
             <p><b>↶ Undo</b> (between the hole buttons under the keypad) takes back the last score you entered, even after it moved to the next hole: it goes back to that hole and that player so you can tap the right number.</p>
             <p><b>All holes / scores</b> lists every hole; tap one to open it. <b>Standings</b> is on the scoring screen too.</p>
             <p><b>Standings:</b> during play, the <b>Live</b> box at the top shows each team's score in each game and how far through they are. When the round is over, <b>who pays who</b> takes the top. The team scorecards, Our Match and side bets are below.</p>
-            <p><b>📣 Share &amp; message</b> sends links to carts and messages to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
+            <p><b>📣 Share &amp; message › Text live links to carts</b> lists each cart's players. Tap <b>💬 Text</b> next to each one: he gets <b>his own</b> scorecard link (no number on file? <b>Copy link</b>). Each cart also has <b>Share to a group text</b> if you'd rather send one link to the cart.</p>
+            <p>📣 also sends a message to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
         </details>
 
         <details class="help"><summary><div>6 · Links and Home Screen icons <span>JB Golf · JB Watch</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>A link in a text always opens in <b>Safari</b>. To keep the app on the Home Screen: open the link in Safari, tap <b>Share › Add to Home Screen</b>. The icon remembers the link it was saved from.</p>
-            <p><b>JB Golf</b> (the regular logo) is for scoring. A <b>cart link</b> saved this way opens the cart's scoring; each new round it asks <i>"Which cart are you in today?"</i>.</p>
+            <p><b>JB Golf</b> (the regular logo) is for scoring. Saved from <b>his own cart link</b> (the one you texted just him), it knows who he is: when you start a tournament he just opens JB Golf and it goes <b>straight to his cart</b>, no link and no question. It only asks <i>"Which cart are you in today?"</i> if he isn't in a cart that round, or if his icon came from an older one-link-per-cart text (then he taps his cart once each round).</p>
             <p><b>JB Watch</b> (the logo with the orange <b>WATCH</b> band) is for following along. Our Match links, spectator links and results links save as JB Watch on their own, so it's never mixed up with the scoring icon.</p>
             <ul class="help-list">
                 <li><b>Once it's on his phone, he doesn't need the link.</b> He opens JB Watch and it shows whatever round is being played right then.</li>
@@ -3010,7 +3015,17 @@ function toggle9HoleOptions() {
             }
             let picked = cartPickFor(rid);
             if (picked !== null && has(picked)) { if (lockedTeamId !== picked) useCart(picked); return true; }
+            // A link that says who he is (me=andy anderson): his cart in this round, found by name
+            let mine = cartOfPlayerNamed(new URLSearchParams(location.search).get('me'));
+            if (mine !== null) { if (lockedTeamId !== mine) useCart(mine); return true; }
             return false;
+        }
+        function cartOfPlayerNamed(me) {
+            me = (me || '').trim().toLowerCase();
+            if (!me) return null;
+            let nameOf = cp => (roundData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p)?.name || '').trim().toLowerCase();
+            let carts = roundData.carts.filter(c => (c.players || []).some(cp => nameOf(cp) === me));
+            return carts.length === 1 ? carts[0].id : null; // not in this round (or in two carts): ask as before
         }
         function showCartPicker() {
             document.getElementById('cartpick-sub').textContent = [roundData.course?.name, formatRoundDate(roundData.date)].filter(Boolean).join(' · ');
@@ -6657,29 +6672,49 @@ function hideCartHoleHeader() {
         let cartShareMessages = [];
         function closeShareModal() { document.getElementById('share-modal').classList.remove('active'); }
 
+        // Text live links to carts: each player gets his own cart link. It carries his name, so a JB Golf icon saved from it
+        // finds his cart by itself in every later round. The one-link-per-cart share is still there for a group text.
+        let cartSendSent = new Set();
+        function cartDetails(c) { return [formatRoundDate(roundData.date), roundData.course?.name, c.time ? `Tee ${formatFriendlyTime(c.time)}` : ''].filter(Boolean).join(' · '); }
+        function cartLinkFor(c, name) { return shareUrl('cart.html', `cart=${c.id}&r=${roundData.roundId || ''}${name ? '&me=' + encodeURIComponent(name.trim().toLowerCase()) : ''}`); }
+        function cartTextFor(c, name) {
+            return `⛳ JB Golf · Cart ${c.id} · ${cartDetails(c)}\n`
+                + `Your scorecard: tap the link, then Share › Add to Home Screen to keep it. Already have JB Golf on your Home Screen? Just open it.\n${cartLinkFor(c, name)}`;
+        }
+        function cartSendPlayers() {
+            return roundData.carts.flatMap(c => realPlayersOf(c).map(x => ({ c, name: x.player.name, phone: phoneFor(canonicalKey(x.player.name.trim().toLowerCase())) })));
+        }
         function openShareMenu() {
-            let html = '';
+            if (cartSendSent.round !== roundData.roundId) { cartSendSent = new Set(); cartSendSent.round = roundData.roundId; }
             cartShareMessages = [];
+            let list = cartSendPlayers(), html = '';
             roundData.carts.forEach(c => {
-                let cartCaptain = "Player";
-                if(c.players && c.players.length > 0) {
-                    let pObj = c.players[0];
-                    let gObj = roundData.groups.find(g => g.id === pObj.g);
-                    if(gObj) {
-                        let plObj = gObj.players.find(p => p.id === pObj.p);
-                        if(plObj) cartCaptain = plObj.name.split(' ')[0];
-                    }
-                }
-                
-                const magicLink = shareUrl('cart.html', `cart=${c.id}&r=${roundData.roundId || ''}`);
-                // Course, date and tee time so everyone knows where and when
-                let details = [formatRoundDate(roundData.date), roundData.course?.name, c.time ? `Tee ${formatFriendlyTime(c.time)}` : ''].filter(Boolean).join(' · ');
-                // Players with the app on their Home Screen just open it and pick their cart; the link (last, for its picture) is for everyone else
-                cartShareMessages.push(`JB Golf · Cart ${c.id} scorecard (${cartCaptain})\n${details}\n📱 Have JB Golf on your Home Screen? Just open it and tap Cart ${c.id}.\nDon't have the app? Tap the link, then tap Share at the bottom of your browser › Add to Home Screen to get alerts.\n${magicLink}`);
-                html += `<button class="btn-secondary" style="border-color: var(--accent-gold); color: var(--accent-gold);" onclick="shareCartLink(${cartShareMessages.length - 1})">📱 Text Link for Cart ${c.id} (${cartCaptain})</button>`;
+                let names = realPlayersOf(c).map(x => firstName(x.player.name)).join(', ');
+                cartShareMessages.push(`JB Golf · Cart ${c.id} scorecard (${names})\n${cartDetails(c)}\n📱 Have JB Golf on your Home Screen? Just open it.\nDon't have it? Tap the link, then Share › Add to Home Screen.\n${cartLinkFor(c)}`);
+                html += `<div class="cart-send-head"><b>Cart ${c.id}</b><span>${cartDetails(c)}</span></div>`;
+                list.forEach((x, i) => {
+                    if (x.c !== c) return;
+                    let sent = cartSendSent.has(x.name);
+                    let btn = x.phone ? `<button type="button" class="match-send-btn${sent ? ' sent' : ''}" onclick="textCartTo(${i})">${sent ? '✓ Texted' : '💬 Text'}</button>`
+                        : `<button type="button" class="match-send-btn ghost" onclick="copyCartLink(${i})">Copy link</button>`;
+                    html += `<div class="match-send-row"><div><b>${x.name}</b><small>${x.phone || 'no number on file'}</small></div>${btn}</div>`;
+                });
+                html += `<button type="button" class="text-link cart-send-group" onclick="shareCartLink(${cartShareMessages.length - 1})">Share Cart ${c.id}'s link to a group text ›</button>`;
             });
-            document.getElementById('share-buttons-container').innerHTML = html; 
+            document.getElementById('share-buttons-container').innerHTML = html;
             switchScreen('step-3', 'step-7');
+        }
+        function textCartTo(i) {
+            let x = cartSendPlayers()[i];
+            cartSendSent.add(x.name); openShareMenu();
+            let num = x.phone.replace(/[^\d+]/g, ''), body = encodeURIComponent(cartTextFor(x.c, x.name));
+            let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            openSms(isIOS ? `sms:/open?addresses=${num}&body=${body}` : `sms:${num}?body=${body}`);
+        }
+        function copyCartLink(i) {
+            let x = cartSendPlayers()[i];
+            (navigator.clipboard?.writeText(cartTextFor(x.c, x.name)) || Promise.reject()).then(() => alert(`Copied ${firstName(x.name)}'s link. Paste it into a text to him.`))
+                .catch(() => prompt(`${firstName(x.name)}'s link:`, cartLinkFor(x.c, x.name)));
         }
 
         // ==========================================

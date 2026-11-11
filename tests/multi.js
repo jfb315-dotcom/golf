@@ -112,5 +112,5 @@ async function write(op) {
   const prog = await admin.innerText('#dashboard-cart-progress');
   ok((prog.match(/Thru 5/g) || []).length === TEAMS, 'admin standings: every cart Thru 5');
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();

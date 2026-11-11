@@ -91,5 +91,5 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(!(await cart.isVisible('#admin-share-btn-container')), 'cart link: no admin buttons');
   ok(!(await cart.isVisible('#pill-nav-container')), 'no empty tab bar on cart');
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();

@@ -51,5 +51,5 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   const cart = await open('?cart=1', docs);
   ok(!(await cart.locator('#step-3 button:has-text("Finalize / Archive Round")').isVisible()), 'cart link does not show Finalize');
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();

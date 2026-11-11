@@ -52,10 +52,10 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(await page.inputValue('#g1-p1-name') === 'Eddie' && await page.inputValue('#g1-p1-strokes') === '7', 'roster remembered, saved strokes filled');
   page.on('dialog', d => d.accept());
   await page.click('#btn-step2-next'); await page.waitForTimeout(300);
-  ok(await page.isVisible('#step-3') && await page.evaluate(() => roundData.startType === 'back' && roundData.groups.length === 3 && roundData.formats.join() === '2,3' && roundData.birdieRules[2] === true), 'round starts with chosen settings');
+  ok(await page.isVisible('#step-3') && await page.evaluate(() => roundData.startType === 'back' && roundData.groups.length === 3 && roundData.formats.join() === '2' && roundData.birdieRules[2] === true), 'round starts with chosen settings (3-Ball dropped: teams of 2 have no 3rd ball)');
   // Edit setup mid-round restores toggles
   await page.click('text=Edit Setup / Rosters');
   ok(await page.getAttribute('.segmented[data-select="start-type"] button[data-value="back"]', 'aria-pressed') === 'true', 'edit setup shows Start on 10 selected');
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();

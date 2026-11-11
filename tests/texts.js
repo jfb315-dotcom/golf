@@ -29,14 +29,16 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   page.on('dialog', d => d.accept());
   await page.click('#btn-step2-next'); await page.waitForTimeout(300);
   await page.evaluate(() => shareSpectatorLink());
-  const spec = await page.inputValue('#share-text-content');
+  const spec = await page.inputValue('#text-body'); // the organizer sends it from the text screen
   console.log('----- SPECTATOR -----\n' + spec);
   ok(spec === 'JB Golf · Live leaderboard (watch only)\nTap to follow along. Want alerts (birdies, skins)? In Safari tap Share › Add to Home Screen, then open JB Golf from your Home Screen and tap Turn on alerts.\nhttp://app.test/live.html?spectator=true', 'spectator text: short tip, link last');
-  await page.evaluate(() => closeShareModal());
+  await page.evaluate(() => { closeShareModal(); document.getElementById('text-modal').classList.remove('active'); });
   await page.evaluate(() => openShareMenu());
-  const sms = await page.evaluate(() => cartShareMessages[0]);
+  const sms = await page.evaluate(() => cartTextFor(roundData.carts[0], 'John Bischof'));
   console.log('----- CART LINK -----\n' + sms);
-  console.log(JSON.stringify(sms.slice(0,120))); ok(sms === 'JB Golf · Cart 1 scorecard (John)\nSat, Oct 31 · Cleveland Country Club · Tee 8:00 AM\n📱 Have JB Golf on your Home Screen? Just open it and tap Cart 1.\nDon\'t have the app? Tap the link, then tap Share at the bottom of your browser › Add to Home Screen to get alerts.\nhttp://app.test/cart.html?cart=1&r=' + await page.evaluate(() => roundData.roundId), 'cart link text: details, Home Screen tip, link last');
+  ok(sms === '⛳ JB Golf · Cart 1 · Sat, Oct 31 · Cleveland Country Club · Tee 8:00 AM\nYour scorecard: tap the link, then Share › Add to Home Screen to keep it. Already have JB Golf on your Home Screen? Just open it.\nhttp://app.test/cart.html?cart=1&r=' + await page.evaluate(() => roundData.roundId) + '&me=john%20bischof', 'cart link text: his own link (with his name), details, Home Screen tip, link last');
+  const group = await page.evaluate(() => cartShareMessages[0]);
+  ok(/^JB Golf · Cart 1 scorecard \(John, Billy, Brent, Joe\)/.test(group) && /cart\.html\?cart=1&r=\d+$/.test(group), 'the group-text version is still there, without a name in the link');
   const UAS = {
     safari: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.5 Mobile/15E148 Safari/604.1',
     facebook: 'Mozilla/5.0 (iPhone; CPU iPhone OS 17_5 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Mobile/15E148 [FBAN/FBIOS;FBAV/470.0.0.0]',
@@ -64,5 +66,5 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
     await ctx.close();
   }
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();

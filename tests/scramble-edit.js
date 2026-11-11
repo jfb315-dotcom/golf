@@ -50,5 +50,5 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(after.roundData.groups[0].players[1].strokeHoles.join() === '3,7', 'strokes unchanged');
   ok(JSON.stringify(after.scoresDb) === JSON.stringify(before.active_round.scoresDb), 'scores untouched by the edit');
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();

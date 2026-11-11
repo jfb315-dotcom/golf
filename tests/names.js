@@ -41,5 +41,5 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.evaluate(() => renderScoreEntry()); await page.waitForTimeout(150);
   ok(await page.isVisible('#cart-scorecard-list'), 'list stays open when the screen refreshes');
   await browser.close();
-  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED');
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
 })();
