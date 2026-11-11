@@ -6231,7 +6231,7 @@ function hideCartHoleHeader() {
             let pick = tabs.some(t => t[0] === omTab) ? omTab : null;
             html += `<div class="om-tabs-wrap" id="om-tabs"><div class="om-tabs-label">Tap to see the details</div><div class="om-tabs">${tabs.map(([k, label]) => `<button type="button" class="${k === pick ? 'on' : ''}" onclick="showOmTab('${k}')"><span>${label}</span><i>${k === pick ? '▴' : '▾'}</i></button>`).join('')}</div></div>`;
             tabs.forEach(([k, , body]) => {
-                html += `<div class="om-tab-pane om-plain" data-tab="${k}"${k === pick ? '' : ' hidden'}>${body}<button type="button" class="om-tab-top" onclick="omBackToButtons()">↑ Back up to the buttons</button></div>`;
+                html += `<div class="om-tab-pane om-plain" data-tab="${k}"${k === pick ? '' : ' hidden'}>${body}<button type="button" class="om-tab-top" onclick="omBackToButtons()">↑ Pick another view</button></div>`;
             });
 
             // ---- presses made, with Undo: the organizer's, at the bottom, folded ----
