@@ -5115,7 +5115,7 @@ function hideCartHoleHeader() {
             let matchOver = isOurMatchOnly(roundData) && !!calculateOurMatch(roundData, scoresDb, matchPresses || {})?.finished;
             let over = showingFinalResults || matchOver;
             document.getElementById('dashboard-eyebrow').innerText = over ? 'Round complete' : 'Live';
-            document.getElementById('dashboard-title').innerText = over ? "Final results" : ((urlParams.get('spectator') === 'true') ? "Leaderboard" : "Standings");
+            document.getElementById('dashboard-title').innerText = over ? "Final results" : ((urlParams.get('spectator') === 'true' && !isOurMatchOnly(roundData)) ? "Leaderboard" : "Standings");
             document.getElementById('dashboard-sub').textContent = roundWhere(roundData);
             // A finished round has nothing left to alert about, so no "Get alerts" card on it
             document.getElementById('step-dashboard').classList.toggle('round-over', over || !liveRoundInCloud);
@@ -5158,7 +5158,7 @@ function hideCartHoleHeader() {
             // Our Match over: who pays who goes first, with the scorecards folded under it
             let omv = ourMatchForViewer(roundData, matchPresses);
             let banner = ourMatchFinalBanner(omv.rData, scoresDb, omv.presses, showingFinalResults);
-            let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator && !banner.startsWith('<div class="om-final-banner">')); // open for spectators until the match is over
+            let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator && !isOurMatchOnly(roundData) && !banner.startsWith('<div class="om-final-banner">')); // open for tournament spectators until the match is over; an Our Match link looks like the organizer's page
             document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
@@ -5171,7 +5171,7 @@ function hideCartHoleHeader() {
             agEl.innerHTML = liveProgressHTML(roundData, scoresDb) + allGamesHTML(roundData, scoresDb, matchPresses, canSeeOurMatch(roundData));
             dash.insertBefore(agEl, dash.querySelector('.alerts-banner').nextSibling);
             let sbEl = document.getElementById('dashboard-side-bets');
-            sbEl.innerHTML = sideBetsHTML(roundData, scoresDb, 'live-', !spectator && lockedTeamId === null && !showingFinalResults && liveRoundInCloud);
+            sbEl.innerHTML = isOurMatchOnly(roundData) ? '' : sideBetsHTML(roundData, scoresDb, 'live-', !spectator && lockedTeamId === null && !showingFinalResults && liveRoundInCloud);
             dash.insertBefore(sbEl, omEl.nextSibling);
             let cardsEl = document.getElementById('dashboard-scorecards');
             dash.insertBefore(cardsEl, spectator || banner ? dash.querySelector('.alerts-banner').nextSibling : document.getElementById('dashboard-payouts'));
