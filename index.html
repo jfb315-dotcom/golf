@@ -409,7 +409,7 @@
         .om-switch-row .om-label .payout-note { display: block; margin-top: 3px; font-weight: 600; }
         .om-side-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
         .om-sides-note { margin: -4px 4px 10px; font-size: 13px; color: var(--text-muted); }
-        .om-side-name { width: 52px; flex-shrink: 0; font-size: 13px; font-weight: bold; color: var(--text-muted); }
+        .om-side-name { width: 58px; flex-shrink: 0; font-size: 13px; font-weight: bold; color: var(--text-muted); white-space: nowrap; letter-spacing: -0.02em; }
         .roster-num { width: 22px; flex-shrink: 0; font-size: 18px; font-weight: 800; color: var(--text-muted); }
         .clean input.roster-name-input { flex-grow: 1; min-width: 0; height: 44px; padding: 0; background: none; border-radius: 0; font-size: 18px; font-weight: 600; }
         .clean input.roster-stroke-input { width: 68px; flex-shrink: 0; height: 36px; padding: 0 8px; border-radius: 18px; font-size: 14px; font-weight: 600; text-align: center; }
@@ -717,6 +717,12 @@
         body:has(#om-only:checked) #om-options { display: block !important; }
         .home-new.home-om { margin-top: 10px; background: var(--bg-card); color: var(--text-main); box-shadow: inset 0 0 0 2px var(--accent-gold); }
         .home-new.home-om span { color: var(--text-muted); }
+        .match-send-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 12px 4px; border-bottom: 1px solid var(--line); }
+        .match-send-row b { display: block; font-size: 17px; color: var(--text-main); }
+        .match-send-row small { color: var(--text-muted); font-size: 13px; }
+        .match-send-btn { flex-shrink: 0; min-width: 104px; height: 44px; border: 0; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 16px; font-weight: 800; }
+        .match-send-btn.sent { background: var(--fill-strong); color: var(--good); }
+        .match-send-btn.ghost { background: var(--fill-strong); color: var(--text-main); }
         .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
@@ -938,10 +944,10 @@
         <button type="button" class="text-link tourn-only" onclick="openPreRoundBlindDrawModal()">Assign blind draw (ghost)</button>
 
         <div id="om-sides" style="display: none;">
-            <div class="field-label">Our Match · sides</div>
-            <p class="om-sides-note">Set to Team 1 vs Team 2. Change only if the sides are different.</p>
-            <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="om-a1" aria-label="Side 1 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-a2" aria-label="Side 1 second player" onchange="saveOurMatchSides()"></select></div></div>
-            <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="om-b1" aria-label="Side 2 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-b2" aria-label="Side 2 second player" onchange="saveOurMatchSides()"></select></div></div>
+            <div class="field-label">Our Match · pairs</div>
+            <p class="om-sides-note">Pick the 4 players. Each row is a pair of partners; the top pair plays the bottom pair.</p>
+            <div class="om-side-row"><span class="om-side-name">Pair 1</span><div class="select-wrap slot"><select id="om-a1" aria-label="Pair 1 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-a2" aria-label="Pair 1 second player" onchange="saveOurMatchSides()"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Pair 2</span><div class="select-wrap slot"><select id="om-b1" aria-label="Pair 2 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-b2" aria-label="Pair 2 second player" onchange="saveOurMatchSides()"></select></div></div>
         </div>
 
         <div class="field-label tourn-only">Carts</div>
@@ -1222,6 +1228,15 @@
         <p class="dash-footnote">This is a new round. Pick your cart once and this app keeps it until the round is over.</p>
     </div>
 
+    <div id="match-send-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="match-send-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Send the match</h2>
+            <p class="clean-sub" style="text-align:center;">Each player gets his own link. It shows the match from his pair's side, this match and every one after.</p>
+            <div id="match-send-list"></div>
+            <button type="button" class="btn-secondary" onclick="document.getElementById('match-send-modal').classList.remove('active')">Done</button>
+        </div>
+    </div>
+
     <div id="om-view-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Who's this link for?</h2>
@@ -1251,8 +1266,8 @@
         <div class="modal-content" id="side-bets-live">
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Add a side bet</h2>
             <p class="clean-sub" style="text-align:center;">2 on 2 · low net ball Nassau · same amount every bet, per person</p>
-            <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="sbl-a1" aria-label="Side 1 first player"></select></div><div class="select-wrap slot"><select id="sbl-a2" aria-label="Side 1 second player"></select></div></div>
-            <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="sbl-b1" aria-label="Side 2 first player"></select></div><div class="select-wrap slot"><select id="sbl-b2" aria-label="Side 2 second player"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Pair 1</span><div class="select-wrap slot"><select id="sbl-a1" aria-label="Pair 1 first player"></select></div><div class="select-wrap slot"><select id="sbl-a2" aria-label="Pair 1 second player"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Pair 2</span><div class="select-wrap slot"><select id="sbl-b1" aria-label="Pair 2 first player"></select></div><div class="select-wrap slot"><select id="sbl-b2" aria-label="Pair 2 second player"></select></div></div>
             <div class="side-bet-opts"><div class="money-field"><span>$</span><input type="number" id="sbl-amount" min="0" inputmode="numeric" value="20" aria-label="Dollars per bet" onfocus="this.select()"></div><span class="payout-note">a bet, per person</span></div>
             <div class="format-row"><label class="format-label" for="sbl-birdies">All birdies count</label><input type="checkbox" class="switch" id="sbl-birdies"></div>
             <button type="button" class="btn-primary" onclick="saveLiveSideBet()">Add side bet</button>
@@ -1288,7 +1303,7 @@
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Share &amp; message</h2>
             <div class="list-rows">
                 <button type="button" class="list-row" id="cart-links-row" onclick="shareHub(openShareMenu)">Text live links to carts <span class="row-note">each cart's scorecard</span></button>
-                <button type="button" class="list-row" onclick="shareHub(shareSpectatorLink)">Share spectator leaderboard <span class="row-note">watch only</span></button>
+                <button type="button" class="list-row" id="share-hub-spectator" onclick="shareHub(shareSpectatorLink)">Share spectator leaderboard <span class="row-note">watch only</span></button>
                 <button type="button" class="list-row" id="admin-message-row" style="display:none;" onclick="shareHub(openMessageModal)">📣 Send a message to carts <span class="row-note">as an alert</span></button>
             </div>
             <button type="button" class="btn-secondary" onclick="document.getElementById('share-hub-modal').classList.remove('active')">Cancel</button>
@@ -2771,7 +2786,12 @@ function toggle9HoleOptions() {
         function roundMenu(fn) { document.getElementById('rv-menu').classList.remove('active'); fn(); }
 
         // Scoring screen: the three ways to send links or messages, behind one row
-        function openShareHub() { document.getElementById('share-hub-modal').classList.add('active'); }
+        function openShareHub() {
+            // Our Match: the watch link is for the other players, from their side
+            let om = roundData?.ourMatch && isOurMatchOnly(roundData);
+            document.getElementById('share-hub-spectator').innerHTML = om ? 'Send the match to the other players <span class="row-note">their side, watch only</span>' : 'Share spectator leaderboard <span class="row-note">watch only</span>';
+            document.getElementById('share-hub-modal').classList.add('active');
+        }
         function shareHub(fn) { document.getElementById('share-hub-modal').classList.remove('active'); fn(); }
 
         function openSignupModal() {
@@ -3711,6 +3731,7 @@ function toggle9HoleOptions() {
                 sel.value = tempRosterCache[id] || '';
             });
             document.getElementById('om-sides').style.display = document.getElementById('om-enabled').checked ? '' : 'none';
+            refreshPairLabels();
         }
 
         // ===== Side bets: any 2 on 2 inside the round, low net ball Nassau, one amount for every bet =====
@@ -3729,8 +3750,8 @@ function toggle9HoleOptions() {
             }
             let opts = v => '<option value="">Pick</option>' + players.map(x => `<option value="${x.slot}"${x.slot === v ? ' selected' : ''}>${x.label}</option>`).join('');
             el.innerHTML = sideBetsDraft().map((b, i) => `<div class="side-bet-card">
-                    <div class="om-side-row"><span class="om-side-name">Side 1</span>${['a1', 'a2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, side 1" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
-                    <div class="om-side-row"><span class="om-side-name">Side 2</span>${['b1', 'b2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, side 2" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
+                    <div class="om-side-row"><span class="om-side-name">Pair 1</span>${['a1', 'a2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, pair 1" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
+                    <div class="om-side-row"><span class="om-side-name">Pair 2</span>${['b1', 'b2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, pair 2" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
                     <div class="side-bet-opts">
                         <div class="money-field"><span>$</span><input type="number" min="0" inputmode="numeric" value="${b.amount || ''}" placeholder="20" aria-label="Side bet ${i + 1}, dollars per bet" onfocus="this.select()" oninput="setSideBet(${i}, 'amount', this.value)"></div>
                         <span class="payout-note">a bet, per person</span>
@@ -3738,6 +3759,7 @@ function toggle9HoleOptions() {
                     <div class="format-row"><label class="format-label" for="sb-birdies-${i}">All birdies count</label><input type="checkbox" class="switch" id="sb-birdies-${i}"${b.allBirdies ? ' checked' : ''} onchange="setSideBet(${i}, 'allBirdies', this.checked)"></div>
                     <button type="button" class="text-link danger-link side-bet-remove" onclick="removeSideBet(${i})">Remove this side bet</button>
                 </div>`).join('');
+            refreshPairLabels();
         }
         function saveSideBets() { try { localStorage.setItem('jbGolfRosterCache', JSON.stringify(tempRosterCache)); } catch (e) {} }
         function addSideBet() { saveRosterCache(); sideBetsDraft().push({ a1: '', a2: '', b1: '', b2: '', amount: 20, allBirdies: false }); saveSideBets(); renderSideBets(); }
@@ -3753,6 +3775,25 @@ function toggle9HoleOptions() {
             sideBetsDraft().forEach(b => SB_SEATS.forEach(k => { if (b[k] === from) b[k] = here; else if (b[k] === here) b[k] = from; }));
         }
         function clearSideBetSeats() { sideBetsDraft().forEach(b => SB_SEATS.forEach(k => { b[k] = ''; })); }
+
+        // A pair's label shows its two players' initials once both are picked ("JB & AA"); "Pair 1" / "Pair 2" until then
+        function pairPlayerName(sel) {
+            let [g, p] = (sel.value || '').split('-').map(Number);
+            if (!g || !p) return '';
+            if (sel.id.startsWith('sbl-')) return roundData.groups.find(x => x.id === g)?.players.find(x => x.id === p)?.name || ''; // during the round: team-player id
+            return (tempRosterCache[`g${g}-p${p}-name`] || '').trim(); // setup: team-slot
+        }
+        function initialsOf(name) { let w = name.trim().split(/\s+/); return (w[0][0] + (w.length > 1 ? w[w.length - 1][0] : (w[0][1] || ''))).toUpperCase(); }
+        function refreshPairLabels() {
+            document.querySelectorAll('.om-side-row').forEach(row => {
+                let label = row.querySelector('.om-side-name');
+                if (!label) return;
+                if (!label.dataset.base) label.dataset.base = label.textContent;
+                let names = [...row.querySelectorAll('select')].map(pairPlayerName);
+                label.textContent = names.length === 2 && names.every(Boolean) ? names.map(initialsOf).join(' & ') : label.dataset.base;
+            });
+        }
+        document.addEventListener('change', e => { if (e.target.closest?.('.om-side-row')) refreshPairLabels(); });
 
         function saveOurMatchSides() {
             OM_SEATS.forEach(id => { tempRosterCache[id] = document.getElementById(id).value; });
@@ -3894,7 +3935,7 @@ function processStep2() {
             for (let [i, b] of sideBetsDraft().entries()) {
                 let picked = SB_SEATS.map(k => b[k]);
                 if (picked.some(v => !v) || new Set(picked).size !== 4 || !(b.amount > 0)) {
-                    alert(`Side bet ${i + 1} needs 4 different players, 2 on each side, and a dollar amount. Fix it, or tap "Remove this side bet".`);
+                    alert(`Side bet ${i + 1} needs 4 different players, 2 in each pair, and a dollar amount. Fix it, or tap "Remove this side bet".`);
                     return;
                 }
             }
@@ -4281,6 +4322,7 @@ function processStep2() {
 
         function shareStandingsLink(side) {
             let rd = activeViewRoundData || roundData;
+            if (rd.ourMatch && isOurMatchOnly(rd) && isAdminView()) { openMatchSend(rd, showingFinalResults || !liveRoundInCloud); return; }
             if (rd.ourMatch && !side) { askOurMatchView(rd, shareStandingsLink); return; }
             let final = showingFinalResults || !liveRoundInCloud;
             let page = rd.ourMatch ? 'match.html' : final ? 'results.html' : 'live.html';
@@ -4294,6 +4336,55 @@ function processStep2() {
             document.getElementById('share-text-content').value = `${title}\n${link}`;
             document.getElementById('share-modal').classList.add('active');
         }
+        // Our Match: each player gets his own text with his own link. The link says who he is, so it (and a Home Screen
+        // icon made from it) shows the match from his pair's view in this match and every match after.
+        let matchSend = { rd: null, final: false, sent: new Set() };
+        function matchLinkFor(rd, final, name) {
+            let me = 'me=' + encodeURIComponent(name.trim().toLowerCase());
+            return final ? shareUrl('match.html', `round=${encodeURIComponent(rd.roundId || '')}&${me}`) : shareUrl('match.html', `spectator=true&${me}`);
+        }
+        function matchTextFor(rd, final, name) {
+            let course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
+            let link = matchLinkFor(rd, final, name);
+            if (final) return `JB Golf · Our Match final results · ${course}\n${link}`;
+            return `JB Golf · Our Match, live · ${course}\nTap to follow along (watch only), from your side.\n`
+                + `Want alerts (birdies, presses, final)? Only once: in Safari tap Share › Add to Home Screen, name it "JB Match", then open it and tap Turn on alerts. Already added it before? Just open JB Match from your Home Screen.\n${link}`;
+        }
+        function openMatchSend(rd, final) {
+            if (matchSend.rd?.roundId !== rd.roundId || matchSend.final !== final) matchSend.sent = new Set();
+            matchSend.rd = rd; matchSend.final = final;
+            document.getElementById('match-send-title').textContent = final ? 'Send the results' : 'Send the match';
+            renderMatchSend();
+            document.getElementById('match-send-modal').classList.add('active');
+        }
+        function matchSendPlayers(rd) {
+            return ourMatchSides(rd.ourMatch).flat().map(cp => rd.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p)).filter(Boolean)
+                .map(p => ({ name: p.name, phone: phoneFor(canonicalKey(p.name.trim().toLowerCase())) }));
+        }
+        function renderMatchSend() {
+            let rd = matchSend.rd;
+            document.getElementById('match-send-list').innerHTML = matchSendPlayers(rd).map((x, i) => {
+                let sent = matchSend.sent.has(x.name);
+                let btn = x.phone ? `<button type="button" class="match-send-btn${sent ? ' sent' : ''}" onclick="textMatchTo(${i})">${sent ? '✓ Texted' : '💬 Text'}</button>`
+                    : `<button type="button" class="match-send-btn ghost" onclick="copyMatchLink(${i})">Copy link</button>`;
+                return `<div class="match-send-row"><div><b>${x.name}</b><small>${x.phone || 'no number on file'}</small></div>${btn}</div>`;
+            }).join('');
+        }
+        function textMatchTo(i) {
+            let x = matchSendPlayers(matchSend.rd)[i];
+            matchSend.sent.add(x.name); renderMatchSend();
+            let num = x.phone.replace(/[^\d+]/g, ''), body = encodeURIComponent(matchTextFor(matchSend.rd, matchSend.final, x.name));
+            let isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            openSms(isIOS ? `sms:/open?addresses=${num}&body=${body}` : `sms:${num}?body=${body}`);
+        }
+        function openSms(url) { window.location.href = url; } // opens Messages
+        function copyMatchLink(i) {
+            let x = matchSendPlayers(matchSend.rd)[i];
+            let text = matchTextFor(matchSend.rd, matchSend.final, x.name);
+            (navigator.clipboard?.writeText(text) || Promise.reject()).then(() => alert(`Copied ${firstName(x.name)}'s link. Paste it into a text to him.`))
+                .catch(() => prompt(`${firstName(x.name)}'s link:`, matchLinkFor(matchSend.rd, matchSend.final, x.name)));
+        }
+
         // The admin shares a link the same way as after finalizing: the text screen, link in the message,
         // the round's players with numbers checked (for an Our Match link made for one side, just that side)
         function isAdminView() { return lockedTeamId === null && new URLSearchParams(location.search).get('spectator') !== 'true' && !new URLSearchParams(location.search).get('round'); }
@@ -4309,6 +4400,7 @@ function processStep2() {
         function shareSpectatorLink(side) {
             // Our Match only: the people following along are there for the match, so it's on their page, from their side
             let om = roundData.ourMatch && isOurMatchOnly(roundData);
+            if (om && isAdminView()) { openMatchSend(roundData, false); return; }
             if (om && !side) { askOurMatchView(roundData, shareSpectatorLink); return; }
             const spectatorLink = om ? shareUrl('match.html', `spectator=true&om=${side === 'b' ? 2 : 1}`) : shareUrl('live.html', 'spectator=true');
             let st = `JB Golf · ${om ? 'Big Money Match, live' : 'Live leaderboard'} (watch only)\nTap to follow along. Want alerts${om ? ' (birdies, presses, final)' : ' (birdies, skins)'}? In Safari tap Share › Add to Home Screen, then open JB Golf from your Home Screen and tap Turn on alerts.\n${spectatorLink}`;
@@ -5159,7 +5251,7 @@ function hideCartHoleHeader() {
             let omv = ourMatchForViewer(roundData, matchPresses);
             let banner = ourMatchFinalBanner(omv.rData, scoresDb, omv.presses, showingFinalResults);
             let cardsView = scorecardView(roundData);
-            if (isOurMatchOnly(roundData) && urlParams.get('om') === '2') cardsView = { ...cardsView, groups: [...cardsView.groups].reverse() };
+            if (isOurMatchOnly(roundData) && omViewerFlipped(roundData)) cardsView = { ...cardsView, groups: [...cardsView.groups].reverse() };
             let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(cardsView, scoresDb, money ? 'cards' : undefined), spectator && !isOurMatchOnly(roundData) && !banner.startsWith('<div class="om-final-banner">')); // open for tournament spectators until the match is over; an Our Match link looks like the organizer's page
             document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
@@ -5788,8 +5880,21 @@ function hideCartHoleHeader() {
         // Our Match is shown to the admin and to carts that have one of its four players; spectators never see it
         // A link made for the second side (om=2) shows the match from their side: their names first, + = them up.
         // Swapping the two sides (and whose press is whose) is all it takes; who pays who stays the same.
+        // A per-person link (me=andy anderson) shows the match from whichever pair that player is in today;
+        // older links said which pair (om=2 = the second pair)
+        function omViewerFlipped(rData) {
+            let q = new URLSearchParams(location.search);
+            let me = (q.get('me') || '').trim().toLowerCase();
+            if (me && rData?.ourMatch) {
+                let keyOf = cp => (rData.groups.find(g => g.id === cp.g)?.players.find(p => p.id === cp.p)?.name || '').trim().toLowerCase();
+                let pairs = ourMatchSides(rData.ourMatch);
+                if (pairs[1].some(cp => keyOf(cp) === me)) return true;
+                if (pairs[0].some(cp => keyOf(cp) === me)) return false;
+            }
+            return q.get('om') === '2';
+        }
         function ourMatchForViewer(rData, presses) {
-            if (!rData?.ourMatch || new URLSearchParams(location.search).get('om') !== '2') return { rData, presses };
+            if (!rData?.ourMatch || !omViewerFlipped(rData)) return { rData, presses };
             let om = rData.ourMatch, flipped = {};
             Object.entries(presses || {}).forEach(([k, v]) => { flipped[k] = { A: v?.B ?? null, B: v?.A ?? null }; });
             return { rData: { ...rData, ourMatch: { ...om, sideA: om.sideB, sideB: om.sideA } }, presses: flipped };
@@ -5798,7 +5903,7 @@ function hideCartHoleHeader() {
         function canSeeOurMatch(rData) {
             let q = new URLSearchParams(window.location.search);
             if (!rData.ourMatch) return false;
-            if (q.get('spectator') === 'true') return q.get('om') === '1' || q.get('om') === '2'; // a shared link that includes Our Match
+            if (q.get('spectator') === 'true') return q.get('om') === '1' || q.get('om') === '2' || !!q.get('me'); // a shared link that includes Our Match
             if (lockedTeamId === null) return true;
             let cart = rData.carts.find(c => c.id === lockedTeamId);
             let mine = rData.isScrambled && cart ? cart.players : (rData.groups.find(g => g.id === lockedTeamId)?.players.map(p => ({ g: lockedTeamId, p: p.id })) || []);
@@ -6069,6 +6174,7 @@ function hideCartHoleHeader() {
             document.getElementById('sbl-amount').value = 20;
             document.getElementById('sbl-birdies').checked = false;
             document.getElementById('sb-modal').classList.add('active');
+            refreshPairLabels();
         }
         function saveSideBetsToRound() {
             trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('roundData', 'sideBets'), JSON.parse(JSON.stringify(roundData.sideBets || []))));
@@ -6077,7 +6183,7 @@ function hideCartHoleHeader() {
         function saveLiveSideBet() {
             let picked = ['a1', 'a2', 'b1', 'b2'].map(k => document.getElementById('sbl-' + k).value);
             let amount = parseInt(document.getElementById('sbl-amount').value) || 0;
-            if (picked.some(v => !v) || new Set(picked).size !== 4 || amount <= 0) { alert('Pick 4 different players, 2 on each side, and a dollar amount.'); return; }
+            if (picked.some(v => !v) || new Set(picked).size !== 4 || amount <= 0) { alert('Pick 4 different players, 2 in each pair, and a dollar amount.'); return; }
             let seat = v => { let [g, p] = v.split('-').map(Number); return { g, p }; };
             let bets = roundData.sideBets = roundData.sideBets || [];
             bets.push({ id: Math.max(0, ...bets.map(b => b.id || 0)) + 1, sideA: [seat(picked[0]), seat(picked[1])], sideB: [seat(picked[2]), seat(picked[3])], amount, allBirdies: document.getElementById('sbl-birdies').checked });
@@ -6118,7 +6224,7 @@ function hideCartHoleHeader() {
             return html + `</div>`;
         }
 
-        function realOurMatchSide(side) { return new URLSearchParams(location.search).get('om') === '2' ? (side === 'A' ? 'B' : 'A') : side; }
+        function realOurMatchSide(side) { return omViewerFlipped(roundData) ? (side === 'A' ? 'B' : 'A') : side; }
 
         // Take back a press made by mistake (the side can press again later)
         function unpressOurMatch(key, side) {
@@ -6673,7 +6779,8 @@ function hideCartHoleHeader() {
                 return (today ? 'today ' : d.toLocaleDateString([], { month: 'short', day: 'numeric' }) + ' · ') + d.toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
             };
             let who = (id, x) => {
-                let view = /[?&]om=2/.test(x.url || '') ? ' · other side\'s view' : '';
+                let who = (x.url || '').match(/[?&]me=([^&#]+)/);
+                let view = who ? ` · ${firstName(decodeURIComponent(who[1]).replace(/\b\w/g, c => c.toUpperCase()))}'s view` : /[?&]om=2/.test(x.url || '') ? ' · other pair\'s view' : '';
                 let what = x.cart === 'admin' ? 'Admin' : x.cart ? cartWho(x) : `Spectator${view}`;
                 return id === me ? `This phone (${what.toLowerCase()})` : what;
             };
@@ -7014,6 +7121,7 @@ function hideCartHoleHeader() {
             sendAlert('final', '🏆 Final results are in', `${activeViewRoundData.course?.name || 'JB Golf'} · ${formatRoundDate(activeViewRoundData.date)}`, 'standings', 'final', activeViewRoundData);
 
             textRound = activeViewRoundData;
+            if (activeViewRoundData.ourMatch && isOurMatchOnly(activeViewRoundData)) { openMatchSend(activeViewRoundData, true); return; } // each player his own results link
             let rd = activeViewRoundData, course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
             let link = shareUrl(rd.ourMatch ? 'match.html' : 'results.html', `round=${encodeURIComponent(rd.roundId || '')}`);
             openGroupText('round', `🏆 JB Golf final results · ${course} · ${formatRoundDate(rd.date)}\nScores, money and who pays who:\n${link}`, 'Round finalized · text the results');
