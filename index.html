@@ -743,6 +743,14 @@
         .cart-send-head b { font-size: 18px; color: var(--accent-gold); white-space: nowrap; }
         .cart-send-head span { font-size: 13px; color: var(--text-muted); text-align: right; }
         .cart-send-group { display: block; margin: 8px 4px 4px; font-size: 14px; }
+        .om-tabs { display: flex; gap: 6px; margin: 16px 0 10px; padding: 4px; border-radius: 14px; background: var(--fill-strong); }
+        .om-tabs button { flex: 1; border: 0; border-radius: 11px; padding: 11px 4px; background: transparent; color: var(--text-main); font-size: 14px; font-weight: 800; }
+        .om-tabs button.on { background: var(--accent-gold); color: var(--on-accent); }
+        .om-tab-pane { margin-bottom: 8px; }
+        .om-tab-top { display: block; width: 100%; margin: 14px 0 4px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 700; }
+        .om-plain .om-a, .om-plain .om-b, .om-plain .om-b-win, .om-plain .om-birdie-line { color: inherit; text-decoration: none; }
+        .om-plain td, .om-plain .om-second { color: var(--text-main); }
+        .om-win { font-weight: 900; font-size: 1.2em; }
         .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
@@ -5323,10 +5331,12 @@ function hideCartHoleHeader() {
             let cardsView = scorecardView(roundData);
             if (isOurMatchOnly(roundData) && omViewerFlipped(roundData)) cardsView = { ...cardsView, groups: [...cardsView.groups].reverse() };
             let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(cardsView, scoresDb, money ? 'cards' : undefined), spectator && !isOurMatchOnly(roundData) && !banner.startsWith('<div class="om-final-banner">')); // open for tournament spectators until the match is over; an Our Match link looks like the organizer's page
-            document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
+            let omOnlyRound = BETA && isOurMatchOnly(roundData);
+            document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (omOnlyRound ? '' : spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
+            if (omOnlyRound) document.getElementById('dashboard-financial-summary').innerHTML = ''; // the rules are in How it works
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
-            let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(omv.rData, scoresDb, omv.presses, !showingFinalResults && urlParams.get('spectator') !== 'true') : '';
+            let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(omv.rData, scoresDb, omv.presses, !showingFinalResults && urlParams.get('spectator') !== 'true', { cards: omOnlyRound ? generateScorecardHTML(cardsView, scoresDb) : '' }) : '';
             document.getElementById('dashboard-our-match').innerHTML = omHTML && money ? fold('live-om', ourMatchSummaryLine(omv.rData, scoresDb, omv.presses), omHTML, !showingFinalResults) : omHTML;
             // Our Match only: the match goes first, scorecards after
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
@@ -6022,7 +6032,7 @@ function hideCartHoleHeader() {
             return `${diff < 0 ? m.names[0] : m.names[1]} up ${Math.abs(diff)}`;
         }
 
-        function generateOurMatchHTML(rData, sDb, presses, live) {
+        function generateOurMatchHTMLClassic(rData, sDb, presses, live) {
             let m = calculateOurMatch(rData, sDb, presses);
             if (!m) return '';
             let om = rData.ourMatch;
@@ -6120,6 +6130,116 @@ function hideCartHoleHeader() {
 
             html += `<p class="dash-footnote">All amounts are per person. Nassau is paid when each bet finishes; 1st ball goes to 2nd ball bets and birdies count as they stand. Every gross birdie by any of the four counts.</p>`;
             return html + nassauFold + `</section>`;
+        }
+
+        // Our Match with buttons (test copy for now): trending + money on top, then 1st ball / Nassau / Scorecards
+        // views, the nine being played first; presses with Undo folded at the bottom. The real app keeps the classic layout.
+        function generateOurMatchHTML(rData, sDb, presses, live, opts = {}) {
+            if (!BETA) return generateOurMatchHTMLClassic(rData, sDb, presses, live);
+            let m = calculateOurMatch(rData, sDb, presses);
+            if (!m) return '';
+            let om = rData.ourMatch;
+            let labels = { front: 'Front 9', back: 'Back 9', overall: 'Overall' };
+            let html = `<section class="dash-section om-section" id="our-match">
+                <div class="dash-section-title team-head"><span>Our Match</span><span>${m.finished ? 'Final' : 'Live'}</span></div>
+                <div class="om-sides"><span class="om-side a">${m.names[0]}</span><span class="om-vs">vs</span><span class="om-side b">${m.names[1]}</span></div>`;
+            html += ourMatchMoneyTable(m, rData);
+
+            // Press buttons stay up top while the match is live
+            if (live) MATCH_BETS.forEach(key => {
+                let n = m.nassau[key];
+                if (n) ['A', 'B'].forEach((side, i) => {
+                    if (n.canPress[side]) html += `<button type="button" class="om-press" onclick="pressOurMatch('${key}','${side}')">PRESS ${labels[key].toUpperCase()} · ${m.names[i]}</button>`;
+                });
+            });
+
+            let pressList = ourMatchPressList(m);
+            let win = (x, y) => x < y ? `<b class="om-win">${x}</b>` : `${x}`; // the winning number, bold and a bit bigger
+
+            // The nines in the order to read them: during play the nine being played comes first; once it's over, in play order
+            let order = keys => {
+                let started = keys.filter(k => (k === 'overall' ? m.nassau.overall : (m.nines.find(n => n.key === k) || m.nassau[k]))?.done?.length);
+                let second = keys[1] && started.includes(keys[1]);
+                return !m.finished && second ? [keys[1], keys[0], ...keys.slice(2)] : keys;
+            };
+            let nineKeys = m.nines.map(n => n.key); // already in play order
+            let nineTitle = k => k === 'back' ? 'Back 9' : 'Front 9';
+
+            // ---- 1st ball goes to 2nd ball & birdies, one block per nine ----
+            let balls = '';
+            order(nineKeys).forEach(k => {
+                let nine = m.nines.find(n => n.key === k);
+                balls += omHead(`1st ball goes to 2nd ball · ${nineTitle(k)}`, `net · $${nine.amount} a bet per person · + = ${m.names[0]} up`);
+                if (nine.rows.length === 0) { balls += `<div class="payout-row muted">Not started yet</div>`; return; }
+                balls += `<table class="om-chart"><thead><tr><th>Hole</th><th>Par</th><th>Net</th><th>Won</th><th>Bets</th><th>Birdies</th></tr></thead><tbody>`;
+                nine.rows.forEach(r => {
+                    let [a, b] = r.lowNets, [a2, b2] = r.secondNets;
+                    let net = a !== b ? `${win(a, b)} v ${win(b, a)}` : `${a} v ${b}<div class="om-second">2nd ${win(a2, b2)} v ${win(b2, a2)}</div>`;
+                    let won = r.result > 0 ? m.names[0].split(' ')[0] : r.result < 0 ? m.names[1].split(' ')[0] : '–';
+                    let bird = [r.units[0] ? `${m.names[0].split(' ')[0].slice(0, 1)}${'●'.repeat(r.units[0])}` : '', r.units[1] ? `${m.names[1].split(' ')[0].slice(0, 1)}${'●'.repeat(r.units[1])}` : ''].filter(Boolean).join(' ');
+                    balls += `<tr><td><b>${r.hole}</b></td><td class="om-par">${rData.course.pars[r.hole - 1]}</td><td>${net}</td><td>${won}</td><td class="om-bets">${r.bets.map(formatMatchBet).join(' ')}</td><td>${bird}</td></tr>`;
+                });
+                balls += `</tbody></table>`;
+                let betsUp = nine.bets.filter(x => x > 0).length, betsDown = nine.bets.filter(x => x < 0).length;
+                balls += `<div class="payout-row sub"><span>Bets: ${m.names[0]} up ${betsUp}, down ${betsDown}${nine.bets.length - betsUp - betsDown ? `, ${nine.bets.length - betsUp - betsDown} even` : ''}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney)}</b></div>`;
+                balls += ourMatchBirdiesHTML(m, nine);
+                balls += `<div class="payout-row om-subtotal"><span>${nineTitle(k)} 1st ball goes to 2nd ball + birdies${nine.finished ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nine.ballMoney + nine.birdieMoney)}</b></div>`;
+            });
+
+            // ---- Nassau: each bet (main and presses) with its holes, in reading order; Overall last ----
+            let running = (n, b, h) => b.from != null && m.pos(h) <= m.pos(b.from) ? null
+                : -n.done.filter(x => m.pos(x) <= m.pos(h) && (b.from == null || m.pos(x) > m.pos(b.from))).reduce((a, x) => a + n.lows[x][0] - n.lows[x][1], 0);
+            let cell = (n, h) => n.bets.map(b => running(n, b, h)).filter(v => v !== null).map(formatMatchBet).join(' ');
+            let betLines = (key, n) => n.bets.map(b => {
+                let money = n.finished ? (b.diff < 0 ? om.nassauBet : b.diff > 0 ? -om.nassauBet : 0) : null;
+                let label = b.label === 'Main' ? 'Main bet' : `Press · from hole ${n.holes[n.holes.indexOf(b.from) + 1] ?? b.from + 1}`;
+                return `<div class="om-bet-row"><span>${label}</span><span class="om-standing">${nassauText(m, b.diff)}</span><b>${money !== null ? formatMatchMoney(money) : ''}</b></div>`;
+            }).join('');
+            let nassau = `<p class="payout-sub" style="margin-top:0;">Low ball ${om.nassauNet ? 'net (strokes count)' : 'gross'} each hole, added up · $${om.nassauBet} a bet per person · + = ${m.names[0]} up</p>`;
+            order(['front', 'back'].filter(k => m.nassau[k]).sort((x, y) => m.pos(m.nassau[x].holes[0]) - m.pos(m.nassau[y].holes[0]))).forEach(key => {
+                let n = m.nassau[key];
+                nassau += omHead(`Nassau · ${nineTitle(key)}`, n.finished ? 'final' : n.done.length ? `thru ${n.lastDone}` : 'not started');
+                nassau += betLines(key, n);
+                if (n.done.length) {
+                    nassau += `<table class="om-chart"><thead><tr><th>Hole</th><th>Par</th><th>Low</th><th>${key === 'back' ? 'Back' : 'Front'} bets</th>${m.nassau.overall ? '<th>Overall</th>' : ''}</tr></thead><tbody>`;
+                    n.done.forEach(h => {
+                        let [a, b] = n.lows[h];
+                        nassau += `<tr><td><b>${h}</b></td><td class="om-par">${rData.course.pars[h - 1]}</td><td>${win(a, b)} v ${win(b, a)}</td><td class="om-bets">${cell(n, h)}</td>${m.nassau.overall ? `<td class="om-bets">${cell(m.nassau.overall, h)}</td>` : ''}</tr>`;
+                        pressList.filter(pr => pr.after === h).forEach(pr => { nassau += `<tr class="om-press-mark"><td colspan="${m.nassau.overall ? 5 : 4}">⤴ ${pr.text} · from hole ${pr.start}</td></tr>`; });
+                    });
+                    nassau += `</tbody></table>`;
+                }
+                nassau += `<div class="payout-row om-subtotal"><span>${nineTitle(key)} Nassau${n.bets.length > 1 ? ` (${n.bets.length} bets)` : ''}</span>${n.finished ? `<b class="payout-amount">${formatMatchMoney(n.money)}</b>` : '<span class="payout-note">in play</span>'}</div>`;
+            });
+            if (m.nassau.overall) {
+                let n = m.nassau.overall;
+                nassau += omHead('Nassau · Overall', n.finished ? 'final' : n.done.length ? `thru ${n.lastDone}` : 'not started');
+                nassau += betLines('overall', n);
+                nassau += `<div class="payout-row om-subtotal"><span>Overall Nassau${n.bets.length > 1 ? ` (${n.bets.length} bets)` : ''}</span>${n.finished ? `<b class="payout-amount">${formatMatchMoney(n.money)}</b>` : '<span class="payout-note">in play</span>'}</div>`;
+            }
+            let nassauTotal = MATCH_BETS.reduce((a, k) => a + (m.nassau[k]?.money || 0), 0);
+            nassau += `<div class="payout-row om-grand"><span>Nassau total${MATCH_BETS.every(k => !m.nassau[k] || m.nassau[k].finished) ? '' : ' so far'}</span><b class="payout-amount">${formatMatchMoney(nassauTotal)}</b></div>`;
+
+            // ---- three buttons; each opens its view under them (tap again to close) ----
+            let tabs = [['balls', '1st ball → 2nd', balls], ['nassau', 'Nassau', nassau]];
+            if (opts.cards) tabs.push(['cards', 'Scorecards', opts.cards]);
+            let pick = tabs.some(t => t[0] === omTab) ? omTab : null;
+            html += `<div class="om-tabs" id="om-tabs">${tabs.map(([k, label]) => `<button type="button" class="${k === pick ? 'on' : ''}" onclick="showOmTab('${k}')">${label}</button>`).join('')}</div>`;
+            tabs.forEach(([k, , body]) => {
+                html += `<div class="om-tab-pane om-plain" data-tab="${k}"${k === pick ? '' : ' hidden'}>${body}<button type="button" class="om-tab-top" onclick="document.getElementById('om-tabs').scrollIntoView({ behavior: 'smooth', block: 'start' })">↑ Back to the top of Our Match</button></div>`;
+            });
+
+            // ---- presses made, with Undo: the organizer's, at the bottom, folded ----
+            if (live && pressList.length) {
+                html += fold('om-presses', `Presses made (${pressList.length}) · undo one`, pressList.map(pr => `<div class="om-press-made"><span>⤴ ${pr.text} · from hole ${pr.start}</span><button type="button" class="om-unpress" onclick="unpressOurMatch('${pr.key}','${pr.by}')">Undo</button></div>`).join(''));
+            }
+            return html + `</section>`;
+        }
+        let omTab = null; // which Our Match view is open: 'balls', 'nassau', 'cards' or none
+        function showOmTab(k) {
+            omTab = omTab === k ? null : k;
+            document.querySelectorAll('#om-tabs button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${omTab}'`)));
+            document.querySelectorAll('.om-tab-pane').forEach(p => { p.hidden = p.dataset.tab !== omTab; });
         }
 
         // The rules dropdown: each Our Match game, its stakes, and whether strokes count in it
@@ -7414,9 +7534,12 @@ function hideCartHoleHeader() {
                 let presses = activeViewRoundData.matchPresses || {};
                 let money = hasTournamentMoney(activeViewRoundData) ? standingsSections(activeViewRoundData, activeViewScoresDb, presses, 'arc-') : null;
                 let omv = ourMatchForViewer(activeViewRoundData, presses);
-                document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(omv.rData, activeViewScoresDb, omv.presses, true) + (isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb)) : generateScorecardHTML(scorecardView(activeViewRoundData), activeViewScoresDb));
+                let arcOmOnly = BETA && isOurMatchOnly(activeViewRoundData);
+                let arcCards = scorecardView(activeViewRoundData);
+                if (arcOmOnly && omViewerFlipped(activeViewRoundData)) arcCards = { ...arcCards, groups: [...arcCards.groups].reverse() };
+                document.getElementById('archived-card-container').innerHTML = money ? '' : ourMatchFinalBanner(omv.rData, activeViewScoresDb, omv.presses, true) + (arcOmOnly ? '' : isOurMatchOnly(activeViewRoundData) ? fold('arc-cards', CARDS_FOLD_TITLE, generateScorecardHTML(arcCards, activeViewScoresDb)) : generateScorecardHTML(arcCards, activeViewScoresDb));
                 document.getElementById('archived-payout-summary-container').innerHTML = money ? money.top : '';
-                let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(omv.rData, activeViewScoresDb, omv.presses, false) : '';
+                let omHTML = activeViewRoundData.ourMatch ? generateOurMatchHTML(omv.rData, activeViewScoresDb, omv.presses, false, { cards: arcOmOnly ? generateScorecardHTML(arcCards, activeViewScoresDb) : '' }) : '';
                 document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(omv.rData, activeViewScoresDb, omv.presses), omHTML) : omHTML;
                 document.getElementById('archived-more').innerHTML = money ? money.more : '';
                 document.getElementById('archived-side-bets').innerHTML = sideBetsHTML(activeViewRoundData, activeViewScoresDb, 'arc-');
@@ -7509,6 +7632,12 @@ function hideCartHoleHeader() {
                 let cfg = TABS[screen], sc = $(screen);
                 let rd = screen === 'step-9' ? activeViewRoundData : roundData, sDb = screen === 'step-9' ? activeViewScoresDb : scoresDb;
                 if (!rd?.groups) return;
+                // An Our Match round has its own buttons (1st ball / Nassau / Scorecards): no tabs here
+                if (isOurMatchOnly(rd)) {
+                    $('rv-dtabs-' + screen)?.remove(); $('rv-cards-' + screen)?.remove();
+                    ['Board', 'Our Match', 'Side bets'].forEach(n => cfg[n].forEach(id => { let el = $(id); if (el) el.style.display = ''; }));
+                    return;
+                }
                 // Cards get their own tab; the folded copies elsewhere are hidden by CSS
                 let cardsId = 'rv-cards-' + screen, cards = $(cardsId);
                 if (!cards) { cards = document.createElement('div'); cards.id = cardsId; let after = $(cfg['Side bets'][0]); after.after(cards); }
