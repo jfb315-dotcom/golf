@@ -34,7 +34,7 @@
                 --fill-soft: rgba(255,255,255,0.04); --fill: rgba(255,255,255,0.08); --fill-strong: rgba(255,255,255,0.16); --line: rgba(255,255,255,0.10);
                 --good: #7ced7e; --bad: #ff6b6b; --band-bg: #284b63; --band-text: #f4f1de; --band-accent: #f4a261; --head-bg: #0a1d28; }
         body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
-        .app-logo { display: block; width: 84px; height: auto; margin: -6px auto -10px auto; position: relative; z-index: 500; }
+        .app-logo { display: block; width: 84px; height: auto; margin: -6px auto -10px auto; position: relative; top: 10px; z-index: 500; } /* nudged down out of the iPhone status-bar blur; "top" moves only the logo, nothing else shifts */
         body:has(#step-3.active) .app-logo { display: none; } /* scoring needs the room */
         
         @keyframes rotate-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
