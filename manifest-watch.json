@@ -1,0 +1,14 @@
+{
+  "name": "JB Golf · Watch",
+  "short_name": "JB Watch",
+  "display": "standalone",
+  "background_color": "#0d211a",
+  "theme_color": "#0d211a",
+  "icons": [
+    {
+      "src": "logo-watch-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    }
+  ]
+}

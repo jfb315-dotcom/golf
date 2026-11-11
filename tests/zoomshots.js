@@ -1,0 +1,34 @@
+// Rosters and the tees editor at 375 wide: nothing spills sideways after the 16px change
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const fs = require('fs');
+const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
+const html = fs.readFileSync(process.argv[2] || __dirname + '/../index.html', 'utf8');
+const tag = process.argv[3] || 'new';
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 375, height: 760 }, deviceScaleFactor: 2 }); page.setDefaultTimeout(5000);
+  page.on('dialog', d => d.dismiss());
+  await page.route('**/*', r => { const u = r.request().url();
+    if (u.includes('gstatic')) return r.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? stub : '' });
+    if (u.startsWith('http://app.test/')) return r.fulfill({ contentType: 'text/html', body: html });
+    return r.abort(); });
+  await page.addInitScript(() => { window.__docsInit = {}; });
+  await page.goto('http://app.test/?beta=0'); await page.waitForTimeout(400);
+  await page.evaluate(() => { changeTheme('fairway'); showScreen('step-1'); document.getElementById('group-count').value = 2; document.getElementById('players-per-group').value = 4; });
+  await page.click('#step-1 .bar-primary[onclick="goToStep2()"]');
+  const names = ['Jordia Smith','Brent Copeland','Andy Anderson','John Bischof','Ed Eads','Fy Fox','Gus Gray','Hal Hart'];
+  for (let i = 0; i < 8; i++) await page.fill(`#g${Math.floor(i / 4) + 1}-p${i % 4 + 1}-name`, names[i]);
+  await page.fill('#g1-p2-strokes', '1, 3, 5, 7, 9');
+  const over = () => page.evaluate(() => { let w = document.documentElement.clientWidth; return [...document.querySelectorAll('.screen.active *, .modal-overlay.active *')].filter(e => e.offsetParent && e.getBoundingClientRect().right > w + 1).map(e => e.id || e.className).slice(0, 5); });
+  let o = await over();
+  ok(!o.length, 'rosters: nothing past the right edge ' + JSON.stringify(o));
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.screenshot({ path: __dirname + `/shots/zoom-rosters-${tag}.png` });
+  await page.evaluate(() => openTeesEditor()); await page.waitForTimeout(300);
+  o = await over();
+  ok(!o.length, 'tees editor: nothing past the right edge ' + JSON.stringify(o));
+  await page.screenshot({ path: __dirname + `/shots/zoom-tees-${tag}.png` });
+  await browser.close();
+  console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
+})();

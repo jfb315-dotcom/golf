@@ -1,0 +1,54 @@
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const fs = require('fs');
+const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
+const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  async function open(docs) {
+    const page = await browser.newPage({ viewport: { width: 390, height: 844 } });
+    page.on('pageerror', e => { console.log('PAGE ERROR', e.message); fails++; });
+    page.on('dialog', d => d.accept());
+    await page.route('**/*', r => { const u = r.request().url();
+      if (u.includes('gstatic')) return r.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? stub : '' });
+      if (u.startsWith('http://app.test/')) return r.fulfill({ contentType: 'text/html', body: html });
+      return r.abort(); });
+    await page.addInitScript(d => { window.__docsInit = d; }, docs);
+    await page.goto('http://app.test/'); await page.waitForTimeout(300); await page.evaluate(() => { if (document.getElementById('step-home')?.classList.contains('active')) showScreen('step-1'); });
+    return page;
+  }
+  let page = await open({});
+  await page.evaluate(() => { document.getElementById('group-count').value = 2; document.getElementById('players-per-group').value = 4; });
+  await page.click('#step-1 .bar-primary[onclick="goToStep2()"]');
+  for (const [id, n] of [['g1-p1','Al'],['g1-p2','Bo'],['g1-p3','Cy'],['g1-p4','Di'],['g2-p1','Ed'],['g2-p2','Fo'],['g2-p3','Gu'],['g2-p4','Hy']]) await page.fill(`#${id}-name`, n);
+  await page.fill('#g1-p2-strokes', '3, 7');
+  await page.evaluate(() => saveRosterCache());
+  await page.click('text=Scramble carts'); await page.click('#btn-step2-next');
+  const seats = [['cart1-p1','1-1'],['cart1-p2','2-1'],['cart1-p3','1-2'],['cart1-p4','2-2'],['cart2-p1','1-3'],['cart2-p2','2-3'],['cart2-p3','1-4'],['cart2-p4','2-4']];
+  for (const [id, v] of seats) await page.selectOption('#' + id, v);
+  await page.fill('#cart2-time', '08:20'); await page.dispatchEvent('#cart2-time', 'change');
+  await page.click('#step-2-half .bar-primary'); await page.waitForTimeout(300);
+  await page.evaluate(() => { [[1,1],[1,2],[2,1],[2,2]].forEach(([g,p]) => { scoresDb[g][p][1] = 4; saveScoresToCloud([[g,p]], 1); }); });
+  await page.waitForTimeout(200);
+  const before = await page.evaluate(() => JSON.parse(JSON.stringify(window.__docs)));
+  await page.close();
+  // A different phone (fresh storage, no roster cache) edits mid-round
+  page = await open(before);
+  await page.evaluate(() => localStorage.clear());
+  await page.click('text=Edit setup / rosters'); await page.waitForTimeout(200);
+  ok(await page.inputValue('#group-count') === '2' && await page.inputValue('#players-per-group') === '4', 'setup shows the live 2 teams of 4');
+  await page.fill('#skins-amount', '15');
+  await page.click('#step-1 .bar-primary[onclick="goToStep2()"]'); await page.waitForTimeout(200);
+  ok(await page.inputValue('#g1-p1-name') === 'Al' && await page.inputValue('#g2-p4-name') === 'Hy' && await page.inputValue('#g1-p2-strokes') === '3, 7', 'roster screen shows the live names and strokes');
+  ok(await page.getAttribute('.segmented[data-select="is-scrambled"] button[data-value="yes"]', 'aria-pressed') === 'true', 'Scramble carts still selected');
+  await page.click('#btn-step2-next'); await page.waitForTimeout(200);
+  ok(await page.inputValue('#cart1-p2') === '2-1' && await page.inputValue('#cart2-p4') === '2-4' && await page.inputValue('#cart2-time') === '08:20', 'cart pairings and tee times show the live seats');
+  await page.click('#step-2-half .bar-primary'); await page.waitForTimeout(300);
+  const after = await page.evaluate(() => window.__docs.active_round);
+  ok(after.roundData.skinsAmount === 15, 'edit saved (skins $15)');
+  ok(JSON.stringify(after.roundData.carts.map(c => c.players)) === JSON.stringify(before.active_round.roundData.carts.map(c => c.players)), 'cart seats unchanged');
+  ok(after.roundData.groups[0].players[1].strokeHoles.join() === '3,7', 'strokes unchanged');
+  ok(JSON.stringify(after.scoresDb) === JSON.stringify(before.active_round.scoresDb), 'scores untouched by the edit');
+  await browser.close();
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
+})();

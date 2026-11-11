@@ -1,0 +1,23 @@
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const fs = require('fs');
+const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
+const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  page.on('pageerror', e => { console.log('PAGE ERROR', e.message); fails++; }); page.on('dialog', d => { console.log('  dialog:', d.message()); d.accept(); });
+  await page.route('**/*', r => { const u = r.request().url();
+    if (u.includes('gstatic')) return r.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? stub : '' });
+    if (u.startsWith('http://app.test/')) return r.fulfill({ contentType: 'text/html', body: html });
+    return r.abort(); });
+  await page.addInitScript(() => { window.__docsInit = {}; });
+  await page.goto('http://app.test/'); await page.waitForTimeout(500);
+  await page.evaluate(() => openPlayersScreen()); await page.waitForTimeout(300);
+  ok(!(await page.isVisible('button:has-text("Add older rounds")')), 'import button tucked away');
+  await page.click('.older-rounds summary');
+  ok(await page.isVisible('button:has-text("Add older rounds")'), 'opens to show it');
+  await page.evaluate(() => scrollTo(0, 99999)); await page.screenshot({ path: __dirname + '/shots/older.png' });
+  await page.click('button:has-text("Add older rounds")'); await page.waitForTimeout(200);
+  await browser.close(); console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
+})();

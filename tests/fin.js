@@ -1,0 +1,55 @@
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const fs = require('fs');
+const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
+const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  async function open(q, docs) {
+    const page = await browser.newPage({ viewport: { width: 420, height: 900 } });
+    page.on('pageerror', e => { console.log('PAGE ERROR', e.message); fails++; });
+    await page.route('**/*', r => { const u = r.request().url();
+      if (u.includes('gstatic')) return r.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? stub : '' });
+      if (u.startsWith('http://app.test/')) return u.includes('logo') ? r.fulfill({status:404, body:''}) : r.fulfill({ contentType: 'text/html', body: html });
+      return r.abort(); });
+    await page.addInitScript(d => { window.__docsInit = d; }, docs);
+    await page.goto('http://app.test/' + q); await page.waitForTimeout(300); await page.evaluate(() => { if (document.getElementById('step-home')?.classList.contains('active')) showScreen('step-1'); }); return page;
+  }
+  let page = await open('', {});
+  await page.evaluate(() => { document.getElementById('group-count').value = 2; document.getElementById('players-per-group').value = 2; goToStep2(); });
+  for (const [id, n] of [['g1-p1','Al'],['g1-p2','Bo'],['g2-p1','Cy'],['g2-p2','Di']]) await page.fill(`#${id}-name`, n);
+  await page.evaluate(() => { saveRosterCache(); processStep2(); }); await page.waitForTimeout(300);
+  const btn = page.locator('#step-3 button:has-text("Finalize / Archive Round")');
+  ok(await btn.isVisible(), 'admin scoring screen shows Finalize button');
+  const docs = await page.evaluate(() => JSON.parse(JSON.stringify(window.__docs)));
+  const msgs = [];
+  page.on('dialog', d => { msgs.push(d.message()); if (d.type() === 'prompt') d.accept('1234'); else if (d.message().includes('Generate text')) d.dismiss(); else d.accept(); });
+  const pin = async digits => { for (const d of digits) await page.click(`.pin-pad button:text-is("${d}")`); };
+  await btn.click(); await page.waitForTimeout(200);
+  ok(await page.isVisible('#pin-modal') && !msgs.some(m => /PIN/i.test(m)), 'finalize shows the on-screen PIN pad, not a browser prompt');
+  await page.screenshot({ path: __dirname + '/shots/pin-pad.png' });
+  await pin('1111'); await page.waitForTimeout(100);
+  ok(await page.isVisible('#pin-modal') && (await page.innerText('#pin-error')).includes('Wrong PIN') && !(await page.evaluate(() => window.__doc.isArchived)), 'wrong PIN keeps pad open and does nothing');
+  await page.click('.pin-cancel');
+  ok(!(await page.isVisible('#pin-modal')) && !(await page.evaluate(() => window.__doc.isArchived)), 'cancel closes pad without finalizing');
+  await btn.click(); await page.waitForTimeout(100);
+  await pin('12'); await page.click('.pin-back'); await pin('234'); await page.waitForTimeout(500);
+  ok(msgs.some(m => m.includes('Not all scores')), 'early archive warns about missing scores');
+  ok(await page.evaluate(() => window.__doc.isArchived === true), 'round archived');
+  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('tournamentArchive')).length === 1), 'saved to archive list');
+  ok(await page.isVisible('#step-home'), 'back on Home');
+  ok(await page.isVisible('#text-modal') && (await page.innerText('#text-modal-title')) === 'Round finalized · text the results' && /^🏆 JB Golf final results/.test(await page.inputValue('#text-body')) && /results\.html\?round=\d+/.test(await page.inputValue('#text-body')) && !msgs.some(m => /Generate text/.test(m)), 'after finalizing: text the results link to the players');
+  await page.evaluate(() => { closeShareModal(); document.getElementById('text-modal').classList.remove('active'); });
+  // delete an archived round with the pad
+  await page.evaluate(() => viewArchiveList());
+  await page.check('.archive-checkbox');
+  await page.click('#bulk-delete-btn');
+  await page.waitForTimeout(100);
+  ok(await page.isVisible('#pin-modal') && (await page.innerText('#pin-title')) === 'Enter PIN to delete rounds', 'delete archive asks on the PIN pad');
+  await pin('1234'); await page.waitForTimeout(200);
+  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('tournamentArchive')).length === 0), 'archived round deleted after PIN');
+  const cart = await open('?cart=1', docs);
+  ok(!(await cart.locator('#step-3 button:has-text("Finalize / Archive Round")').isVisible()), 'cart link does not show Finalize');
+  await browser.close();
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
+})();

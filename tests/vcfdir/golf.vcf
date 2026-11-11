@@ -1,0 +1,25 @@
+BEGIN:VCARD
+VERSION:3.0
+N:Hamilton;Bart;;;
+FN:Bart Hamilton
+TEL;type=HOME:(423) 555-0000
+TEL;type=CELL;type=VOICE;type=pref:(423) 555-0111
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:King;Joe;;;
+FN:Joe King
+item1.TEL;type=pref:+1 423 555 0122
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Plumber;Dave;;;
+FN:Dave Plumber
+TEL;type=CELL:423-555-9999
+END:VCARD
+BEGIN:VCARD
+VERSION:3.0
+N:Watson;Mike;;;
+FN:Mike Watson
+TEL;type=CELL:423-555-0133
+END:VCARD

@@ -1,0 +1,45 @@
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const fs = require('fs');
+const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
+const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+  page.on('pageerror', e => { console.log('PAGE ERROR', e.message); fails++; });
+  page.on('dialog', d => d.accept());
+  await page.route('**/*', r => { const u = r.request().url();
+    if (u.includes('gstatic')) return r.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? stub : '' });
+    if (u.startsWith('http://app.test/')) return u.includes('logo') ? r.fulfill({ path: __dirname + '/../logo.png' }) : r.fulfill({ contentType: 'text/html', body: html });
+    return r.abort(); });
+  await page.addInitScript(() => { window.__docsInit = {}; localStorage.setItem('savedTheme', 'augusta'); });
+  await page.goto('http://app.test/'); await page.waitForTimeout(300); await page.evaluate(() => { if (document.getElementById('step-home')?.classList.contains('active')) showScreen('step-1'); });
+  await page.evaluate(() => { document.getElementById('group-count').value = 2; document.getElementById('players-per-group').value = 4; });
+  await page.click('#step-1 .bar-primary[onclick="goToStep2()"]');
+  for (const [id, n] of [['g1-p1','John Smith'],['g1-p2','Jeff'],['g1-p3','Bartholomew'],['g1-p4','Billy'],['g2-p1','Jordia'],['g2-p2','Marty'],['g2-p3','Brent'],['g2-p4','Al']]) await page.fill(`#${id}-name`, n);
+  await page.evaluate(() => saveRosterCache());
+  await page.click('#btn-step2-next'); await page.waitForTimeout(300);
+  await page.evaluate(() => { for (let h = 1; h <= 10; h++) [1,2,3,4].forEach(p => { scoresDb[1][p][h] = 3 + ((h + p) % 3); }); });
+  await page.click('.pill:text-is("CART 1")'); await page.waitForTimeout(200);
+  ok(await page.isVisible('#cart-scorecard-list'), 'cart tab opens on the All scores list');
+  ok(await page.evaluate(() => Array.from(document.querySelectorAll('.hole-list-names .hole-list-score')).map(s => s.innerText).join()) === 'JOHN,JEFF,BART,BILL', 'names cut to 4 letters: JOHN, JEFF, BART, BILL');
+  const aligned = await page.evaluate(() => {
+    const n = Array.from(document.querySelectorAll('.hole-list-names .hole-list-score')).map(e => Math.round(e.getBoundingClientRect().left));
+    const s = Array.from(document.querySelectorAll('.hole-list-row:nth-child(3) .hole-list-score')).map(e => Math.round(e.getBoundingClientRect().left));
+    return JSON.stringify(n) === JSON.stringify(s) ? 'ok' : JSON.stringify({ n, s });
+  });
+  ok(aligned === 'ok', 'each name sits exactly over its score column ' + aligned);
+  await page.screenshot({ path: __dirname + '/shots/names-top.png' });
+  await page.evaluate(() => window.scrollTo(0, 700)); await page.waitForTimeout(200);
+  const pinned = await page.evaluate(() => { const r = document.querySelector('.hole-list-names').getBoundingClientRect(); const top = document.querySelector('#step-3 .sticky-top').getBoundingClientRect(); return Math.abs(r.top - top.bottom) <= 1 && r.top > 0; });
+  ok(pinned, 'name row stays pinned under the header while scrolling');
+  await page.screenshot({ path: __dirname + '/shots/names-scrolled.png' });
+  // Tapping a hole in the list opens it, and the list stays put if scores arrive meanwhile
+  await page.click('.hole-list-row >> nth=3'); await page.waitForTimeout(200);
+  ok(await page.innerText('.cart-band-hole') === 'Hole 4', 'tapping hole 4 in the list opens hole 4');
+  await page.click('text=‹ All holes / scores'); await page.waitForTimeout(150);
+  await page.evaluate(() => renderScoreEntry()); await page.waitForTimeout(150);
+  ok(await page.isVisible('#cart-scorecard-list'), 'list stays open when the screen refreshes');
+  await browser.close();
+  console.log(fails ? `${fails} FAILURE(S)` : 'ALL PASSED'); process.exit(fails ? 1 : 0);
+})();

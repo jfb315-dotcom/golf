@@ -1,0 +1,47 @@
+// Real app: Fairway colours can be picked, stick, and carts follow; layout stays the original
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const fs = require('fs');
+const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
+const html = fs.readFileSync(__dirname + '/../index.html', 'utf8');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const mk = async docs => { const p = await browser.newPage({ viewport: { width: 390, height: 797 }, deviceScaleFactor: 2 }); p.setDefaultTimeout(6000);
+    p.on('pageerror', e => { console.log('PAGE ERROR', e.message); fails++; }); p.on('dialog', d => d.accept());
+    await p.route('**/*', r => { const u = r.request().url();
+      if (u.includes('gstatic')) return r.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? stub : '' });
+      if (u.startsWith('http://app.test/')) return r.fulfill({ contentType: 'text/html', body: html });
+      return r.abort(); });
+    await p.addInitScript(d => { window.__docsInit = d; }, docs); return p; };
+  const page = await mk({});
+  const bg = p => p.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue('--bg-dark').trim());
+  await page.goto('http://app.test/?beta=0'); await page.waitForTimeout(400);
+  await page.evaluate(() => showScreen('step-home'));
+  await page.selectOption('#app-theme-selector', 'fairway'); await page.waitForTimeout(100);
+  ok(await bg(page) === '#0d211a', 'Fairway colours applied in the real app');
+  ok(!(await page.evaluate(() => document.documentElement.classList.contains('revamp'))) && !(await page.isVisible('.beta-banner')), 'still the original layout, no test strip');
+  await page.screenshot({ path: __dirname + '/shots/fw-home.png' });
+  await page.evaluate(() => { showScreen('step-1'); document.getElementById('group-count').value = 2; document.getElementById('players-per-group').value = 4; });
+  await page.click('#step-1 .bar-primary[onclick="goToStep2()"]');
+  const names = ['John Bischof','Brent Copeland','Chad Copeland','Bart Hamilton','Ed Eads','Fy Fox','Gus Gray','Hal Hart'];
+  for (let i = 0; i < 8; i++) await page.fill(`#g${Math.floor(i / 4) + 1}-p${i % 4 + 1}-name`, names[i]);
+  await page.evaluate(() => saveRosterCache());
+  await page.click('#btn-step2-next'); await page.waitForTimeout(400);
+  await page.evaluate(() => changeTheme('fairway'));
+  ok(await page.evaluate(() => window.__docs.active_round.roundData.theme) === 'fairway', "round saved with Fairway so carts wear it");
+  await page.click('#pill-nav-container :text("CART 1")'); await page.waitForTimeout(300);
+  await page.evaluate(() => openHoleForScoring(1)); await page.waitForTimeout(200);
+  await page.screenshot({ path: __dirname + '/shots/fw-score.png' });
+  await page.evaluate(() => { let pars = roundData.course.pars; for (let h = 1; h <= 6; h++) roundData.groups.forEach(g => g.players.forEach((p, i) => { scoresDb[g.id][p.id] = scoresDb[g.id][p.id] || {}; scoresDb[g.id][p.id][h] = pars[h - 1] + (i % 2); })); viewDashboard(); window.scrollTo(0, 0); });
+  await page.waitForTimeout(200);
+  await page.screenshot({ path: __dirname + '/shots/fw-stand.png' });
+  const docs = await page.evaluate(() => JSON.parse(JSON.stringify(window.__docs)));
+  await page.reload(); await page.waitForTimeout(500);
+  ok(await bg(page) === '#0d211a', 'pick is remembered after reopening');
+  // a cart phone follows
+  const c = await mk(docs);
+  await c.goto(`http://app.test/?cart=1&r=${docs.active_round.roundData.roundId}&beta=0`); await c.waitForTimeout(1300);
+  ok(await bg(c) === '#0d211a', 'cart phone shows Fairway too');
+  await browser.close();
+  console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
+})();
