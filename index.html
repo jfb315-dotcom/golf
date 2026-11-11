@@ -13,9 +13,22 @@
     <meta property="og:image:height" content="630">
     <meta property="og:type" content="website">
     <meta name="twitter:card" content="summary_large_image">
-    <link rel="apple-touch-icon" href="logo.png">
+    <link rel="apple-touch-icon" href="logo.png" id="home-icon">
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="JB Golf" id="home-name">
+    <script>
+        // A watch-only link (Our Match, spectator leaderboard, results) saves to the Home Screen as "JB Watch"
+        // with its own logo, so it isn't mixed up with the JB Golf scoring icon
+        (function () {
+            var q = new URLSearchParams(location.search);
+            if (q.get('spectator') !== 'true' && !q.get('round')) return;
+            document.getElementById('home-icon').href = 'logo-watch.png';
+            document.getElementById('home-name').content = 'JB Watch';
+            document.title = 'JB Watch';
+            window.__watchLink = true;
+        })();
+    </script>
     <style>
         :root { --bg-dark: #153243; --bg-card: #284b63; --text-main: #f4f1de; --text-muted: #b4c5e4; --accent-gold: #f4a261; --bg-table: #1e3b4d; --border-color: #3c6e71; --on-accent: #153243;
                 --fill-soft: rgba(255,255,255,0.04); --fill: rgba(255,255,255,0.08); --fill-strong: rgba(255,255,255,0.16); --line: rgba(255,255,255,0.10);
@@ -764,7 +777,8 @@
         .clipboard-banner { background: #ff4500; color: white; padding: 10px; text-align: center; font-weight: bold; font-size: 14px; border-radius: 4px; margin-bottom: 15px; }
     </style>
     
-    <link rel="manifest" href="manifest.json">
+    <link rel="manifest" href="manifest.json" id="home-manifest">
+    <script>if (window.__watchLink) document.getElementById('home-manifest').href = 'manifest-watch.json';</script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
