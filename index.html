@@ -1288,7 +1288,7 @@
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Share &amp; message</h2>
             <div class="list-rows">
                 <button type="button" class="list-row" id="cart-links-row" onclick="shareHub(openShareMenu)">Text live links to carts <span class="row-note">each cart's scorecard</span></button>
-                <button type="button" class="list-row" onclick="shareHub(shareSpectatorLink)">Share spectator leaderboard <span class="row-note">watch only</span></button>
+                <button type="button" class="list-row" id="share-hub-spectator" onclick="shareHub(shareSpectatorLink)">Share spectator leaderboard <span class="row-note">watch only</span></button>
                 <button type="button" class="list-row" id="admin-message-row" style="display:none;" onclick="shareHub(openMessageModal)">📣 Send a message to carts <span class="row-note">as an alert</span></button>
             </div>
             <button type="button" class="btn-secondary" onclick="document.getElementById('share-hub-modal').classList.remove('active')">Cancel</button>
@@ -2771,7 +2771,12 @@ function toggle9HoleOptions() {
         function roundMenu(fn) { document.getElementById('rv-menu').classList.remove('active'); fn(); }
 
         // Scoring screen: the three ways to send links or messages, behind one row
-        function openShareHub() { document.getElementById('share-hub-modal').classList.add('active'); }
+        function openShareHub() {
+            // Our Match: the watch link is for the other players, from their side
+            let om = roundData?.ourMatch && isOurMatchOnly(roundData);
+            document.getElementById('share-hub-spectator').innerHTML = om ? 'Send the match to the other players <span class="row-note">their side, watch only</span>' : 'Share spectator leaderboard <span class="row-note">watch only</span>';
+            document.getElementById('share-hub-modal').classList.add('active');
+        }
         function shareHub(fn) { document.getElementById('share-hub-modal').classList.remove('active'); fn(); }
 
         function openSignupModal() {
