@@ -5158,7 +5158,9 @@ function hideCartHoleHeader() {
             // Our Match over: who pays who goes first, with the scorecards folded under it
             let omv = ourMatchForViewer(roundData, matchPresses);
             let banner = ourMatchFinalBanner(omv.rData, scoresDb, omv.presses, showingFinalResults);
-            let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(roundData), scoresDb, money ? 'cards' : undefined), spectator && !isOurMatchOnly(roundData) && !banner.startsWith('<div class="om-final-banner">')); // open for tournament spectators until the match is over; an Our Match link looks like the organizer's page
+            let cardsView = scorecardView(roundData);
+            if (isOurMatchOnly(roundData) && urlParams.get('om') === '2') cardsView = { ...cardsView, groups: [...cardsView.groups].reverse() };
+            let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(cardsView, scoresDb, money ? 'cards' : undefined), spectator && !isOurMatchOnly(roundData) && !banner.startsWith('<div class="om-final-banner">')); // open for tournament spectators until the match is over; an Our Match link looks like the organizer's page
             document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
@@ -5824,7 +5826,7 @@ function hideCartHoleHeader() {
             if (final || m.finished) return `<div class="om-final-banner"><span class="om-final-label">Final results</span><b>${matchSettleLine(m, m.totalMoney)}</b><span class="om-final-note">See the breakdowns below</span></div>`;
             let t = m.totalMoney, amt = `$${Math.abs(t).toLocaleString('en-US')}`;
             let line = t === 0 ? '<b>All square so far</b>'
-                : `<b>Trending ${t > 0 ? m.names[0] : m.names[1]}</b><span class="om-final-down">${t > 0 ? m.names[1] : m.names[0]} currently down ${amt} per person</span>`;
+                : `<b>Trending ${t > 0 ? m.names[0] : m.names[1]}</b><span class="om-final-down">${m.names[0]} currently ${t > 0 ? 'up' : 'down'} ${amt} per person</span>`;
             return `<div class="om-final-banner pending"><span class="om-final-label">Final results · pending</span>${line}<span class="om-final-note">Updates as scores come in · see the breakdowns below</span></div>`;
         }
 
@@ -6283,6 +6285,7 @@ function hideCartHoleHeader() {
         // Standings during play: the match at a glance. Teams (best first) with each team game's score to par and how far
         // they're through; under each, every player's net score to par (gross beside it) and the hole they're through.
         function liveProgressHTML(rData, sDb) {
+            if (isOurMatchOnly(rData)) return '';
             let seq = getHoleSequenceFor(rData), par = h => rData.course.pars[h - 1];
             let real = g => g.players.filter(p => !p.isGhost);
             let scored = (g, p, h) => sDb[g.id]?.[p.id]?.[h];
