@@ -723,6 +723,7 @@
         .match-send-btn { flex-shrink: 0; min-width: 104px; height: 44px; border: 0; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 16px; font-weight: 800; }
         .match-send-btn.sent { background: var(--fill-strong); color: var(--good); }
         .match-send-btn.ghost { background: var(--fill-strong); color: var(--text-main); }
+        body.om-link .alerts-banner { display: none !important; }
         .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
@@ -4346,9 +4347,10 @@ function processStep2() {
         function matchTextFor(rd, final, name) {
             let course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
             let link = matchLinkFor(rd, final, name);
-            if (final) return `JB Golf · Our Match final results · ${course}\n${link}`;
-            return `JB Golf · Our Match, live · ${course}\nTap to follow along (watch only), from your side.\n`
-                + `Want alerts (birdies, presses, final)? Only once: in Safari tap Share › Add to Home Screen, name it "JB Match", then open it and tap Turn on alerts. Already added it before? Just open JB Match from your Home Screen.\n${link}`;
+            // Short: what it is, then the link (they're playing with you, so no alerts pitch)
+            let head = `⛳ Our Match · ${course}${rd.date ? ' · ' + formatRoundDate(rd.date) : ''}`;
+            if (final) return `${head}\nJB Golf: final results, from your side\n${link}`;
+            return `${head}\nJB Golf: tap to follow along from your side\n${link}`;
         }
         function openMatchSend(rd, final) {
             if (matchSend.rd?.roundId !== rd.roundId || matchSend.final !== final) matchSend.sent = new Set();
@@ -5246,6 +5248,8 @@ function hideCartHoleHeader() {
             document.getElementById('dashboard-financial-summary').innerHTML = finHTML; 
             // Spectators mostly check the cards as the round goes, so theirs sit at the very top, open
             let spectator = urlParams.get('spectator') === 'true';
+            // An Our Match link is for the guys in the match: no alerts prompt
+            document.body.classList.toggle('om-link', spectator && isOurMatchOnly(roundData));
             let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
             // Our Match over: who pays who goes first, with the scorecards folded under it
             let omv = ourMatchForViewer(roundData, matchPresses);
