@@ -691,6 +691,7 @@
         html.revamp .rv-review-row span { color: var(--text-muted); }
         html.revamp .rv-review-row b { text-align: right; }
         .rv-dtabs { display: none; }
+        html.revamp .dash .top-row { top: calc(26px + env(safe-area-inset-top)); } /* below the TEST COPY strip, not under it */
         html.revamp .rv-dtabs { display: flex; gap: 4px; padding: 4px; margin: 14px 0 10px; border-radius: 14px; background: var(--fill-strong); position: sticky; top: 30px; z-index: 5; }
         html.revamp .rv-dtabs button { flex: 1; border: 0; background: transparent; color: var(--text-muted); font-weight: 700; font-size: 13px; padding: 9px 0; border-radius: 11px; }
         html.revamp .rv-dtabs button.on { background: var(--text-main); color: var(--bg-dark); }
@@ -743,11 +744,15 @@
         .cart-send-head b { font-size: 18px; color: var(--accent-gold); white-space: nowrap; }
         .cart-send-head span { font-size: 13px; color: var(--text-muted); text-align: right; }
         .cart-send-group { display: block; margin: 8px 4px 4px; font-size: 14px; }
-        .om-tabs { display: flex; gap: 6px; margin: 16px 0 10px; padding: 4px; border-radius: 14px; background: var(--fill-strong); }
-        .om-tabs button { flex: 1; border: 0; border-radius: 11px; padding: 11px 4px; background: transparent; color: var(--text-main); font-size: 14px; font-weight: 800; }
+        .om-tabs-wrap { margin: 18px 0 10px; }
+        .om-tabs-label { font-size: 12px; font-weight: 800; letter-spacing: .1em; text-transform: uppercase; color: var(--text-muted); margin: 0 2px 8px; }
+        .om-tabs { display: flex; gap: 8px; }
+        .om-tabs button { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; min-height: 58px; padding: 8px 4px; border: 2px solid var(--accent-gold); border-radius: 14px; background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 800; line-height: 1.15; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
+        .om-tabs button i { font-style: normal; font-size: 13px; color: var(--accent-gold); }
         .om-tabs button.on { background: var(--accent-gold); color: var(--on-accent); }
+        .om-tabs button.on i { color: var(--on-accent); }
         .om-tab-pane { margin-bottom: 8px; }
-        .om-tab-top { display: block; width: 100%; margin: 14px 0 4px; padding: 12px; border: 1px solid var(--line); border-radius: 12px; background: var(--fill); color: var(--text-main); font-size: 15px; font-weight: 700; }
+        .om-tab-top { display: block; width: 100%; min-height: 54px; margin: 16px 0 6px; padding: 12px; border: 2px solid var(--accent-gold); border-radius: 14px; background: var(--fill); color: var(--text-main); font-size: 16px; font-weight: 800; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
         .om-plain .om-a, .om-plain .om-b, .om-plain .om-b-win, .om-plain .om-birdie-line { color: inherit; text-decoration: none; }
         .om-plain td, .om-plain .om-second { color: var(--text-main); }
         .om-win { font-weight: 900; font-size: 1.2em; }
@@ -6224,9 +6229,9 @@ function hideCartHoleHeader() {
             let tabs = [['balls', '1st ball → 2nd', balls], ['nassau', 'Nassau', nassau]];
             if (opts.cards) tabs.push(['cards', 'Scorecards', opts.cards]);
             let pick = tabs.some(t => t[0] === omTab) ? omTab : null;
-            html += `<div class="om-tabs" id="om-tabs">${tabs.map(([k, label]) => `<button type="button" class="${k === pick ? 'on' : ''}" onclick="showOmTab('${k}')">${label}</button>`).join('')}</div>`;
+            html += `<div class="om-tabs-wrap" id="om-tabs"><div class="om-tabs-label">Tap to see the details</div><div class="om-tabs">${tabs.map(([k, label]) => `<button type="button" class="${k === pick ? 'on' : ''}" onclick="showOmTab('${k}')"><span>${label}</span><i>${k === pick ? '▴' : '▾'}</i></button>`).join('')}</div></div>`;
             tabs.forEach(([k, , body]) => {
-                html += `<div class="om-tab-pane om-plain" data-tab="${k}"${k === pick ? '' : ' hidden'}>${body}<button type="button" class="om-tab-top" onclick="document.getElementById('om-tabs').scrollIntoView({ behavior: 'smooth', block: 'start' })">↑ Back to the top of Our Match</button></div>`;
+                html += `<div class="om-tab-pane om-plain" data-tab="${k}"${k === pick ? '' : ' hidden'}>${body}<button type="button" class="om-tab-top" onclick="omBackToButtons()">↑ Back up to the buttons</button></div>`;
             });
 
             // ---- presses made, with Undo: the organizer's, at the bottom, folded ----
@@ -6236,9 +6241,17 @@ function hideCartHoleHeader() {
             return html + `</section>`;
         }
         let omTab = null; // which Our Match view is open: 'balls', 'nassau', 'cards' or none
+        // Scroll so the buttons sit fully in view, below anything pinned to the top of the screen (BACK TO SCORING, the test strip)
+        function omBackToButtons() {
+            let el = document.getElementById('om-tabs');
+            if (!el) return;
+            // anything pinned at the top of the screen right now (BACK TO SCORING, the test strip): stop below it
+            let pinned = [...document.querySelectorAll('.back-to-scoring, .beta-banner')].map(x => x.getBoundingClientRect()).filter(r => r.height && r.top < 90).reduce((a, r) => Math.max(a, r.bottom), 0);
+            window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - Math.max(pinned, 0) - 16, behavior: 'smooth' });
+        }
         function showOmTab(k) {
             omTab = omTab === k ? null : k;
-            document.querySelectorAll('#om-tabs button').forEach(b => b.classList.toggle('on', b.getAttribute('onclick').includes(`'${omTab}'`)));
+            document.querySelectorAll('#om-tabs button').forEach(b => { let on = b.getAttribute('onclick').includes(`'${omTab}'`); b.classList.toggle('on', on); b.querySelector('i').textContent = on ? '▴' : '▾'; });
             document.querySelectorAll('.om-tab-pane').forEach(p => { p.hidden = p.dataset.tab !== omTab; });
         }
 
