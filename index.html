@@ -938,10 +938,10 @@
         <button type="button" class="text-link tourn-only" onclick="openPreRoundBlindDrawModal()">Assign blind draw (ghost)</button>
 
         <div id="om-sides" style="display: none;">
-            <div class="field-label">Our Match · sides</div>
-            <p class="om-sides-note">Set to Team 1 vs Team 2. Change only if the sides are different.</p>
-            <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="om-a1" aria-label="Side 1 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-a2" aria-label="Side 1 second player" onchange="saveOurMatchSides()"></select></div></div>
-            <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="om-b1" aria-label="Side 2 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-b2" aria-label="Side 2 second player" onchange="saveOurMatchSides()"></select></div></div>
+            <div class="field-label">Our Match · pairs</div>
+            <p class="om-sides-note">Pair 1 plays Pair 2. Pick which 4 players are in the match and who partners who.</p>
+            <div class="om-side-row"><span class="om-side-name">Pair 1</span><div class="select-wrap slot"><select id="om-a1" aria-label="Pair 1 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-a2" aria-label="Pair 1 second player" onchange="saveOurMatchSides()"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Pair 2</span><div class="select-wrap slot"><select id="om-b1" aria-label="Pair 2 first player" onchange="saveOurMatchSides()"></select></div><div class="select-wrap slot"><select id="om-b2" aria-label="Pair 2 second player" onchange="saveOurMatchSides()"></select></div></div>
         </div>
 
         <div class="field-label tourn-only">Carts</div>
@@ -1251,8 +1251,8 @@
         <div class="modal-content" id="side-bets-live">
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Add a side bet</h2>
             <p class="clean-sub" style="text-align:center;">2 on 2 · low net ball Nassau · same amount every bet, per person</p>
-            <div class="om-side-row"><span class="om-side-name">Side 1</span><div class="select-wrap slot"><select id="sbl-a1" aria-label="Side 1 first player"></select></div><div class="select-wrap slot"><select id="sbl-a2" aria-label="Side 1 second player"></select></div></div>
-            <div class="om-side-row"><span class="om-side-name">Side 2</span><div class="select-wrap slot"><select id="sbl-b1" aria-label="Side 2 first player"></select></div><div class="select-wrap slot"><select id="sbl-b2" aria-label="Side 2 second player"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Pair 1</span><div class="select-wrap slot"><select id="sbl-a1" aria-label="Pair 1 first player"></select></div><div class="select-wrap slot"><select id="sbl-a2" aria-label="Pair 1 second player"></select></div></div>
+            <div class="om-side-row"><span class="om-side-name">Pair 2</span><div class="select-wrap slot"><select id="sbl-b1" aria-label="Pair 2 first player"></select></div><div class="select-wrap slot"><select id="sbl-b2" aria-label="Pair 2 second player"></select></div></div>
             <div class="side-bet-opts"><div class="money-field"><span>$</span><input type="number" id="sbl-amount" min="0" inputmode="numeric" value="20" aria-label="Dollars per bet" onfocus="this.select()"></div><span class="payout-note">a bet, per person</span></div>
             <div class="format-row"><label class="format-label" for="sbl-birdies">All birdies count</label><input type="checkbox" class="switch" id="sbl-birdies"></div>
             <button type="button" class="btn-primary" onclick="saveLiveSideBet()">Add side bet</button>
@@ -3734,8 +3734,8 @@ function toggle9HoleOptions() {
             }
             let opts = v => '<option value="">Pick</option>' + players.map(x => `<option value="${x.slot}"${x.slot === v ? ' selected' : ''}>${x.label}</option>`).join('');
             el.innerHTML = sideBetsDraft().map((b, i) => `<div class="side-bet-card">
-                    <div class="om-side-row"><span class="om-side-name">Side 1</span>${['a1', 'a2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, side 1" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
-                    <div class="om-side-row"><span class="om-side-name">Side 2</span>${['b1', 'b2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, side 2" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
+                    <div class="om-side-row"><span class="om-side-name">Pair 1</span>${['a1', 'a2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, pair 1" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
+                    <div class="om-side-row"><span class="om-side-name">Pair 2</span>${['b1', 'b2'].map(k => `<div class="select-wrap slot"><select aria-label="Side bet ${i + 1}, pair 2" onchange="setSideBet(${i}, '${k}', this.value)">${opts(b[k])}</select></div>`).join('')}</div>
                     <div class="side-bet-opts">
                         <div class="money-field"><span>$</span><input type="number" min="0" inputmode="numeric" value="${b.amount || ''}" placeholder="20" aria-label="Side bet ${i + 1}, dollars per bet" onfocus="this.select()" oninput="setSideBet(${i}, 'amount', this.value)"></div>
                         <span class="payout-note">a bet, per person</span>
@@ -3899,7 +3899,7 @@ function processStep2() {
             for (let [i, b] of sideBetsDraft().entries()) {
                 let picked = SB_SEATS.map(k => b[k]);
                 if (picked.some(v => !v) || new Set(picked).size !== 4 || !(b.amount > 0)) {
-                    alert(`Side bet ${i + 1} needs 4 different players, 2 on each side, and a dollar amount. Fix it, or tap "Remove this side bet".`);
+                    alert(`Side bet ${i + 1} needs 4 different players, 2 in each pair, and a dollar amount. Fix it, or tap "Remove this side bet".`);
                     return;
                 }
             }
@@ -6082,7 +6082,7 @@ function hideCartHoleHeader() {
         function saveLiveSideBet() {
             let picked = ['a1', 'a2', 'b1', 'b2'].map(k => document.getElementById('sbl-' + k).value);
             let amount = parseInt(document.getElementById('sbl-amount').value) || 0;
-            if (picked.some(v => !v) || new Set(picked).size !== 4 || amount <= 0) { alert('Pick 4 different players, 2 on each side, and a dollar amount.'); return; }
+            if (picked.some(v => !v) || new Set(picked).size !== 4 || amount <= 0) { alert('Pick 4 different players, 2 in each pair, and a dollar amount.'); return; }
             let seat = v => { let [g, p] = v.split('-').map(Number); return { g, p }; };
             let bets = roundData.sideBets = roundData.sideBets || [];
             bets.push({ id: Math.max(0, ...bets.map(b => b.id || 0)) + 1, sideA: [seat(picked[0]), seat(picked[1])], sideB: [seat(picked[2]), seat(picked[3])], amount, allBirdies: document.getElementById('sbl-birdies').checked });
