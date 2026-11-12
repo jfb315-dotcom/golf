@@ -91,16 +91,20 @@ const titles = sent => sent.map(a => a.title);
   ok(!titles(sent).some(t => t.includes('made a 9')), 'switched off: no double alert');
   await page.close();
 
-  // Our Match only round: match over alert with money
-  const omr = round({ betAmount: 0, skinsAmount: 0, ourMatch: { sideA: [{ g: 1, p: 1 }, { g: 1, p: 2 }], sideB: [{ g: 2, p: 1 }, { g: 2, p: 2 }], nassauBet: 50, ballBet: 25 } });
+  // Our Match within a tournament: the match over alert with money still goes out
+  const omr = round({ betAmount: 20, skinsAmount: 0, ourMatch: { sideA: [{ g: 1, p: 1 }, { g: 1, p: 2 }], sideB: [{ g: 2, p: 1 }, { g: 2, p: 2 }], nassauBet: 50, ballBet: 25 } });
   ({ page, sent } = await open(browser, omr));
   const all = []; for (let h = 1; h <= 18; h++) for (const [g,p] of [[1,1],[1,2],[2,1],[2,2]]) all.push([g,p,h, g === 1 && p === 1 && h === 1 ? 4 : pars[h-1]]);
   await set(page, all); await page.waitForTimeout(300);
   const over = sent.find(a => a.title.startsWith('🏁 Our Match'));
-  ok(over && over.title === '🏁 Our Match: Brent & John +$' + over.title.split('+$')[1] && over.body.includes('Jordia pays Brent') && over.view === 'our-match', 'Our Match over alert: ' + JSON.stringify(over && [over.title, over.body]));
-  const turnOM = sent.find(a => a.title.startsWith('🔄'));
-  ok(turnOM && turnOM.body.includes('per person'), 'turn in Our Match only: front money: ' + (turnOM && turnOM.body));
-  ok(!sent.some(a => a.title.startsWith('💰') || a.title.startsWith('📈')), 'Our Match only: no skins or lead alerts');
+  ok(over && over.title === '🏁 Our Match: Brent & John +$' + over.title.split('+$')[1] && over.body.includes('Jordia pays Brent') && over.view === 'our-match', 'Our Match (in a tournament) over alert: ' + JSON.stringify(over && [over.title, over.body]));
+  await page.close();
+
+  // Our Match only round: no alerts at all (they're all playing together)
+  const omo = round({ betAmount: 0, skinsAmount: 0, ourMatch: { sideA: [{ g: 1, p: 1 }, { g: 1, p: 2 }], sideB: [{ g: 2, p: 1 }, { g: 2, p: 2 }], nassauBet: 50, ballBet: 25 } });
+  ({ page, sent } = await open(browser, omo));
+  await set(page, all); await page.waitForTimeout(300);
+  ok(sent.length === 0, 'Our Match only: no alerts sent at all: ' + JSON.stringify(sent.map(a => a.title)));
   await page.close();
 
   // Cart phone: subscription remembers its cart

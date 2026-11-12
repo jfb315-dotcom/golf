@@ -1,0 +1,42 @@
+// Our Match: what Share & message offers, and that the link each player gets opens as JB Watch
+const { chromium } = require('/opt/node22/lib/node_modules/playwright');
+const fs = require('fs');
+const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
+const html = fs.readFileSync(process.argv[2] || __dirname + '/../index.html', 'utf8');
+const match = fs.readFileSync(__dirname + '/../match.html', 'utf8');
+let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); if (!c) fails++; };
+(async () => {
+  const browser = await chromium.launch({ executablePath: '/opt/pw-browsers/chromium' });
+  const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 }); page.setDefaultTimeout(5000);
+  page.on('pageerror', e => { console.log('PAGE ERROR', e.message); fails++; }); page.on('dialog', d => d.accept());
+  const players = { saved_players: { players: { 'brent copeland': { name: 'Brent Copeland', first: 'Brent', last: 'Copeland', phone: '(423) 555-0103' } } } };
+  const route = p => p.route('**/*', r => { const u = r.request().url();
+    if (u.includes('gstatic')) return r.fulfill({ contentType: 'text/javascript', body: u.includes('app-compat') ? stub : '' });
+    if (u.startsWith('http://app.test/match.html')) return r.fulfill({ contentType: 'text/html', body: match });
+    if (u.startsWith('http://app.test/')) return r.fulfill({ contentType: 'text/html', body: html });
+    return r.abort(); });
+  await route(page); await page.addInitScript(d => { window.__docsInit = d; }, players);
+  await page.goto('http://app.test/?beta=0'); await page.waitForTimeout(400);
+  await page.evaluate(() => { changeTheme('fairway'); startNewRound('om'); });
+  await page.click('#step-1 .bar-primary[onclick="goToStep2()"]');
+  for (const [id, n] of [['g1-p1','John Bischof'],['g1-p2','Jordia Smith'],['g2-p1','Brent Copeland'],['g2-p2','Andy Anderson']]) await page.fill(`#${id}-name`, n);
+  await page.evaluate(() => saveRosterCache());
+  await page.click('#btn-step2-next'); await page.waitForTimeout(400);
+  await page.evaluate(() => openShareHub()); await page.waitForTimeout(200);
+  const rows = await page.$$eval('#share-hub-modal .list-row', b => b.filter(x => x.offsetParent).map(x => x.innerText.replace(/\s+/g, ' ').trim()));
+  console.log('Share & message offers:', JSON.stringify(rows));
+  await page.screenshot({ path: __dirname + '/shots/omshare-hub.png' });
+  ok(JSON.stringify(rows) === JSON.stringify(['Send the match to the other players their side, watch only']), 'Our Match: only "Send the match to the other players" (no cart links, no message-as-alert)');
+  await page.click('#share-hub-spectator'); await page.waitForTimeout(200);
+  const link = await page.evaluate(() => matchLinkFor(roundData, false, 'Brent Copeland'));
+  console.log('Brent gets:', link);
+  // open his link the way his phone would: match.html, which hands over to the app
+  const ctx = await browser.newContext({ viewport: { width: 390, height: 844 } }); const p = await ctx.newPage();
+  await route(p); await p.addInitScript(d => { window.__docsInit = d; }, await page.evaluate(() => JSON.parse(JSON.stringify(window.__docs))));
+  await p.goto(link); await p.waitForTimeout(1200);
+  const r = await p.evaluate(() => ({ url: location.href, name: document.querySelector('meta[name="apple-mobile-web-app-title"]')?.content, icon: document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href'), screen: document.querySelector('.screen.active')?.id }));
+  console.log(JSON.stringify(r));
+  ok(r.name === 'JB Watch' && r.icon === 'logo-watch.png' && r.screen === 'step-dashboard' && /spectator=true/.test(r.url), "Brent's link opens the watch page and saves as JB Watch");
+  await browser.close();
+  console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
+})();

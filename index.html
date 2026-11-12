@@ -34,7 +34,7 @@
                 --fill-soft: rgba(255,255,255,0.04); --fill: rgba(255,255,255,0.08); --fill-strong: rgba(255,255,255,0.16); --line: rgba(255,255,255,0.10);
                 --good: #7ced7e; --bad: #ff6b6b; --band-bg: #284b63; --band-text: #f4f1de; --band-accent: #f4a261; --head-bg: #0a1d28; }
         body { background-color: var(--bg-dark); color: var(--text-main); font-family: 'Segoe UI', Tahoma, sans-serif; margin: 0; padding: 5px 15px 90px 15px; touch-action: manipulation; overflow-x: hidden; transition: background-color 0.3s, color 0.3s; }
-        .app-logo { display: block; width: 84px; height: auto; margin: -6px auto -10px auto; position: relative; z-index: 500; }
+        .app-logo { display: block; width: 84px; height: auto; margin: -6px auto -10px auto; position: relative; top: 10px; z-index: 500; } /* nudged down out of the iPhone status-bar blur; "top" moves only the logo, nothing else shifts */
         body:has(#step-3.active) .app-logo { display: none; } /* scoring needs the room */
         
         @keyframes rotate-orbit { from { transform: translate(-50%, -50%) rotate(0deg); } to { transform: translate(-50%, -50%) rotate(360deg); } }
@@ -737,7 +737,7 @@
         .match-send-btn { flex-shrink: 0; min-width: 104px; height: 44px; border: 0; border-radius: 12px; background: var(--accent-gold); color: var(--on-accent); font-size: 16px; font-weight: 800; }
         .match-send-btn.sent { background: var(--fill-strong); color: var(--good); }
         .match-send-btn.ghost { background: var(--fill-strong); color: var(--text-main); }
-        body.om-link .alerts-banner { display: none !important; }
+        body.om-link .alerts-banner, body.om-round .alerts-banner { display: none !important; }
         .help-list { margin: 6px 0 10px; padding-left: 20px; }
         .help-list li { margin: 4px 0; line-height: 1.45; }
         .cart-send-head { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin: 18px 4px 2px; }
@@ -937,7 +937,7 @@
             <div class="format-row om-only-row"><label class="format-label" for="om-only">Only Our Match <span class="payout-note">no tournament purse</span></label><input type="checkbox" class="switch" id="om-only" aria-label="Only Our Match, no tournament purse" onchange="toggleOurMatchOnly()"></div>
         </div>
 
-        <button type="button" class="list-row" id="alerts-row" style="display:none;" onclick="openAlertsScreen('step-1')">Phone alerts <span class="row-note" id="alerts-count"></span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+        <button type="button" class="list-row tourn-only" id="alerts-row" style="display:none;" onclick="openAlertsScreen('step-1')">Phone alerts <span class="row-note" id="alerts-count"></span><svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
 
 
         <div class="bottom-bar">
@@ -1223,7 +1223,7 @@
 
         <details class="help"><summary><div>Alerts <span>phone notifications</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Alerts</b> on Home turns notifications on for your phone and picks what gets sent each round. Each player turns them on from his own cart link (iPhone: add it to the Home Screen first). The Alerts screen lists every phone that has them on and can send a test alert.</p>
-            <p>Our Match links don't ask about alerts: the players are with you.</p>
+            <p><b>Our Match has no alerts</b>, for you or the others: you're all playing together. Tournaments work as above.</p>
         </details>
 
         <details class="help"><summary><div>Look and test copy <span>Color theme</span></div><span class="fold-hint">Tap to open</span></summary>
@@ -2860,6 +2860,7 @@ function toggle9HoleOptions() {
         function openShareHub() {
             // Our Match: the watch link is for the other players, from their side
             let om = roundData?.ourMatch && isOurMatchOnly(roundData);
+            document.getElementById('admin-message-row').style.display = ALERTS_URL && !om ? '' : 'none'; // messages to carts go out as alerts: none in Our Match
             document.getElementById('share-hub-spectator').innerHTML = om ? 'Send the match to the other players <span class="row-note">their side, watch only</span>' : 'Share spectator leaderboard <span class="row-note">watch only</span>';
             document.getElementById('share-hub-modal').classList.add('active');
         }
@@ -4699,6 +4700,7 @@ function setTeamFilter(filterValue) {
         }
 
 function renderScoreEntry() {
+    document.body.classList.toggle('om-round', !!roundData?.ourMatch && isOurMatchOnly(roundData)); // no alerts offered in an Our Match round
     const container = document.getElementById('entry-container');
     if (!container) return;
     updateOurMatchAlert();
@@ -5330,6 +5332,7 @@ function hideCartHoleHeader() {
             let spectator = urlParams.get('spectator') === 'true';
             // An Our Match link is for the guys in the match: no alerts prompt
             document.body.classList.toggle('om-link', spectator && isOurMatchOnly(roundData));
+            document.body.classList.toggle('om-round', isOurMatchOnly(roundData)); // no alerts offered in an Our Match round, organizer included
             let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
             // Our Match over: who pays who goes first, with the scorecards folded under it
             let omv = ourMatchForViewer(roundData, matchPresses);
@@ -6990,6 +6993,7 @@ function hideCartHoleHeader() {
         function sendAlert(type, title, body, view, tag, rData, opts = {}) {
             rData = rData || roundData;
             if (!ALERTS_URL || rData.alerts?.[type] === false) return;
+            if (isOurMatchOnly(rData)) return; // Our Match: everyone's playing together, so no alerts
             if (!alertOnce(`${rData.roundId}|${tag}`)) return;
             fetch(ALERTS_URL, {
                 method: 'POST', keepalive: true, headers: { 'Content-Type': 'application/json' },
