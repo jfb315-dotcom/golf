@@ -2860,6 +2860,7 @@ function toggle9HoleOptions() {
         function openShareHub() {
             // Our Match: the watch link is for the other players, from their side
             let om = roundData?.ourMatch && isOurMatchOnly(roundData);
+            document.getElementById('admin-message-row').style.display = ALERTS_URL && !om ? '' : 'none'; // messages to carts go out as alerts: none in Our Match
             document.getElementById('share-hub-spectator').innerHTML = om ? 'Send the match to the other players <span class="row-note">their side, watch only</span>' : 'Share spectator leaderboard <span class="row-note">watch only</span>';
             document.getElementById('share-hub-modal').classList.add('active');
         }
