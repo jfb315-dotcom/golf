@@ -68,6 +68,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - Home has **＋ New tournament** and **⛳ Our Match** (`startNewRound('tournament' | 'om')`). Our Match = 2 teams of 2, no purse, no side bets, short setup (`.tourn-only` elements hidden via `#om-only:checked`). A tournament can add it: "Our Match within this tournament?".
 - Per person: Nassau front/back/overall (low ball; net only if "strokes count on the Nassau"; one press per pair per bet; presses can be undone), 1st ball goes to 2nd ball (net; a new bet whenever the newest goes 1 down), team birdies (gross; eagle = 2).
 - **The second nine *played* is double**, whichever holes those are.
+- An Our Match from Home is **always Team 1 vs Team 2**: `renderOurMatchSides()` clears the remembered pair picks (`OM_SEATS` in `tempRosterCache`) when `#om-only` is on, so an earlier tournament's Our Match can't leak in.
 - John keeps all four scores. The others get **their own link** (`match.html?spectator=true&me=<name>`), one text each from **Share & message › Send the match to the other players**; it always shows the match from that player's pair. Texts are three lines.
 - **No alerts in an Our Match round**, for anyone. Our Match inside a tournament still alerts.
 - Standings: trending box → money table → PRESS buttons (if a pair can press) → **1st ball → 2nd / Nassau / Scorecards** buttons (one view open at a time; the nine being played first, play order once over; "↑ Pick another view" at the end) → **Presses made** fold with Undo (organizer only). No rules dropdown.

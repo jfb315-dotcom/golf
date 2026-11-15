@@ -3805,6 +3805,9 @@ function toggle9HoleOptions() {
                     (real[g] = real[g] || []).push(`${g}-${p}`);
                 }
             }
+            // An Our Match round (from Home) has no pickers: it is always Team 1 against Team 2, whatever an earlier
+            // tournament's Our Match left behind on this phone
+            if (document.getElementById('om-only').checked) OM_SEATS.forEach(id => { tempRosterCache[id] = ''; });
             // Nothing picked yet: Team 1's first two against Team 2's first two
             if (OM_SEATS.every(id => !tempRosterCache[id]) && real[1]?.length >= 2 && real[2]?.length >= 2) {
                 [real[1][0], real[1][1], real[2][0], real[2][1]].forEach((slot, i) => { tempRosterCache[OM_SEATS[i]] = slot; });
@@ -4011,7 +4014,7 @@ function processStep2() {
                 saveOurMatchSides();
                 let picked = OM_SEATS.map(id => tempRosterCache[id]);
                 if (picked.some(v => !v) || new Set(picked).size !== 4) {
-                    alert("Our Match needs 4 different players, 2 on each side. Check the Our Match sides at the bottom of the roster, or turn Our Match off.");
+                    alert(document.getElementById('om-only').checked ? "Our Match needs all 4 players: 2 on Team 1 and 2 on Team 2. Fill in every name." : "Our Match needs 4 different players, 2 in each pair. Check the Our Match pairs at the bottom of the roster, or turn Our Match off.");
                     return;
                 }
             }
@@ -4448,7 +4451,8 @@ function processStep2() {
         }
         function renderMatchSend() {
             let rd = matchSend.rd;
-            document.getElementById('match-send-list').innerHTML = matchSendPlayers(rd).map((x, i) => {
+            let list = matchSendPlayers(rd);
+            document.getElementById('match-send-list').innerHTML = !list.length ? `<p class="clean-sub" style="text-align:center;">No players found for this match. Go back to scoring and open Share &amp; message again.</p>` : list.map((x, i) => {
                 let sent = matchSend.sent.has(x.name);
                 let btn = x.phone ? `<button type="button" class="match-send-btn${sent ? ' sent' : ''}" onclick="textMatchTo(${i})">${sent ? '✓ Texted' : '💬 Text'}</button>`
                     : `<button type="button" class="match-send-btn ghost" onclick="copyMatchLink(${i})">Copy link</button>`;
