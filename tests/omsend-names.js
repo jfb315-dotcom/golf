@@ -28,7 +28,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
     for (let i = 0; i < 4; i++) await page.fill(`#g${Math.floor(i / 2) + 1}-p${i % 2 + 1}-name`, names[i]);
     await page.evaluate(() => saveRosterCache());
     await page.click('#btn-step2-next'); await page.waitForTimeout(400);
-    if (from === 'hub') { await page.evaluate(() => openShareHub()); await page.click('#share-hub-spectator'); }
+    if (from === 'hub') await page.click('#share-hub-row'); // the scoring screen's row goes straight to the players
     else { await page.evaluate(() => viewDashboard()); await page.click('#step-dashboard .bar-primary[onclick="shareStandingsLink()"]'); }
     await page.waitForTimeout(250);
     const rows = await page.$$eval('#match-send-list .match-send-row', r => r.map(x => x.innerText.replace(/\s+/g, ' ').trim())).catch(() => []);

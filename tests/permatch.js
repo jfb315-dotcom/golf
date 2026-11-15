@@ -32,8 +32,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await a.evaluate(() => changeTheme('fairway'));
   await playMatch(a, ['Jordia Smith', 'John Bischof', 'Brent Copeland', 'Andy Anderson']);
   // the send screen
-  await a.evaluate(() => { openShareHub(); });
-  await a.click('#share-hub-spectator'); await a.waitForTimeout(200);
+  await a.click('#share-hub-row'); await a.waitForTimeout(200);
   ok(await a.isVisible('#match-send-modal'), 'Send the match to the other players opens the send screen');
   const rows = await a.$$eval('.match-send-row', r => r.map(x => x.innerText.replace(/\s+/g, ' ')));
   console.log(rows.join(' | '));
