@@ -1,4 +1,4 @@
-// Our Match: what Share & message offers, and that the link each player gets opens as JB Watch
+// Our Match: what Share & message offers, and that the link each player gets opens as JB Live
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs');
 const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
@@ -36,7 +36,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await p.goto(link); await p.waitForTimeout(1200);
   const r = await p.evaluate(() => ({ url: location.href, name: document.querySelector('meta[name="apple-mobile-web-app-title"]')?.content, icon: document.querySelector('link[rel="apple-touch-icon"]')?.getAttribute('href'), screen: document.querySelector('.screen.active')?.id }));
   console.log(JSON.stringify(r));
-  ok(r.name === 'JB Watch' && r.icon === 'logo-watch.png' && r.screen === 'step-dashboard' && /spectator=true/.test(r.url), "Brent's link opens the watch page and saves as JB Watch");
+  ok(r.name === 'JB Live' && r.icon === 'logo-live.png' && r.screen === 'step-dashboard' && /spectator=true/.test(r.url), "Brent's link opens the watch page and saves as JB Live");
   await browser.close();
   console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
 })();
