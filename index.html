@@ -1064,7 +1064,7 @@
         </div>
         
         <div id="admin-share-btn-container" class="list-rows">
-            <button type="button" class="list-row" id="share-hub-row" onclick="openShareHub()">📣 Share &amp; message <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
+            <button type="button" class="list-row" id="share-hub-row" onclick="openShareHub()"><span id="share-hub-label">📣 Share &amp; message</span> <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="showHome()">Home · players, money, past rounds <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row" onclick="editMidRound()">Edit setup / rosters <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
             <button type="button" class="list-row danger-row" onclick="validateAndFinalize()">Finalize / archive round <svg aria-hidden="true" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 18l6-6-6-6"/></svg></button>
@@ -1178,7 +1178,7 @@
             </ul>
             <p><b>On Standings:</b> the trending box and the <b>money so far</b> are on top. Under them, tap <b>1st ball → 2nd</b>, <b>Nassau</b> or <b>Scorecards</b> to see that part. The nine you're playing shows first (once the match is over, the front nine is first again). The number that won each hole is in bold. <b>↑ Pick another view</b> at the end takes you back up to the buttons.</p>
             <p>You keep all four scores. When a pair can press, a <b>PRESS</b> button shows under the money table. Pressed by mistake? Open <b>Presses made</b> at the bottom and tap <b>Undo</b> (only you see that).</p>
-            <p><b>Let the others follow along:</b> on the scoring screen, <b>📣 Share &amp; message › Send the match to the other players</b>. Tap <b>💬 Text</b> next to each player; each gets a short text with <b>his own link</b>. A player with no number in Players gets <b>Copy link</b> instead.</p>
+            <p><b>Let the others follow along:</b> on the scoring screen, tap <b>📣 Send the match to the other players</b>. The four players are listed. Tap <b>💬 Text</b> next to each player; each gets a short text with <b>his own link</b>. A player with no number in Players gets <b>Copy link</b> instead.</p>
             <p>His link always shows the match <b>from his pair's side</b> (his names first, + when they're up), whoever he's partnered with that day. It's watch only: no scoring, no presses, no alerts. See <b>JB Live</b> below to keep it on his Home Screen.</p>
         </details>
 
@@ -2862,6 +2862,7 @@ function toggle9HoleOptions() {
         function openShareHub() {
             // Our Match: the watch link is for the other players, from their side
             let om = roundData?.ourMatch && isOurMatchOnly(roundData);
+            if (om) { openMatchSend(roundData, false); return; } // one choice only: skip the menu, show the four players
             document.getElementById('admin-message-row').style.display = ALERTS_URL && !om ? '' : 'none'; // messages to carts go out as alerts: none in Our Match
             document.getElementById('share-hub-spectator').innerHTML = om ? 'Send the match to the other players <span class="row-note">their side, watch only</span>' : 'Share spectator leaderboard <span class="row-note">watch only</span>';
             document.getElementById('share-hub-modal').classList.add('active');
@@ -4618,6 +4619,8 @@ function processStep2() {
             let omOnly = isOurMatchOnly(roundData);
             container.style.display = omOnly ? 'none' : '';
             document.getElementById('cart-links-row').style.display = omOnly ? 'none' : '';
+            // Our Match has one thing to share, so the row says so and goes straight to the players
+            document.getElementById('share-hub-label').textContent = omOnly ? '📣 Send the match to the other players' : '📣 Share & message';
             if (omOnly) { currentTeamFilter = "ALL"; return; }
             
             // We ensure classes are assigned correctly
