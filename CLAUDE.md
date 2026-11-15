@@ -13,7 +13,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
   - Screens: `step-home`, `step-1` (setup), `step-2` (rosters), `step-2-half` (scramble carts), `step-3` (scoring), `step-dashboard` (Standings), `step-7` (cart links), `step-players`, `step-money`, `step-whos`, `step-signup`, `step-alerts`, `step-help` (How it works), `step-8`/`step-9` (Past rounds list / one round), `step-cartpick`, `step-dead-link`.
   - Script sections (search the banner comments): THEMES & POPUPS · FIREBASE & STATE · SETUP & SCRAMBLED PAIRINGS · TEXT SHARE · SCORING ENGINE · SCOREBOARDS & PAYOUTS · CORE SCORING MATH · SHARE & ARCHIVE · PHONE ALERTS.
 - `cart.html`, `live.html`, `match.html`, `results.html`, `join.html` — 21-line link pages. Each only carries the picture card Messages shows (`og:image` → `card-*.png`), then redirects to `./` with the same query string.
-- `sw.js` — offline cache. `manifest.json` + `logo.png` = the **JB Golf** icon; `manifest-watch.json` + `logo-watch*.png` = the **JB Watch** icon.
+- `sw.js` — offline cache. Home Screen icons: `logo.png` + `manifest.json` (organizer, plain logo), `logo-score*.png` + `manifest-score.json` (cart links: **JB Golf**, green SCORE band), `logo-live*.png` + `manifest-live.json` (follow-along links: **JB Live**, light with an orange LIVE band). The head script in `index.html` picks one from the link.
 - `firebase/firestore.rules` (pasted into the Firebase console by hand; `ORGANIZER_EMAIL` placeholder) and `rules.test.mjs`.
 - `cloudflare/alerts-worker.js` — deployed by hand in Cloudflare.
 - `tests/` — Playwright tests, `stub.js` (fake Firestore), `run-all.sh`. `tests/shots/` holds screenshots (not committed).
@@ -62,7 +62,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - The scoring screen must never scroll or shift while scores are entered (no `scrollIntoView`, no smooth scrolling there).
 
 ## Words to use (John's vocabulary)
-- **Pair**, never "side" (side means front/back nine). **Our Match**, **1st ball goes to 2nd ball**, **Nassau**, **press**, **Standings**, **How it works**, **JB Golf** (scoring icon), **JB Watch** (follow-along icon), **test copy**.
+- **Pair**, never "side" (side means front/back nine). **Our Match**, **1st ball goes to 2nd ball**, **Nassau**, **press**, **Standings**, **How it works**, **JB Golf** (scoring icon), **JB Live** (follow-along icon; was "JB Watch"), **test copy**.
 
 ## Our Match facts
 - Home has **＋ New tournament** and **⛳ Our Match** (`startNewRound('tournament' | 'om')`). Our Match = 2 teams of 2, no purse, no side bets, short setup (`.tourn-only` elements hidden via `#om-only:checked`). A tournament can add it: "Our Match within this tournament?".
@@ -75,7 +75,8 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 ## Home Screen icons (iPhone)
 - A texted link opens in Safari, never in an icon. An icon remembers the link it was saved from.
 - Cart links are per person (`cart.html?cart=2&r=<round>&me=<name>`): the saved **JB Golf** icon finds his cart by name every later round, and only asks "Which cart are you in today?" if he isn't in one (or the icon predates names).
-- Spectator, Our Match and results links save as **JB Watch** automatically. Once saved, opening it shows whatever round is on. Save from a *live* link, not a results link.
+- **The picture in a text must match the icon it saves as:** `card-cart.png` shows the SCORE icon, `card-match.png` the LIVE icon. Change one, change the other.
+- Spectator, Our Match and results links save as **JB Live** automatically (old "JB Watch" icons keep working). Once saved, opening it shows whatever round is on. Save from a *live* link, not a results link.
 
 ## Test copy
 `?beta=1` (sticky; `?beta=0` or **Leave** exits). `BETA` prefixes localStorage keys and uses `beta_` Firestore docs, turns alerts off, adds `html.revamp`, and has its own layouts (4-step setup, Standings tabs, Home with a tab bar). John prefers the original look; new ideas go here first, gated by `BETA`, and move to the real app only when he says so.
@@ -109,4 +110,5 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - [ ] Committed, pushed, PR opened; John told in plain words what changed, shown a screenshot, and asked to say **merge**.
 
 ## Back burner (John's list)
+- **Rename to "Press Golf"** (John likes it, not ready yet). Chosen logo: sketch 1, an orange PRESS button on dark green with GOLF under it; banners SCORE (or TOURNAMENT) for the scoring icon and LIVE for the follow-along icon ("Press Live"). Sketches and the scripts that drew them are in `ideas/press-golf/`. Don't rename anything until he says go; the web address would stay the same.
 - Two or more rounds at once / separate groups for other organizers · Venmo / Cash App · Season leaderboard · Turning the test copy's redesign on for everyone

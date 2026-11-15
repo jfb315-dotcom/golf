@@ -18,15 +18,16 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-title" content="JB Golf" id="home-name">
     <script>
-        // A watch-only link (Our Match, spectator leaderboard, results) saves to the Home Screen as "JB Watch"
-        // with its own logo, so it isn't mixed up with the JB Golf scoring icon
+        // The Home Screen icon matches the picture in the text that brought them here:
+        //  - a follow-along link (Our Match, spectator leaderboard, results) saves as "JB Live" (light icon, LIVE band)
+        //  - a cart's scoring link saves as "JB Golf" with the green SCORE band
+        //  - the organizer's own page keeps the plain JB Golf logo
         (function () {
-            var q = new URLSearchParams(location.search);
-            if (q.get('spectator') !== 'true' && !q.get('round')) return;
-            document.getElementById('home-icon').href = 'logo-watch.png';
-            document.getElementById('home-name').content = 'JB Watch';
-            document.title = 'JB Watch';
-            window.__watchLink = true;
+            var q = new URLSearchParams(location.search), kind = q.get('spectator') === 'true' || q.get('round') ? 'live' : q.get('cart') ? 'score' : '';
+            if (!kind) return;
+            document.getElementById('home-icon').href = 'logo-' + kind + '.png';
+            window.__homeManifest = 'manifest-' + kind + '.json';
+            if (kind === 'live') { document.getElementById('home-name').content = 'JB Live'; document.title = 'JB Live'; }
         })();
     </script>
     <style>
@@ -797,7 +798,7 @@
     </style>
     
     <link rel="manifest" href="manifest.json" id="home-manifest">
-    <script>if (window.__watchLink) document.getElementById('home-manifest').href = 'manifest-watch.json';</script>
+    <script>if (window.__homeManifest) document.getElementById('home-manifest').href = window.__homeManifest;</script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-auth-compat.js"></script>
@@ -1178,7 +1179,7 @@
             <p><b>On Standings:</b> the trending box and the <b>money so far</b> are on top. Under them, tap <b>1st ball → 2nd</b>, <b>Nassau</b> or <b>Scorecards</b> to see that part. The nine you're playing shows first (once the match is over, the front nine is first again). The number that won each hole is in bold. <b>↑ Pick another view</b> at the end takes you back up to the buttons.</p>
             <p>You keep all four scores. When a pair can press, a <b>PRESS</b> button shows under the money table. Pressed by mistake? Open <b>Presses made</b> at the bottom and tap <b>Undo</b> (only you see that).</p>
             <p><b>Let the others follow along:</b> on the scoring screen, <b>📣 Share &amp; message › Send the match to the other players</b>. Tap <b>💬 Text</b> next to each player; each gets a short text with <b>his own link</b>. A player with no number in Players gets <b>Copy link</b> instead.</p>
-            <p>His link always shows the match <b>from his pair's side</b> (his names first, + when they're up), whoever he's partnered with that day. It's watch only: no scoring, no presses, no alerts. See <b>JB Watch</b> below to keep it on his Home Screen.</p>
+            <p>His link always shows the match <b>from his pair's side</b> (his names first, + when they're up), whoever he's partnered with that day. It's watch only: no scoring, no presses, no alerts. See <b>JB Live</b> below to keep it on his Home Screen.</p>
         </details>
 
         <details class="help"><summary><div>5 · During the round <span>Scoring</span></div><span class="fold-hint">Tap to open</span></summary>
@@ -1191,12 +1192,13 @@
             <p>📣 also sends a message to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
         </details>
 
-        <details class="help"><summary><div>6 · Links and Home Screen icons <span>JB Golf · JB Watch</span></div><span class="fold-hint">Tap to open</span></summary>
+        <details class="help"><summary><div>6 · Links and Home Screen icons <span>JB Golf · JB Live</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>A link in a text always opens in <b>Safari</b>. To keep the app on the Home Screen: open the link in Safari, tap <b>Share › Add to Home Screen</b>. The icon remembers the link it was saved from.</p>
-            <p><b>JB Golf</b> (the regular logo) is for scoring. Saved from <b>his own cart link</b> (the one you texted just him), it knows who he is: when you start a tournament he just opens JB Golf and it goes <b>straight to his cart</b>, no link and no question. It only asks <i>"Which cart are you in today?"</i> if he isn't in a cart that round, or if his icon came from an older one-link-per-cart text (then he taps his cart once each round).</p>
-            <p><b>JB Watch</b> (the logo with the orange <b>WATCH</b> band) is for following along. Our Match links, spectator links and results links save as JB Watch on their own, so it's never mixed up with the scoring icon.</p>
+            <p>The picture in each text is the icon they'll get, so it's easy to tell the two apart:</p>
+            <p><b>JB Golf</b> (dark green, green <b>SCORE</b> band) is for scoring in a tournament. Saved from <b>his own cart link</b> (the one you texted just him), it knows who he is: when you start a tournament he just opens JB Golf and it goes <b>straight to his cart</b>, no link and no question. It only asks <i>"Which cart are you in today?"</i> if he isn't in a cart that round, or if his icon came from an older one-link-per-cart text.</p>
+            <p><b>JB Live</b> (light, orange <b>LIVE</b> band) is for following along: the Big Money Match text, spectator links and results links save as JB Live on their own. (It used to be called JB Watch; an old JB Watch icon still works.)</p>
             <ul class="help-list">
-                <li><b>Once it's on his phone, he doesn't need the link.</b> He opens JB Watch and it shows whatever round is being played right then.</li>
+                <li><b>Once it's on his phone, he doesn't need the link.</b> He opens JB Live and it shows whatever round is being played right then.</li>
                 <li>Save it from a <b>live match link</b> (the one you text during the round), not a results link. A results link always opens that one finished round.</li>
                 <li>Our Match players should save it from <b>your Our Match text</b>: that link knows who he is, so it shows every match from his pair's side.</li>
                 <li>When no round is being played, it says the round is over, and picks up again when the next round starts.</li>

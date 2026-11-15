@@ -1,12 +1,12 @@
 {
-  "name": "JB Golf · Watch",
-  "short_name": "JB Watch",
+  "name": "JB Fishing & Golf",
+  "short_name": "JB Golf",
   "display": "standalone",
   "background_color": "#0d211a",
   "theme_color": "#0d211a",
   "icons": [
     {
-      "src": "logo-watch-192.png",
+      "src": "logo-score-192.png",
       "sizes": "192x192",
       "type": "image/png"
     }
