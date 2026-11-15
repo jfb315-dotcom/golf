@@ -110,4 +110,5 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - [ ] Committed, pushed, PR opened; John told in plain words what changed, shown a screenshot, and asked to say **merge**.
 
 ## Back burner (John's list)
+- **Rename to "Press Golf"** (John likes it, not ready yet). Chosen logo: sketch 1, an orange PRESS button on dark green with GOLF under it; banners SCORE (or TOURNAMENT) for the scoring icon and LIVE for the follow-along icon ("Press Live"). Sketches and the scripts that drew them are in `ideas/press-golf/`. Don't rename anything until he says go; the web address would stay the same.
 - Two or more rounds at once / separate groups for other organizers · Venmo / Cash App · Season leaderboard · Turning the test copy's redesign on for everyone
