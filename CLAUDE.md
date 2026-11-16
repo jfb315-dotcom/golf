@@ -30,7 +30,8 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 ## Working with John
 - He is not a developer. Plain words, no jargon, short answers. Show a screenshot of every visible change (render it in a test, look at it yourself first).
 - Flow: change → tests → commit → push to the working branch → open a PR on `jfb315-dotcom/golf` → **stop and wait for him to say "merge"**. Then merge with the PR's head SHA and reset the working branch to `origin/main` (force-push). Never merge on your own. If he says "do X then merge", that is permission for that one PR.
-- After merging, tell him to close the app fully and reopen it (the offline cache serves the old copy first).
+- **Bump the version with every change to the app:** `APP_VERSION` in `index.html` and `version.txt` must match (format `YYYY-MM-DD.N`; `tests/version.js` fails if `index.html` changed and the version didn't). The app fetches `version.txt` when it opens or comes back to the front: on Home it reloads itself, mid-round it shows "🔄 A newer version is ready · Tap to update". The version shows at the bottom of Home.
+- After merging, tell him the new version number and that the app updates itself the next time he opens it. If something "still isn't fixed", **ask what version the bottom of Home shows before changing any code**: twice a stale copy on his phone was mistaken for a bug.
 - **Always update How it works** (`#step-help`) and this file in the same change when anything changes how the app is used or what something is called.
 - When he asks "does it do X?", check the code or run it before answering. He often turns out to be describing a real bug.
 - When he asks for a "rendering", build it in the test copy and send screenshots; don't change the real app until he approves.
@@ -97,7 +98,8 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 12. **Forgetting the other copies of a feature:** the test copy's second `<script>`, Past rounds (`renderArchivedRound`), shared text (`TEXT SHARE`), How it works, and this file.
 13. **Sending alerts where they don't belong** (Our Match, the test copy) or adding a share option that sends one.
 14. **Offering 3-Ball to 2-player teams** or other impossible games; use `playableFormats`.
-15. **Writing "side", "PR", "commit", "cache" to John.** Say pair, update, saved, "close the app and reopen it".
+15. **Saying "fixed" when John can't see it.** GitHub Pages lets a phone keep the old page for 10 minutes and the Home Screen app keeps it in memory; check the deploy succeeded and his version number before assuming the code is wrong, and never promise "a minute or two".
+16. **Writing "side", "PR", "commit", "cache" to John.** Say pair, update, saved, "close the app and reopen it".
 
 ## Before saying a task is done
 - [ ] Reproduced the problem (or the "before") on `origin/main`'s build.
@@ -107,6 +109,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - [ ] Checked each affected view: organizer, cart, spectator/`me=` link, Past rounds, test copy.
 - [ ] Our Match checked both starting on 1 and on 10 if money or order changed.
 - [ ] How it works and this file updated if behaviour or names changed.
+- [ ] `APP_VERSION` and `version.txt` bumped together.
 - [ ] `sw.js` cache bumped if a file was added; `?v=` bumped if a card picture changed.
 - [ ] Committed, pushed, PR opened; John told in plain words what changed, shown a screenshot, and asked to say **merge**.
 
