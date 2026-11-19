@@ -30,7 +30,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(await page.isVisible('#text-modal'), 'finalizing opens the text screen');
   ok((await page.innerText('#text-modal-title')) === 'Round finalized · text the results', 'titled for the results');
   const body = await page.inputValue('#text-body');
-  ok(/^🏆 JB Golf final results · .+\nScores, money and who pays who:\nhttp:\/\/app\.test\/results\.html\?round=\d+$/.test(body), 'message has the results link: ' + JSON.stringify(body));
+  ok(/^🏆 JB Golf final results · .+\nScores and money:\nhttp:\/\/app\.test\/results\.html\?round=\d+$/.test(body), 'message has the results link: ' + JSON.stringify(body));
   const picked = await page.evaluate(() => groupTextList().map(x => x.name).sort().join());
   ok(picked === 'Al Adams,Bo Brown', 'checked: the round\'s players with numbers (not Zed, not Cy without a number): ' + picked);
   ok(await page.isVisible('#text-pick-round'), '"This round" quick pick shows');

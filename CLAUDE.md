@@ -46,7 +46,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - Round types: `hasTournamentMoney(rd)` (team bets/skins) and `isOurMatchOnly(rd)` (Our Match with no purse). Branch on these, not on player counts.
 - Whose view: `ourMatchForViewer(rd, presses)` / `omViewerFlipped(rd)` flip the pairs for a player's link (`me=<name>` or old `om=2`); a button on a flipped page must pass through `realOurMatchSide()`.
 - Link parameters: `cart`, `r` (round id), `me` (player's full name, lower case), `spectator=true`, `round` (a finished round), `om`, `signup`, `beta`. Build links with `shareUrl(page, query)`. Open Messages with `openSms(url)`.
-- Collapsible sections use `fold(id, title, body, open)`; reuse it rather than writing `<details>` by hand.
+- Collapsible sections use `fold(id, title, body, open)`; reuse it rather than writing `<details>` by hand. A row of buttons that each open a view (John prefers these to dropdowns on Standings): `viewTabsHTML(id, [[key, label, body], …])`.
 - Comments say *why*, in plain words, one line. Match the surrounding style (long single-line CSS rules, `let`, arrow functions).
 - Adding a file the app loads: add it to `APP_FILES` in `sw.js` and bump `CACHE`. Changing a `card-*.png`: add `?v=N` to its `og:image` so Messages refetches it.
 - Never add `start_url` to a manifest: each Home Screen icon must keep the link it was saved from.
@@ -58,8 +58,8 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - **Spacing:** page padding 15px; `.screen.clean` max-width 600px (Standings 1000px); new section `margin-top` 24–28px; rows divided by `1px solid var(--line)`; gaps 8/12/14px.
 - **Controls:** inputs, steppers, money fields 56px tall, radius 14px, `--fill` background; segmented choices 44px; main action `.bar-primary` 56px pill (radius 28) in a sticky `.bottom-bar`; list rows `.list-row` min 52px; cards/tiles radius 16px, `1px solid var(--line)`; modals `.modal-overlay` + `.modal-content`. Anything tappable ≥ 44px tall and must *look* tappable (outline or fill, an arrow if it opens something).
 - **Typing boxes ≥ 16px text**, or iPhones zoom the page and stay zoomed (`zoomscan` test).
-- Standings pages: the answer first (who's winning / who pays who), details behind buttons or folds. In Our Match charts there is no colour coding; the winning number is `<b class="om-win">`.
-- Reuse before inventing: `.format-row` + `.switch`, `.segmented`, `.stepper`, `.money-field`, `.list-row`, `.payout-row`, `.om-head`, `.match-send-row`, `.om-tabs`, `fold()`.
+- Standings pages: the answer first (who's winning, who won what), details behind buttons. **No "who pays who" anywhere** (John: it assumes nobody paid the entry fee and confuses people); Our Match says which pair won and how much per person (`matchSettleLine`). Tournament Standings and Past rounds: purse → leaderboard → team bets won → skins won → Our Match / side bets → three buttons **See all the math · Scorecards · Rules** (`viewTabsHTML`, one open at a time; no scorecards at the top, no rules dropdown). In Our Match charts there is no colour coding; the winning number is `<b class="om-win">`.
+- Reuse before inventing: `.format-row` + `.switch`, `.segmented`, `.stepper`, `.money-field`, `.list-row`, `.payout-row`, `.om-head`, `.match-send-row`, `.om-tabs`, `viewTabsHTML()`, `fold()`.
 - The scoring screen must never scroll or shift while scores are entered (no `scrollIntoView`, no smooth scrolling there).
 
 ## Words to use (John's vocabulary)

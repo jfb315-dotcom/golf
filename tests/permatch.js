@@ -83,7 +83,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   const rid = await b.evaluate(() => matchSend.rd.roundId);
   const af = await mk(docs2, `http://app.test/?round=${rid}&me=andy%20anderson&beta=0`);
   await af.waitForTimeout(600);
-  const t = await af.evaluate(() => document.querySelector('.screen.active')?.innerText.replace(/\s+/g, ' ') || '');
+  const t = await af.evaluate(() => { let sc = document.querySelector('.screen.active'); return (sc?.innerText || '').split(/See the breakdowns below/i).pop().replace(/\s+/g, ' '); }); // after the top box (it names whichever pair won)
   ok(/Andy & John/.test(t) && t.indexOf('Andy & John') < t.indexOf('Jordia & Brent'), "Andy's results page: from Andy & John's side");
   await browser.close();
   console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);

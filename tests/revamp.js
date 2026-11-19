@@ -79,10 +79,10 @@ const vis = (p, sel) => p.isVisible(sel);
   // a refresh keeps the tab the organizer picked
   await page.evaluate(() => viewDashboard());
   ok(await page.$eval('#rv-dtabs-step-dashboard button.on', b => b.textContent) === 'Cards', 'tab stays picked when the standings refresh');
-  // finish: who pays who on top
+  // finish: no who pays who anywhere
   await page.evaluate(() => { let pars = roundData.course.pars; for (let h = 1; h <= 18; h++) roundData.groups.forEach(g => g.players.forEach(p => { if (!scoresDb[g.id][p.id][h]) scoresDb[g.id][p.id][h] = pars[h - 1] + (h % 5 === 0 ? 1 : 0); })); rvTab('step-dashboard', 'Board'); viewDashboard(); window.scrollTo(0, 0); });
   await page.waitForTimeout(200);
-  ok(await vis(page, '#step-dashboard .all-games'), 'round over: who pays who on top');
+  ok(!(await page.$('#step-dashboard .all-games')) && !/\bpays\b/.test(await page.innerText('#step-dashboard')), 'round over: no who pays who');
   await page.screenshot({ path: __dirname + '/shots/rv-final.png' });
   await browser.close();
   console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
