@@ -753,10 +753,13 @@
         .om-tabs button.on { background: var(--accent-gold); color: var(--on-accent); }
         .om-tabs button.on i { color: var(--on-accent); }
         .om-tab-pane { margin-bottom: 8px; }
+        .view-tabs { margin-top: 26px; }
         .om-tab-top { display: block; width: 100%; min-height: 54px; margin: 16px 0 6px; padding: 12px; border: 2px solid var(--accent-gold); border-radius: 14px; background: var(--fill); color: var(--text-main); font-size: 16px; font-weight: 800; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
         .om-plain .om-a, .om-plain .om-b, .om-plain .om-b-win, .om-plain .om-birdie-line { color: inherit; text-decoration: none; }
         .om-plain td, .om-plain .om-second { color: var(--text-main); }
         .om-win { font-weight: 900; font-size: 1.2em; }
+        .app-version { margin: 22px 4px 0; text-align: center; font-size: 12px; color: var(--text-muted); }
+        .update-bar { display: block; width: 100%; margin: 4px 0 6px; padding: 12px; border: 0; border-radius: 14px; background: var(--accent-gold); color: var(--on-accent); font-size: 15px; font-weight: 800; position: relative; z-index: 600; }
         .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
@@ -809,6 +812,7 @@
         <span>For the best experience, open this in Safari: tap <b>⋯</b> or the share icon, then <b>Open in Safari</b>.</span>
         <button type="button" aria-label="Dismiss" onclick="dismissSafariBanner()">✕</button>
     </div>
+    <button type="button" id="update-bar" class="update-bar" style="display:none;" onclick="loadNewVersion()">🔄 A newer version is ready · Tap to update</button>
     <img src="logo.png" class="app-logo" alt="JB Golf">
 
     <div class="beta-banner"><span>🧪 TEST COPY</span><button type="button" onclick="leaveBeta()">Leave</button></div>
@@ -845,6 +849,7 @@
                 </select>
             </label>
         </div>
+        <p class="app-version" id="app-version"></p>
     </div>
 
     <div id="step-1" class="screen clean">
@@ -1187,7 +1192,7 @@
             <p><b>Keypad:</b> tap the number and it moves to the next player, then the next hole once everyone has a score. Tap a player's box and a new number to fix a score. <b>Clear</b> empties the box you're on.</p>
             <p><b>↶ Undo</b> (between the hole buttons under the keypad) takes back the last score you entered, even after it moved to the next hole: it goes back to that hole and that player so you can tap the right number.</p>
             <p><b>All holes / scores</b> lists every hole; tap one to open it. <b>Standings</b> is on the scoring screen too.</p>
-            <p><b>Standings:</b> during play, the <b>Live</b> box at the top shows each team's score in each game and how far through they are. When the round is over, <b>who pays who</b> takes the top. The team scorecards, Our Match and side bets are below.</p>
+            <p><b>Standings:</b> during play, the <b>Live</b> box at the top shows each team's score in each game and how far through they are. Then the <b>purse</b>, the <b>leaderboard</b>, <b>team bets won</b> and <b>skins won</b>, then Our Match and side bets. At the bottom, three buttons open <b>See all the math</b>, <b>Scorecards</b> and <b>Rules</b> (one at a time; tap again to close). Past rounds look the same. Our Match shows which pair won and how much per person.</p>
             <p><b>📣 Share &amp; message › Text live links to carts</b> lists each cart's players. Tap <b>💬 Text</b> next to each one: he gets <b>his own</b> scorecard link (no number on file? <b>Copy link</b>). Each cart also has <b>Share to a group text</b> if you'd rather send one link to the cart.</p>
             <p>📣 also sends a message to every cart (or one cart). Phones with alerts on get birdies, skins, lead changes and more.</p>
         </details>
@@ -1230,6 +1235,7 @@
 
         <details class="help"><summary><div>Look and test copy <span>Color theme</span></div><span class="fold-hint">Tap to open</span></summary>
             <p><b>Color theme</b> at the bottom of Home: Coastal Links, Augusta, Slate, Clubhouse, Neyland Night or <b>Fairway</b> (green and orange). Carts and spectators see the theme you pick.</p>
+            <p><b>Updates:</b> the app checks for a newer version each time you open it and loads it by itself. In the middle of a round it shows <b>🔄 A newer version is ready · Tap to update</b> at the top. The <b>version number</b> is at the bottom of Home.</p>
             <p>The <b>test copy</b> (the app's address with <i>?beta=1</i> on the end) tries out new layouts with an orange <b>TEST COPY</b> strip. Its rounds are kept apart from the real ones and it sends no alerts. Tap <b>Leave</b> to go back.</p>
         </details>
     </div>
@@ -5288,6 +5294,36 @@ function hideCartHoleHeader() {
         function formatNetToPar(net) { if(net === 0) return "E"; return net > 0 ? `+${net}` : `${net}`; }
         function formatNetToParCSS(net) { if(net === 0) return "even-par"; return net > 0 ? "over-par" : "under-par"; }
 
+        // The rules of the round: stakes, birdie rules, who gets strokes (live Standings and Past rounds)
+        function roundRulesHTML(rd) {
+            let orderedSegments = getOrderedSegments(rd); 
+            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
+            let totalBets = playableFormats(rd).length * betsPerFormat; 
+            
+            let rulesHTML = '';
+            if (!isOurMatchOnly(rd)) rd.formats.forEach(f => {
+                let on = rd.birdieRules && rd.birdieRules[f];
+                rulesHTML += `<div class="dash-row"><span>${f}-Ball: all birdies count</span><b style="color:${on ? 'var(--good)' : 'var(--text-muted)'};">${on ? 'On' : 'Off'}</b></div>`;
+            });
+            rd.groups.forEach(g => {
+                g.players.forEach(p => {
+                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) {
+                        rulesHTML += `<div class="dash-row"><span>${p.name.split(' ')[0]} gets strokes</span><span>Hole ${p.strokeHoles.join(', ')}</span></div>`;
+                    }
+                });
+            });
+
+            return `
+                ${canSeeOurMatch(rd) ? ourMatchRulesHTML(rd) : ''}
+                ${sideBetsRulesHTML(rd)}
+                ${hasTournamentMoney(rd) ? `<div class="dash-row"><span>Buy-in per player</span><b>$${(rd.betAmount * totalBets) + rd.skinsAmount}</b></div>
+                <div class="dash-row"><span>Per bet</span><span>$${rd.betAmount}</span></div>
+                <div class="dash-row"><span>Skins buy-in</span><span>$${rd.skinsAmount}</span></div>` : `<div class="dash-row"><span>Tournament purse</span><span>None, Our Match only</span></div>`}
+                ${rulesHTML}
+                <p class="dash-footnote">Red dot = player gets a stroke there; scorecards show gross/net.${hasTournamentMoney(rd) ? ' Skins are gross only.' : ''}</p>
+            `;
+        }
+
         function viewDashboard() {
             const urlParams = new URLSearchParams(window.location.search);
             let wasOpen = document.getElementById('step-dashboard').classList.contains('active');
@@ -5305,32 +5341,7 @@ function hideCartHoleHeader() {
             // A finished round has nothing left to alert about, so no "Get alerts" card on it
             document.getElementById('step-dashboard').classList.toggle('round-over', over || !liveRoundInCloud);
             
-            let orderedSegments = getOrderedSegments(roundData); 
-            let betsPerFormat = orderedSegments.length > 1 ? 3 : 1;
-            let totalBets = playableFormats(roundData).length * betsPerFormat; 
-            
-            let rulesHTML = '';
-            if (!isOurMatchOnly(roundData)) roundData.formats.forEach(f => {
-                let on = roundData.birdieRules && roundData.birdieRules[f];
-                rulesHTML += `<div class="dash-row"><span>${f}-Ball: all birdies count</span><b style="color:${on ? 'var(--good)' : 'var(--text-muted)'};">${on ? 'On' : 'Off'}</b></div>`;
-            });
-            roundData.groups.forEach(g => {
-                g.players.forEach(p => {
-                    if (!p.isGhost && p.strokeHoles && p.strokeHoles.length > 0) {
-                        rulesHTML += `<div class="dash-row"><span>${p.name.split(' ')[0]} gets strokes</span><span>Hole ${p.strokeHoles.join(', ')}</span></div>`;
-                    }
-                });
-            });
-
-            let finHTML = fold('live-rules', 'See the rules', `
-                ${canSeeOurMatch(roundData) ? ourMatchRulesHTML(roundData) : ''}
-                ${sideBetsRulesHTML(roundData)}
-                ${hasTournamentMoney(roundData) ? `<div class="dash-row"><span>Buy-in per player</span><b>$${(roundData.betAmount * totalBets) + roundData.skinsAmount}</b></div>
-                <div class="dash-row"><span>Per bet</span><span>$${roundData.betAmount}</span></div>
-                <div class="dash-row"><span>Skins buy-in</span><span>$${roundData.skinsAmount}</span></div>` : `<div class="dash-row"><span>Tournament purse</span><span>None, Our Match only</span></div>`}
-                ${rulesHTML}
-                <p class="dash-footnote">Red dot = player gets a stroke there; scorecards show gross/net.${hasTournamentMoney(roundData) ? ' Skins are gross only.' : ''}</p>
-            `);
+            let finHTML = fold('live-rules', 'See the rules', roundRulesHTML(roundData));
 
             // Cart progress is an admin tool; carts and spectators don't need it
             let showProgress = urlParams.get('spectator') !== 'true' && lockedTeamId === null && !isOurMatchOnly(roundData);
@@ -5342,16 +5353,16 @@ function hideCartHoleHeader() {
             // An Our Match link is for the guys in the match: no alerts prompt
             document.body.classList.toggle('om-link', spectator && isOurMatchOnly(roundData));
             document.body.classList.toggle('om-round', isOurMatchOnly(roundData)); // no alerts offered in an Our Match round, organizer included
-            let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-', spectator) : null;
-            // Our Match over: who pays who goes first, with the scorecards folded under it
+            let money = hasTournamentMoney(roundData) ? standingsSections(roundData, scoresDb, matchPresses, 'live-') : null;
+            // Our Match over: the result goes first, with the scorecards folded under it
             let omv = ourMatchForViewer(roundData, matchPresses);
             let banner = ourMatchFinalBanner(omv.rData, scoresDb, omv.presses, showingFinalResults);
             let cardsView = scorecardView(roundData);
             if (isOurMatchOnly(roundData) && omViewerFlipped(roundData)) cardsView = { ...cardsView, groups: [...cardsView.groups].reverse() };
             let cardsFold = fold('live-cards', CARDS_FOLD_TITLE, generateScorecardHTML(cardsView, scoresDb, money ? 'cards' : undefined), spectator && !isOurMatchOnly(roundData) && !banner.startsWith('<div class="om-final-banner">')); // open for tournament spectators until the match is over; an Our Match link looks like the organizer's page
             let omOnlyRound = isOurMatchOnly(roundData);
-            document.getElementById('dashboard-scorecards').innerHTML = money && !spectator ? '' : banner + (omOnlyRound ? '' : spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
-            if (omOnlyRound) document.getElementById('dashboard-financial-summary').innerHTML = ''; // the rules are in How it works
+            document.getElementById('dashboard-scorecards').innerHTML = money ? '' : banner + (omOnlyRound ? '' : spectator || isOurMatchOnly(roundData) ? cardsFold : generateScorecardHTML(scorecardView(roundData), scoresDb));
+            if (omOnlyRound || money) document.getElementById('dashboard-financial-summary').innerHTML = ''; // Our Match: the rules are in How it works; tournament: in the Rules button
             document.getElementById('dashboard-payouts').innerHTML = money ? money.top : '';
             document.getElementById('dashboard-more').innerHTML = money ? money.more : '';
             let omHTML = canSeeOurMatch(roundData) ? generateOurMatchHTML(omv.rData, scoresDb, omv.presses, !showingFinalResults && urlParams.get('spectator') !== 'true', { cards: omOnlyRound ? generateScorecardHTML(cardsView, scoresDb) : '' }) : '';
@@ -5360,7 +5371,7 @@ function hideCartHoleHeader() {
             let dash = document.getElementById('step-dashboard'), omEl = document.getElementById('dashboard-our-match');
             dash.insertBefore(omEl, isOurMatchOnly(roundData) ? document.getElementById('dashboard-cart-progress') : document.getElementById('dashboard-payouts').nextSibling);
             let agEl = document.getElementById('dashboard-all-games');
-            agEl.innerHTML = liveProgressHTML(roundData, scoresDb) + allGamesHTML(roundData, scoresDb, matchPresses, canSeeOurMatch(roundData));
+            agEl.innerHTML = liveProgressHTML(roundData, scoresDb);
             dash.insertBefore(agEl, dash.querySelector('.alerts-banner').nextSibling);
             let sbEl = document.getElementById('dashboard-side-bets');
             sbEl.innerHTML = isOurMatchOnly(roundData) ? '' : sideBetsHTML(roundData, scoresDb, 'live-', !spectator && lockedTeamId === null && !showingFinalResults && liveRoundInCloud);
@@ -6013,14 +6024,11 @@ function hideCartHoleHeader() {
         function formatMatchMoney(d) { return d === 0 ? '$0' : `${d > 0 ? '+' : '−'}$${Math.abs(d).toLocaleString('en-US')}`; }
         // Amounts are per person: each loser pays one winner
         function matchSettleLine(m, total) {
-            if (total === 0) return 'All square, nobody owes';
-            let [win, lose] = total > 0 ? [m.sides[0], m.sides[1]] : [m.sides[1], m.sides[0]];
-            let first = x => x.player.name.split(' ')[0];
-            let amt = `$${Math.abs(total).toLocaleString('en-US')}`;
-            return `${first(lose[0])} pays ${first(win[0])} ${amt} · ${first(lose[1])} pays ${first(win[1])} ${amt}`;
+            if (total === 0) return 'All square';
+            return `${total > 0 ? m.names[0] : m.names[1]} win $${Math.abs(total).toLocaleString('en-US')} per person`;
         }
 
-        // Our Match only, at the very top of the page: who pays who once it's over; until the last score
+        // Our Match only, at the very top of the page: who won and how much once it's over; until the last score
         // is in, "pending" with who it's trending toward and how much the other side is down
         function ourMatchFinalBanner(rData, sDb, presses, final) {
             if (!isOurMatchOnly(rData)) return '';
@@ -6164,7 +6172,7 @@ function hideCartHoleHeader() {
         function showOmTab(k) {
             omTab = omTab === k ? null : k;
             document.querySelectorAll('#om-tabs button').forEach(b => { let on = b.getAttribute('onclick').includes(`'${omTab}'`); b.classList.toggle('on', on); b.querySelector('i').textContent = on ? '▴' : '▾'; });
-            document.querySelectorAll('.om-tab-pane').forEach(p => { p.hidden = p.dataset.tab !== omTab; });
+            document.querySelectorAll('.om-tab-pane:not(.view-pane)').forEach(p => { p.hidden = p.dataset.tab !== omTab; });
         }
 
         // The rules dropdown: each Our Match game, its stakes, and whether strokes count in it
@@ -6203,7 +6211,7 @@ function hideCartHoleHeader() {
             html += `<tr class="om-grid-sum"><th>Total</th>${nines.map((n, i) => `<td>${formatMatchMoney(colTotal(i))}</td>`).join('')}${overall ? `<td>${formatMatchMoney(typeof nassauMoney(overall) === 'number' ? nassauMoney(overall) : 0)}</td>` : ''}<td class="om-grid-total">${formatMatchMoney(m.totalMoney)}</td></tr>`;
             html += `</tbody></table>`;
             html += `<p class="om-grid-rules">Per person · Nassau ${om.nassauNet ? 'net (strokes count)' : 'gross'} · $${om.nassauBet} a bet · 1st ball goes to 2nd ball and birdies ${nines.length > 1 ? nines.map(n => `$${n.amount} ${n.key === 'back' ? 'back' : 'front'}`).join(', ') : `$${nines[0]?.amount ?? om.ballBet}`}</p>`; // in play order: a round starting on 10 reads "$25 back, $50 front"
-            // The Our Match only page already says who pays who at the very top
+            // The Our Match only page already says who won at the very top
             if (!isOurMatchOnly(rData)) html += `<b class="om-settle">${matchSettleLine(m, m.totalMoney)}</b>`;
             return html + `</div>`;
         }
@@ -6456,7 +6464,7 @@ function hideCartHoleHeader() {
 
         // ===== Money on the standings page =====
         // First view: purse, leaderboard, team bets won (with each player's share), skins, Our Match.
-        // Tap to open: the scorecards, and who pays who with all the math behind it.
+        // Then three buttons: See all the math, Scorecards, Rules.
         function purseHTML(pay) {
             let players = pay.players.length, teamEntry = pay.teamEntryCents, skinsEntry = pay.skinsRefunded ? 0 : (pay.players[0]?.buyInCents || 0) - teamEntry;
             return `<section class="dash-section"><div class="payout-header" style="margin-top:0;">Purse</div>
@@ -6480,7 +6488,7 @@ function hideCartHoleHeader() {
         }
         function skinsHTML(rData, pay) {
             let html = `<section class="dash-section"><div class="payout-header" style="margin-top:0;">Skins · ${formatCents(pay.skinsPotCents)} cash pot</div>`;
-            if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won${rData.skinsAmount > 0 ? ', so nobody pays the skins buy-in' : ''}</span></div>`;
+            if (pay.skins.length === 0) html += `<div class="payout-row muted"><span>No skins won${rData.skinsAmount > 0 ? ' · skins buy-in refunded' : ''}</span></div>`;
             else html += `<div class="payout-sub">${pay.skins.length} won × ${formatCents(pay.perSkinCents)}</div>`;
             skinsByPlayer(pay).forEach(w => {
                 html += `<div class="payout-row skins-player"><span><b style="color:${w.color};">${firstName(w.name)}</b> <span class="payout-note">${w.holes.length === 1 ? 'hole' : 'holes'} ${w.holes.join(', ')}</span></span><span class="payout-amount"><span class="payout-note">${w.holes.length} × ${formatCents(pay.perSkinCents)} =</span> ${formatCents(w.cents)}</span></div>`;
@@ -6541,35 +6549,6 @@ function hideCartHoleHeader() {
             return html + `</section>`;
         }
 
-        // Top of the standings / results when the round has more than one money game: one who-pays-who for all of it
-        function allGamesHTML(rData, sDb, presses, withMatch = true) {
-            let u = roundSettleUp(rData, sDb, presses, withMatch);
-            // Our Match alone already says who pays who in its box at the top; during play the Live card is up top instead
-            if (!u.finished || !u.games.length || (u.games.length === 1 && u.games[0] !== 'team bets')) return '';
-            let first = n => n.split(' ')[0];
-            let money = c => `${c > 0 ? '+' : c < 0 ? '−' : ''}${formatDollars(Math.round(c / 100) * 100)}`;
-            let rows = Object.entries(u.nets).sort((a, b) => b[1] - a[1]);
-            return `<section class="dash-section all-games">
-                <div class="dash-section-title team-head"><span>Who pays who · everything</span><span>${u.finished ? 'Final' : 'So far'}</span></div>
-                <p class="om-grid-rules" style="margin:0 0 8px;">${u.games.join(' + ')}${u.pay?.skins?.length ? ' · skins are paid in cash from the pot' : ''}</p>
-                ${u.payments.length ? u.payments.map(pm => `<div class="payout-row settle-row"><span><b>${first(pm.from)}</b> pays <b>${first(pm.to)}</b></span><b class="payout-amount">${formatDollars(pm.cents)}</b></div>`).join('') : '<p class="clean-sub">All square, nobody owes.</p>'}
-                <div class="all-games-totals">${rows.map(([n, c]) => `<div class="all-games-row"><span><b>${first(n)}</b><small>${Object.entries(u.parts[n]).filter(([, v]) => v).map(([k, v]) => `${k} ${money(v)}`).join(' · ')}</small></span><b class="${c > 0 ? 'pos' : c < 0 ? 'neg' : ''}">${money(c)}</b></div>`).join('')}</div>
-            </section>`;
-        }
-
-        function settleUpHTML(rData, sDb, pay, presses) {
-            let first = n => n.split(' ')[0];
-            let u = roundSettleUp(rData, sDb, presses), nets = u.nets, payments = u.payments;
-            let m = rData.ourMatch ? calculateOurMatch(rData, sDb, presses || {}) : null;
-            let totals = Object.entries(nets).sort((a, b) => b[1] - a[1]);
-            let skins = skinsByPlayer(pay);
-            return `<div class="payout-header" style="margin-top:4px;">Who pays who · ${u.games.join(' + ')}</div>
-                <div class="payout-sub">${payments.length ? `These ${payments.length} payment${payments.length === 1 ? '' : 's'} square everyone (if nobody paid the team entry up front). Whole dollars.` : 'Nobody owes anybody.'}</div>
-                ${payments.map(pm => `<div class="payout-row settle-row"><span><b>${first(pm.from)}</b> pays <b>${first(pm.to)}</b></span><b class="payout-amount">${formatDollars(pm.cents)}</b></div>`).join('')}
-                ${skins.length ? `<div class="payout-sub" style="margin-top:6px;">💰 Skins are paid in cash from the pot: ${skins.map(sk => `${first(sk.name)} ${formatCents(sk.cents)}`).join(' · ')}</div>` : ''}
-                <div class="payout-sub" style="margin-top:10px;">Each player's total${m && !m.finished ? ' so far' : ''}</div>
-                ${totals.map(([n, c]) => `<div class="payout-row sub"><span>${first(n)}</span><span style="color:${c > 0 ? 'var(--good)' : c < 0 ? '#f85149' : 'inherit'}">${c > 0 ? '+' : c < 0 ? '−' : ''}${formatCents(c)}</span></div>`).join('')}`;
-        }
         function betsGridHTML(rData, pay) {
             let g = id => rData.groups.find(x => x.id === id);
             let segLabels = [...new Set(pay.bets.map(b => b.label))];
@@ -6591,7 +6570,7 @@ function hideCartHoleHeader() {
         function payOutFromPotHTML(pay) {
             let paidOut = [...pay.players].filter(p => p.wonCents > 0).sort((a, b) => b.wonCents - a.wonCents);
             if (!paidOut.length) return '';
-            let html = `<div class="payout-header">Or: pay out from the pot</div>
+            let html = `<div class="payout-header">Pay out from the pot</div>
                 <div class="payout-sub">If everyone paid ${formatCents(pay.players[0].buyInCents)} up front (team bets + skins). Our Match is separate.</div>`;
             paidOut.forEach(p => {
                 let parts = [];
@@ -6617,20 +6596,39 @@ function hideCartHoleHeader() {
             return `Our Match · ${t === 0 ? 'all square' : `${lead} up $${Math.abs(t).toLocaleString('en-US')}`}${m.finished ? '' : ' so far'}`;
         }
         // The standings / results page, in order. Returns { top, more } so Our Match can sit between them.
-        function standingsSections(rData, sDb, presses, prefix, cardsElsewhere) {
+        function standingsSections(rData, sDb, presses, prefix) {
             let pay = calculatePayouts(rData, sDb);
             if (pay.players.length === 0) return { top: '<p>No data.</p>', more: '' };
             let top = purseHTML(pay) + generateScorecardHTML(scorecardView(rData), sDb, 'leaderboard') + teamBetsWonHTML(rData, pay) + skinsHTML(rData, pay);
-            let over = roundSettleUp(rData, sDb, presses).finished;
-            let more = (cardsElsewhere ? '' : fold(prefix + 'cards', CARDS_FOLD_TITLE, generateScorecardHTML(scorecardView(rData), sDb, 'cards')))
-                + fold(prefix + 'math', over ? 'See all the math' : 'See money so far &amp; all the math', (over ? '' : settleUpHTML(rData, sDb, pay, presses)) + betsGridHTML(rData, pay) + payOutFromPotHTML(pay));
+            let more = viewTabsHTML(prefix + 'tabs', [
+                ['math', 'See all the math', betsGridHTML(rData, pay) + payOutFromPotHTML(pay)],
+                ['cards', 'Scorecards', generateScorecardHTML(scorecardView(rData), sDb, 'cards')],
+                ['rules', 'Rules', roundRulesHTML(rData)]]);
             return { top, more };
+        }
+        // A row of buttons; each opens its view under them (tap again to close), like Our Match's. Stays open when scores come in.
+        let viewTab = {};
+        function viewTabsHTML(id, tabs) {
+            let pick = tabs.some(t => t[0] === viewTab[id]) ? viewTab[id] : null;
+            return `<div class="om-tabs-wrap view-tabs" id="${id}"><div class="om-tabs-label">Tap to see more</div><div class="om-tabs">${tabs.map(([k, label]) => `<button type="button" id="${id}-${k}" class="${k === pick ? 'on' : ''}" onclick="showViewTab('${id}','${k}')"><span>${label}</span><i>${k === pick ? '▴' : '▾'}</i></button>`).join('')}</div></div>`
+                + tabs.map(([k, , body]) => `<div class="om-tab-pane view-pane" data-view="${id}" data-tab="${k}"${k === pick ? '' : ' hidden'}>${body}<button type="button" class="om-tab-top" onclick="viewTabsBack('${id}')">↑ Pick another view</button></div>`).join('');
+        }
+        function showViewTab(id, k) {
+            viewTab[id] = viewTab[id] === k ? null : k;
+            document.querySelectorAll(`#${id} button`).forEach(b => { let on = b.id === `${id}-${viewTab[id]}`; b.classList.toggle('on', on); b.querySelector('i').textContent = on ? '▴' : '▾'; });
+            document.querySelectorAll(`.view-pane[data-view="${id}"]`).forEach(p => { p.hidden = p.dataset.tab !== viewTab[id]; });
+        }
+        function viewTabsBack(id) {
+            let el = document.getElementById(id);
+            if (!el) return;
+            let pinned = [...document.querySelectorAll('.back-to-scoring, .beta-banner')].map(x => x.getBoundingClientRect()).filter(r => r.height && r.top < 90).reduce((a, r) => Math.max(a, r.bottom), 0);
+            window.scrollTo({ top: window.scrollY + el.getBoundingClientRect().top - Math.max(pinned, 0) - 16, behavior: 'smooth' });
         }
 
         // ==========================================
         // SHARE & ARCHIVE ENGINE
         // ==========================================
-        // Same order as the payouts page: purse, skins, each player, team bets, then who pays who
+        // Same order as the payouts page: purse, team bets, skins, pay out from the pot
         function openResultsShareModal() {
             let rData = activeViewRoundData; 
             let sDb = activeViewScoresDb;
@@ -6674,11 +6672,6 @@ function hideCartHoleHeader() {
                 });
             }
 
-            let payments = teamBetSettlements(pay);
-            if (payments.length > 0) {
-                st += `\nWho pays who, team bets only (skins paid from the cash pot)\n`;
-                payments.forEach(pm => { st += `${first(pm.from)} → ${first(pm.to)} ${formatDollars(pm.cents)}\n`; });
-            }
 
             st += sideBetsText(rData, sDb);
             document.getElementById('share-modal-title').innerText = "Share Final Results";
@@ -7260,7 +7253,7 @@ function hideCartHoleHeader() {
             if (activeViewRoundData.ourMatch && isOurMatchOnly(activeViewRoundData)) { openMatchSend(activeViewRoundData, true); return; } // each player his own results link
             let rd = activeViewRoundData, course = (rd.course?.name || '').replace(/\s*\(.*\)$/, '');
             let link = shareUrl(rd.ourMatch ? 'match.html' : 'results.html', `round=${encodeURIComponent(rd.roundId || '')}`);
-            openGroupText('round', `🏆 JB Golf final results · ${course} · ${formatRoundDate(rd.date)}\nScores, money and who pays who:\n${link}`, 'Round finalized · text the results');
+            openGroupText('round', `🏆 JB Golf final results · ${course} · ${formatRoundDate(rd.date)}\nScores and money:\n${link}`, 'Round finalized · text the results');
         }
 
         // Finished rounds live in Firebase (so a lost phone loses nothing) with a copy on this phone for offline viewing
@@ -7469,13 +7462,43 @@ function hideCartHoleHeader() {
                 document.getElementById('archived-our-match-container').innerHTML = omHTML && money ? fold('arc-om', ourMatchSummaryLine(omv.rData, activeViewScoresDb, omv.presses), omHTML) : omHTML;
                 document.getElementById('archived-more').innerHTML = money ? money.more : '';
                 document.getElementById('archived-side-bets').innerHTML = sideBetsHTML(activeViewRoundData, activeViewScoresDb, 'arc-');
-                document.getElementById('archived-all-games').innerHTML = allGamesHTML(activeViewRoundData, activeViewScoresDb, presses);
+                document.getElementById('archived-all-games').innerHTML = '';
                 document.getElementById('archived-sub').textContent = [activeViewRoundData.course?.name, formatRoundDate(activeViewRoundData.date || arc.date)].filter(Boolean).join(' · ');
                 return true;
             } catch (error) { 
                 return false;
             }
         }
+
+        // Which copy of the app this phone is showing. Bump APP_VERSION (and version.txt to match) with every change to the app.
+        // A phone can hold on to an older copy for a while after an update, so the app asks the site for version.txt each time
+        // it opens or comes back to the front; if that differs, it loads the new copy by itself (or offers it mid-round).
+        const APP_VERSION = '2026-11-19.1';
+        document.getElementById('app-version').textContent = 'Version ' + APP_VERSION;
+        let updateTried = false;
+        async function checkForUpdate() {
+            try {
+                let res = await fetch('version.txt?t=' + Date.now(), { cache: 'no-store' });
+                if (!res.ok) return;
+                let latest = (await res.text()).trim();
+                if (!/^[\w.-]{3,40}$/.test(latest)) return; // not a version (a Wi-Fi sign-in page, say): ignore it
+                if (latest === APP_VERSION) { document.getElementById('update-bar').style.display = 'none'; return; }
+                // Safe to swap straight away unless someone is in the middle of a screen; once per version so it can't loop
+                let busy = !document.getElementById('step-home').classList.contains('active') || document.querySelector('.modal-overlay.active');
+                let already = false; try { already = sessionStorage.getItem('jbGolfUpdatedTo') === latest; } catch (e) {}
+                if (!busy && !already && !updateTried) { loadNewVersion(latest); return; }
+                document.getElementById('update-bar').style.display = '';
+                document.getElementById('update-bar').dataset.v = latest;
+            } catch (e) { /* no signal: keep using this copy */ }
+        }
+        async function loadNewVersion(latest) {
+            updateTried = true;
+            try { sessionStorage.setItem('jbGolfUpdatedTo', latest || document.getElementById('update-bar').dataset.v || ''); } catch (e) {}
+            try { await fetch(location.href, { cache: 'reload' }); } catch (e) {} // fetch the new page past the phone's saved copy
+            location.reload();
+        }
+        window.addEventListener('load', () => setTimeout(checkForUpdate, 1500));
+        document.addEventListener('visibilitychange', () => { if (!document.hidden) checkForUpdate(); });
 
         // Keep a copy of the app on the phone so it can open with no signal (see sw.js)
         if ('serviceWorker' in navigator) {

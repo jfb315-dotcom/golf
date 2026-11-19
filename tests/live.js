@@ -1,5 +1,5 @@
 // Standings during play: Live card on top (team scores, each player's score and thru), no who-pays-who.
-// When the round is over: who pays who on top, Live card gone, the math dropdown doesn't repeat the payments.
+// When the round is over: Live card gone, no who pays who; the math is behind the See all the math button.
 const { chromium } = require('/opt/node22/lib/node_modules/playwright');
 const fs = require('fs');
 const stub = fs.readFileSync(__dirname + '/stub.js', 'utf8');
@@ -38,16 +38,16 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   ok(live && /Team 2 · Jordia thru 5/.test(live.text), 'team 2 thru 5 (Mike hasn\'t scored 6)');
   ok(live && /John -2 -2 gross thru 7/.test(live.text) && /Jordia \+1 \+1 gross thru 6/.test(live.text) && /Mike E E gross thru 5/.test(live.text), 'each player: net to par, gross, thru');
   ok(!(await page.$('#step-dashboard .all-games')), 'during play: no who-pays-who box at the top');
-  ok(await page.evaluate(() => document.querySelector('details[data-fold="live-math"] summary')?.textContent.includes('See money so far')), 'during play: money so far is in the dropdown');
+  ok(await page.evaluate(() => !!document.getElementById('live-tabs-math') && !document.querySelector('details[data-fold="live-math"]')), 'during play: the math is behind the See all the math button');
   await page.evaluate(() => { document.querySelector('.back-to-scoring').style.visibility = 'hidden'; window.scrollTo(0, 0); });
   await page.screenshot({ path: __dirname + '/shots/live-card.png' });
   // finish the round
   await page.evaluate(() => { let pars = roundData.course.pars; for (let h = 1; h <= 18; h++) roundData.groups.forEach(g => g.players.forEach(p => { if (!scoresDb[g.id][p.id][h]) scoresDb[g.id][p.id][h] = pars[h - 1] + (h % 5 === 0 ? 1 : 0); })); viewDashboard(); });
   await page.waitForTimeout(200);
   ok(!(await page.$('#step-dashboard .live-progress')), 'round over: Live card gone');
-  ok(await page.isVisible('#step-dashboard .all-games'), 'round over: who pays who at the top');
-  const math = await page.evaluate(() => { let d = document.querySelector('details[data-fold="live-math"]'); return d && { title: d.querySelector('summary').textContent, repeats: /pays/.test(d.querySelector('summary').nextSibling ? [...d.children].slice(1).map(x => x.textContent).join(' ') : '') && !!d.querySelector('.settle-row') }; });
-  ok(math && math.title.includes('See all the math') && !math.repeats, 'round over: dropdown is "See all the math" without repeating the payments: ' + JSON.stringify(math));
+  ok(!(await page.$('#step-dashboard .all-games')) && !/\bpays\b/.test(await page.innerText('#step-dashboard')), 'round over: no who pays who');
+  await page.click('#live-tabs-math');
+  ok(/Each team bet/i.test(await page.innerText('.view-pane[data-tab="math"]')) && !(await page.$('.view-pane .settle-row')), 'round over: See all the math shows the bets, no payments');
   await browser.close();
   console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
 })();

@@ -1,7 +1,7 @@
 // Lets the app open with no signal. Pages load from the network when it answers within a few
 // seconds (so updates show straight away) and fall back to the copy saved on the phone otherwise.
 // Scores still sync through Firebase, which keeps its own offline queue.
-const CACHE = 'jb-golf-v6';
+const CACHE = 'jb-golf-v7';
 const FIREBASE = [
     'https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js',
     'https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore-compat.js',
@@ -30,10 +30,13 @@ self.addEventListener('fetch', event => {
     let url = new URL(req.url);
     let ours = url.origin === self.location.origin;
     if (!ours && !FIREBASE.includes(req.url)) return; // Firestore traffic and everything else goes straight through
+    if (ours && url.pathname.endsWith('/version.txt')) return; // the update check always goes to the site, never a saved copy
 
     event.respondWith((async () => {
         let cache = await caches.open(CACHE);
-        let fromNetwork = fetch(req).then(res => {
+        // Our own files: ask the site every time (it answers "unchanged" quickly) so an update shows on the next open,
+        // not whenever the phone's own 10-minute copy runs out
+        let fromNetwork = fetch(ours ? req.url : req, ours ? { cache: 'no-cache', credentials: 'same-origin' } : undefined).then(res => {
             if (res && (res.ok || res.type === 'opaque')) cache.put(req, res.clone());
             return res;
         });

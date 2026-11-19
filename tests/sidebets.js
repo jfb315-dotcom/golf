@@ -62,21 +62,21 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   // Back: h12 side1 0 vs side2 +1 -> side1 ahead 1; h14 side2 -1 -> even -> push 0
   // Overall: side1 -2 vs side2 -1 (+1 -1 = 0) ... side1 total -2, side2 total -1 -> side1 +20
   ok(m.segs[0][0] === 'Front 9' && m.segs[0][2] === 20 && m.segs[1][0] === 'Back 9' && m.segs[1][2] === 0 && m.segs[2][0] === 'Overall' && m.segs[2][2] === 20 && m.total === 40, 'front +$20, back push (his stroke counts), overall +$20 = +$40');
-  ok(m.settle === 'Bo pays Al $40 · Fy pays Ed $40', 'per person, partner to partner: ' + m.settle);
+  ok(m.settle === 'Al & Ed win $40 per person', 'the result: which pair won, per person: ' + m.settle);
   const noBirdies = await page.evaluate(() => { let b = { ...roundData.sideBets[0], allBirdies: false }; return calculateSideBet(roundData, scoresDb, b).segs[0].diff; });
   ok(noBirdies === 0, 'without all birdies count, hole 2 counts once: front is even');
 
   await page.evaluate(() => { viewDashboard(); }); await page.waitForTimeout(200);
   const txt = await page.innerText('#dashboard-side-bets');
-  ok(txt.includes('SIDE BETS') && txt.includes('Al & Ed') && txt.includes('Bo & Fy') && txt.includes('Bo pays Al $40'), 'standings show the side bet and who pays who');
+  ok(txt.includes('SIDE BETS') && txt.includes('Al & Ed') && txt.includes('Bo & Fy') && txt.includes('Al & Ed win $40 per person') && !/pays/.test(txt), 'standings show the side bet and who won (no who pays who)');
   await page.evaluate(() => { document.querySelector('.back-to-scoring').style.visibility = 'hidden'; document.getElementById('dashboard-side-bets').scrollIntoView(); });
   await (await page.$('#dashboard-side-bets')).screenshot({ path: __dirname + '/shots/sidebet-standings.png' });
-  ok(await page.evaluate(() => document.querySelector('details[data-fold="live-rules"]').textContent.replace(/\s+/g, ' ').includes('$20 a bet on Front 9, Back 9 and Overall')), 'rules list the side bet');
+  ok(await page.evaluate(() => document.querySelector('.view-pane[data-view="live-tabs"][data-tab="rules"]').textContent.replace(/\s+/g, ' ').includes('$20 a bet on Front 9, Back 9 and Overall')), 'rules list the side bet');
   // Money ledger and the results text
   ok(await page.evaluate(() => { let mo = roundMoney(roundData, scoresDb); return mo['al adams'].side === 4000 && mo['bo brown'].side === -4000 && mo['ed eads'].side === 4000 && mo['fy fox'].side === -4000 && !('side' in mo['cy cole']); }), 'side bet money goes into the season money');
   await page.evaluate(() => { activeViewRoundData = roundData; activeViewScoresDb = scoresDb; openResultsShareModal(); });
   const share = await page.inputValue('#share-text-content');
-  ok(share.includes('Side bets ($ per person)') && share.includes('Al & Ed vs Bo & Fy ($20, all birdies): Front 9 +$20 · Back 9 $0 · Overall +$20') && share.includes('Bo pays Al $40'), 'results text lists the side bet');
+  ok(share.includes('Side bets ($ per person)') && share.includes('Al & Ed vs Bo & Fy ($20, all birdies): Front 9 +$20 · Back 9 $0 · Overall +$20') && share.includes('Al & Ed win $40 per person'), 'results text lists the side bet');
   await page.evaluate(() => closeShareModal());
   // Edit setup brings it back onto the roster
   await page.evaluate(() => switchScreen('step-dashboard', 'step-3'));

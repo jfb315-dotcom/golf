@@ -66,7 +66,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.evaluate(() => { let f = document.querySelector('details[data-fold="om-presses"]'); if (f) f.open = true; });
   ok((await page.innerText('#dashboard-our-match')).includes('Bo & Bud pressed the Front 9'), 'Presses made (at the bottom) shows who pressed');
   ok(await page.$$eval('.om-press-mark', r => r.length) === 1 && await page.$eval('.om-press-mark', r => !!r.closest('.om-tab-pane[data-tab="nassau"]')), 'press marked in the Nassau chart after hole 2');
-  ok((await page.innerText('#our-match .om-grid-wrap .om-settle')).includes('pays'), 'settle line partner to partner, under the money table: ' + await page.innerText('#our-match .om-settle'));
+  ok(/win \$\d+ per person|All square/.test(await page.innerText('#our-match .om-grid-wrap .om-settle')) && !(await page.innerText('#our-match')).includes(' pays '), 'result line (no who pays who) under the money table: ' + await page.innerText('#our-match .om-settle'));
   await (await page.$('#our-match')).screenshot({ path: __dirname + '/shots/om-section2.png' });
   await page.click('text=BACK TO SCORING'); await page.waitForTimeout(100);
   const alertTxt = await page.innerText('#om-press-alert');

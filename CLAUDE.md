@@ -30,7 +30,8 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 ## Working with John
 - He is not a developer. Plain words, no jargon, short answers. Show a screenshot of every visible change (render it in a test, look at it yourself first).
 - Flow: change → tests → commit → push to the working branch → open a PR on `jfb315-dotcom/golf` → **stop and wait for him to say "merge"**. Then merge with the PR's head SHA and reset the working branch to `origin/main` (force-push). Never merge on your own. If he says "do X then merge", that is permission for that one PR.
-- After merging, tell him to close the app fully and reopen it (the offline cache serves the old copy first).
+- **Bump the version with every change to the app:** `APP_VERSION` in `index.html` and `version.txt` must match (format `YYYY-MM-DD.N`; `tests/version.js` fails if `index.html` changed and the version didn't). The app fetches `version.txt` when it opens or comes back to the front: on Home it reloads itself, mid-round it shows "🔄 A newer version is ready · Tap to update". The version shows at the bottom of Home.
+- After merging, tell him the new version number and that the app updates itself the next time he opens it. If something "still isn't fixed", **ask what version the bottom of Home shows before changing any code**: twice a stale copy on his phone was mistaken for a bug.
 - **Always update How it works** (`#step-help`) and this file in the same change when anything changes how the app is used or what something is called.
 - When he asks "does it do X?", check the code or run it before answering. He often turns out to be describing a real bug.
 - When he asks for a "rendering", build it in the test copy and send screenshots; don't change the real app until he approves.
@@ -45,7 +46,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - Round types: `hasTournamentMoney(rd)` (team bets/skins) and `isOurMatchOnly(rd)` (Our Match with no purse). Branch on these, not on player counts.
 - Whose view: `ourMatchForViewer(rd, presses)` / `omViewerFlipped(rd)` flip the pairs for a player's link (`me=<name>` or old `om=2`); a button on a flipped page must pass through `realOurMatchSide()`.
 - Link parameters: `cart`, `r` (round id), `me` (player's full name, lower case), `spectator=true`, `round` (a finished round), `om`, `signup`, `beta`. Build links with `shareUrl(page, query)`. Open Messages with `openSms(url)`.
-- Collapsible sections use `fold(id, title, body, open)`; reuse it rather than writing `<details>` by hand.
+- Collapsible sections use `fold(id, title, body, open)`; reuse it rather than writing `<details>` by hand. A row of buttons that each open a view (John prefers these to dropdowns on Standings): `viewTabsHTML(id, [[key, label, body], …])`.
 - Comments say *why*, in plain words, one line. Match the surrounding style (long single-line CSS rules, `let`, arrow functions).
 - Adding a file the app loads: add it to `APP_FILES` in `sw.js` and bump `CACHE`. Changing a `card-*.png`: add `?v=N` to its `og:image` so Messages refetches it.
 - Never add `start_url` to a manifest: each Home Screen icon must keep the link it was saved from.
@@ -57,8 +58,8 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - **Spacing:** page padding 15px; `.screen.clean` max-width 600px (Standings 1000px); new section `margin-top` 24–28px; rows divided by `1px solid var(--line)`; gaps 8/12/14px.
 - **Controls:** inputs, steppers, money fields 56px tall, radius 14px, `--fill` background; segmented choices 44px; main action `.bar-primary` 56px pill (radius 28) in a sticky `.bottom-bar`; list rows `.list-row` min 52px; cards/tiles radius 16px, `1px solid var(--line)`; modals `.modal-overlay` + `.modal-content`. Anything tappable ≥ 44px tall and must *look* tappable (outline or fill, an arrow if it opens something).
 - **Typing boxes ≥ 16px text**, or iPhones zoom the page and stay zoomed (`zoomscan` test).
-- Standings pages: the answer first (who's winning / who pays who), details behind buttons or folds. In Our Match charts there is no colour coding; the winning number is `<b class="om-win">`.
-- Reuse before inventing: `.format-row` + `.switch`, `.segmented`, `.stepper`, `.money-field`, `.list-row`, `.payout-row`, `.om-head`, `.match-send-row`, `.om-tabs`, `fold()`.
+- Standings pages: the answer first (who's winning, who won what), details behind buttons. **No "who pays who" anywhere** (John: it assumes nobody paid the entry fee and confuses people); Our Match says which pair won and how much per person (`matchSettleLine`). Tournament Standings and Past rounds: purse → leaderboard → team bets won → skins won → Our Match / side bets → three buttons **See all the math · Scorecards · Rules** (`viewTabsHTML`, one open at a time; no scorecards at the top, no rules dropdown). In Our Match charts there is no colour coding; the winning number is `<b class="om-win">`.
+- Reuse before inventing: `.format-row` + `.switch`, `.segmented`, `.stepper`, `.money-field`, `.list-row`, `.payout-row`, `.om-head`, `.match-send-row`, `.om-tabs`, `viewTabsHTML()`, `fold()`.
 - The scoring screen must never scroll or shift while scores are entered (no `scrollIntoView`, no smooth scrolling there).
 
 ## Words to use (John's vocabulary)
@@ -97,7 +98,8 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 12. **Forgetting the other copies of a feature:** the test copy's second `<script>`, Past rounds (`renderArchivedRound`), shared text (`TEXT SHARE`), How it works, and this file.
 13. **Sending alerts where they don't belong** (Our Match, the test copy) or adding a share option that sends one.
 14. **Offering 3-Ball to 2-player teams** or other impossible games; use `playableFormats`.
-15. **Writing "side", "PR", "commit", "cache" to John.** Say pair, update, saved, "close the app and reopen it".
+15. **Saying "fixed" when John can't see it.** GitHub Pages lets a phone keep the old page for 10 minutes and the Home Screen app keeps it in memory; check the deploy succeeded and his version number before assuming the code is wrong, and never promise "a minute or two".
+16. **Writing "side", "PR", "commit", "cache" to John.** Say pair, update, saved, "close the app and reopen it".
 
 ## Before saying a task is done
 - [ ] Reproduced the problem (or the "before") on `origin/main`'s build.
@@ -107,6 +109,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - [ ] Checked each affected view: organizer, cart, spectator/`me=` link, Past rounds, test copy.
 - [ ] Our Match checked both starting on 1 and on 10 if money or order changed.
 - [ ] How it works and this file updated if behaviour or names changed.
+- [ ] `APP_VERSION` and `version.txt` bumped together.
 - [ ] `sw.js` cache bumped if a file was added; `?v=` bumped if a card picture changed.
 - [ ] Committed, pushed, PR opened; John told in plain words what changed, shown a screenshot, and asked to say **merge**.
 

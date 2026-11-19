@@ -97,7 +97,7 @@ const titles = sent => sent.map(a => a.title);
   const all = []; for (let h = 1; h <= 18; h++) for (const [g,p] of [[1,1],[1,2],[2,1],[2,2]]) all.push([g,p,h, g === 1 && p === 1 && h === 1 ? 4 : pars[h-1]]);
   await set(page, all); await page.waitForTimeout(300);
   const over = sent.find(a => a.title.startsWith('🏁 Our Match'));
-  ok(over && over.title === '🏁 Our Match: Brent & John +$' + over.title.split('+$')[1] && over.body.includes('Jordia pays Brent') && over.view === 'our-match', 'Our Match (in a tournament) over alert: ' + JSON.stringify(over && [over.title, over.body]));
+  ok(over && over.title === '🏁 Our Match: Brent & John +$' + over.title.split('+$')[1] && over.body === 'Brent & John win $' + over.title.split('+$')[1].replace(' each', '') + ' per person' && over.view === 'our-match', 'Our Match (in a tournament) over alert: ' + JSON.stringify(over && [over.title, over.body]));
   await page.close();
 
   // Our Match only round: no alerts at all (they're all playing together)
