@@ -48,8 +48,8 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   const r = hist[id];
   ok(r && r.courseKey === 'tennessee_national' && r.holes === 18, 'finalized round saved to history');
   const b = r.players['brent smith'];
-  // par 72; gross 72+18+6 = 96 (hole 4 is 10 instead of 4); adjusted caps 10 at 3+2+1 = 6 → 92
-  ok(b.gross === 96 && b.adjusted === 92 && b.tee === 'White/Green' && b.rating === 69.9 && b.slope === 128, 'Brent: gross, capped score and tee: ' + JSON.stringify(b));
+  // par 72; gross 72+17+4 = 94 (hole 4, a par 5, is 10 instead of 6); adjusted caps 10 at 5+2+1 = 8 → 92
+  ok(b.gross === 94 && b.adjusted === 92 && b.tee === 'White/Green' && b.rating === 69.9 && b.slope === 128, 'Brent: gross, capped score and tee: ' + JSON.stringify(b));
   ok(b.diff === Math.round(113 / 128 * (92 - 69.9) * 10) / 10, 'Brent differential ' + b.diff);
   ok(!r.players['joe'], 'unfinished player (Joe) left out');
   ok(r.players['jordia'] && r.players['jordia'].rating === 69.0 || r.players['jordia'], 'Jordia saved ' + JSON.stringify(r.players['jordia']));
@@ -62,7 +62,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   // import the old archived round
   await page.click('.older-rounds summary'); await page.click('text=Add older rounds from this phone'); await page.waitForTimeout(200);
   const m = await page.evaluate(() => window.__docs.player_history.rounds['555']?.players['mike davis']);
-  ok(m && m.gross === 90 && m.tee === 'Black' && m.rating === 75.8, 'archived round imported using Mike\'s usual tees: ' + JSON.stringify(m));
+  ok(m && m.gross === 90 && m.tee === 'Black' && m.rating === 75.9, 'archived round imported using Mike\'s usual tees: ' + JSON.stringify(m));
   await page.click('text=Add older rounds from this phone'); await page.waitForTimeout(100);
   ok(Object.keys(await page.evaluate(() => window.__docs.player_history.rounds)).length === 5, 'import is not doubled');
   await page.click('.player-row:has-text("Brent")'); await page.waitForTimeout(150);

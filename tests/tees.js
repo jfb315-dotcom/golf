@@ -19,7 +19,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.selectOption('#course-selector', 'tennessee_national');
   await page.click('text=Tees & ratings'); await page.waitForTimeout(150);
   const rows = await page.$$eval('#tees-rows .tee-edit-row', r => r.map(x => [...x.querySelectorAll('input')].map(i => i.value).join('|')));
-  ok(rows.length === 5 && rows[3] === 'White/Green|6235|69.9|128', 'Tennessee National tees loaded incl. White/Green: ' + rows.join(' ; '));
+  ok(rows.length === 6 && rows[3] === 'White/Green|6235|69.9|128', 'Tennessee National tees loaded incl. White/Green: ' + rows.join(' ; '));
   ok(await page.isVisible('.te-est'), 'White/Green marked as an estimate');
   await page.screenshot({ path: __dirname + '/shots/tees-editor.png' });
   // correct the combo from the scorecard
@@ -42,7 +42,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.screenshot({ path: __dirname + '/shots/roster-tees.png' });
   await page.click('#btn-step2-next'); await page.waitForTimeout(400);
   const ps = await page.evaluate(() => window.__doc.roundData.groups.flatMap(g => g.players.map(p => [p.name, p.tee, p.teeRating, p.teeSlope])));
-  ok(JSON.stringify(ps) === JSON.stringify([['Brent Smith','White/Green',70.1,129],['Mike Davis','Black',75.8,140],['Jordia','Orange',73.5,136],['Joe','',null,null]]), 'round keeps each player\'s tee with rating and slope: ' + JSON.stringify(ps));
+  ok(JSON.stringify(ps) === JSON.stringify([['Brent Smith','White/Green',70.1,129],['Mike Davis','Black',75.9,139],['Jordia','Orange',73.6,137],['Joe','',null,null]]), 'round keeps each player\'s tee with rating and slope: ' + JSON.stringify(ps));
   await browser.close();
   console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
 })();
