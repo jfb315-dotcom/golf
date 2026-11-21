@@ -16,6 +16,8 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.goto('http://app.test/?beta=0'); await page.waitForTimeout(400);
   const tn = await page.evaluate(() => allAvailableCourses.tennessee_national.pars.join(','));
   ok(tn === '4,5,3,5,4,4,3,4,4,4,5,3,4,5,4,4,3,4', 'Tennessee National pars: ' + tn);
+  const tees = await page.evaluate(() => courseTees('tennessee_national').map(t => `${t.name} ${t.yards} ${t.rating}/${t.slope}`).join(', '));
+  ok(tees === 'Black 7393 75.9/139, Orange 6936 73.6/137, White 6572 71.8/135, White/Green 6235 69.9/128, Green 6059 69.4/127, Red 5355 71.5/129', 'Tennessee National tees match the card: ' + tees);
   await browser.close();
   console.log(fails ? `${fails} FAILED` : 'ALL PASS'); process.exit(fails ? 1 : 0);
 })();

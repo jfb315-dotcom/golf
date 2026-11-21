@@ -62,7 +62,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   // import the old archived round
   await page.click('.older-rounds summary'); await page.click('text=Add older rounds from this phone'); await page.waitForTimeout(200);
   const m = await page.evaluate(() => window.__docs.player_history.rounds['555']?.players['mike davis']);
-  ok(m && m.gross === 90 && m.tee === 'Black' && m.rating === 75.8, 'archived round imported using Mike\'s usual tees: ' + JSON.stringify(m));
+  ok(m && m.gross === 90 && m.tee === 'Black' && m.rating === 75.9, 'archived round imported using Mike\'s usual tees: ' + JSON.stringify(m));
   await page.click('text=Add older rounds from this phone'); await page.waitForTimeout(100);
   ok(Object.keys(await page.evaluate(() => window.__docs.player_history.rounds)).length === 5, 'import is not doubled');
   await page.click('.player-row:has-text("Brent")'); await page.waitForTimeout(150);
