@@ -753,6 +753,7 @@
         .om-tabs button.on { background: var(--accent-gold); color: var(--on-accent); }
         .om-tabs button.on i { color: var(--on-accent); }
         .om-tab-pane { margin-bottom: 8px; }
+        .course-manage { display: flex; flex-direction: column; align-items: flex-start; margin: 4px 0 8px; } .course-manage .text-link { min-height: 44px; margin: 0; text-align: left; } .danger-link { color: var(--bad) !important; }
         .view-tabs { margin-top: 26px; }
         .om-tab-top { display: block; width: 100%; min-height: 54px; margin: 16px 0 6px; padding: 12px; border: 2px solid var(--accent-gold); border-radius: 14px; background: var(--fill); color: var(--text-main); font-size: 16px; font-weight: 800; box-shadow: 0 2px 0 rgba(0,0,0,.25); }
         .om-plain .om-a, .om-plain .om-b, .om-plain .om-b-win, .om-plain .om-birdie-line { color: inherit; text-decoration: none; }
@@ -862,7 +863,7 @@
 
         <div class="field-label">Course</div>
         <div class="select-wrap"><select id="course-selector" aria-label="Course"></select></div>
-        <div class="course-links"><button type="button" class="text-link" onclick="switchScreen('step-1', 'step-add-course')">+ Add a course</button><button type="button" class="text-link" onclick="openTeesEditor()">Tees &amp; ratings</button></div>
+        <div class="course-links"><button type="button" class="text-link" onclick="startCourseEdit(null)">+ Add a course</button><button type="button" class="text-link" onclick="openTeesEditor()">Tees &amp; ratings</button></div>
 
         <div class="clean-grid-2 tourn-only">
             <div>
@@ -953,13 +954,13 @@
     </div>
 
     <div id="step-add-course" class="screen card">
-        <h2>Create Custom Course</h2>
+        <h2 id="add-course-title">Create Custom Course</h2>
         <label>Course Name</label>
         <input type="text" id="new-course-name" placeholder="e.g., Pinehurst No. 2">
         <label>Enter Par for Each Hole</label>
         <div class="par-setup-grid" id="par-input-grid"></div>
         <button class="btn-primary" onclick="saveCustomCourse()" style="margin-top: 25px;">💾 Save Course</button>
-        <button class="btn-secondary" onclick="switchScreen('step-add-course', 'step-1')">Cancel</button>
+        <button class="btn-secondary" onclick="editingCourseKey = null; switchScreen('step-add-course', 'step-1')">Cancel</button>
     </div>
 
     <div id="step-2" class="screen clean">
@@ -1166,6 +1167,7 @@
         <details class="help"><summary><div>3 · Start a tournament <span>＋ New tournament</span></div><span class="fold-hint">Tap to open</span></summary>
             <p>Home has two starts: <b>＋ New tournament</b> (teams, bets, skins, side bets) and <b>⛳ Our Match</b> (just the four of you, see 4).</p>
             <p><b>Setup:</b> course, teams and players per team, holes and where you start, team games (1-, 2-, 3-Ball, and whether all birdies count), <b>Per bet</b> and <b>Skins</b>. The entry fee adds up as you go.</p>
+            <p><b>Courses &amp; tees</b> (on Home): pick a course to fix its tees, ratings and slopes, <b>✎ Change the holes (par)</b>, or <b>+ Add a course</b>. A course you added has <b>🗑 Delete this course</b>; a built-in course you changed has <b>↺ Use the original card</b>.</p>
             <p>Last on the page: <b>Our Match within this tournament?</b> Leave it off for a normal tournament. Turn it on to run Our Match for 4 of the players on the side; its amounts open right under it.</p>
             <p><b>Next: Rosters</b> shows the teams. Each player has <b>Tees</b> and <b>Strokes</b> (the hole numbers he gets a stroke on, like <i>3, 7, 12</i>). Use <b>Balance teams</b> or a <b>blind draw</b> for an odd number, pick <b>Ride with team</b> or <b>Scramble carts</b>, and add any <b>side bets</b>.</p>
             <p><b>Side bets</b> are 2 on 2 between any four players, low net ball Nassau. Each row is a pair of partners, labeled with their initials once picked (<i>JS &amp; JB</i>). You can also add one during the round from Standings.</p>
@@ -1511,7 +1513,7 @@
         <div class="modal-content">
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Tees &amp; ratings</h2>
             <div class="select-wrap"><select id="tees-course-sel" aria-label="Course" onchange="pickCourseFor('tees')"></select></div>
-            <button type="button" class="text-link" onclick="document.getElementById('tees-modal').classList.remove('active'); showScreen('step-add-course')">+ Add a course</button>
+            <div class="course-manage"><button type="button" class="text-link" id="course-add-btn" onclick="startCourseEdit(null)">+ Add a course</button><button type="button" class="text-link" id="course-edit-btn" onclick="startCourseEdit(document.getElementById('course-selector').value)">✎ Change the holes (par)</button><button type="button" class="text-link danger-link" id="course-del-btn" onclick="deleteCourse()"></button></div>
             <div class="tee-edit-head"><span>Tee</span><span>Yards</span><span>Rating</span><span>Slope</span><span></span></div>
             <div id="tees-rows"></div>
             <button type="button" class="text-link" onclick="addTeeRow()">+ Add a tee</button>
@@ -2191,24 +2193,53 @@ function toggle9HoleOptions() {
             } 
         }
         
-        function saveCustomCourse() { 
-            let name = document.getElementById('new-course-name').value.trim(); 
-            if (!name) { alert("Please enter a course name."); return; } 
-            let pars = []; 
-            for(let i=1; i<=18; i++) { 
-                let val = parseInt(document.getElementById(`custom-par-${i}`).value); 
-                pars.push(isNaN(val) ? 4 : val); 
-            } 
-            let courseKey = "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, ''); 
-            let customCourses = JSON.parse(localStorage.getItem('customCourses')) || {}; 
-            customCourses[courseKey] = { name: name + " (Custom)", pars: pars }; 
-            localStorage.setItem('customCourses', JSON.stringify(customCourses)); 
-            refreshCourseDropdown(); 
-            document.getElementById('course-selector').value = courseKey; 
-            document.getElementById('new-course-name').value = ''; 
-            for(let i=1; i<=18; i++) document.getElementById(`custom-par-${i}`).value = ''; 
-            alert("Course Saved Successfully!"); 
-            switchScreen('step-add-course', 'step-1'); 
+        // Courses added (or changed) on this phone; a built-in course's key here replaces its card
+        function savedCourses() { try { return JSON.parse(localStorage.getItem('customCourses')) || {}; } catch (e) { return {}; } }
+        let editingCourseKey = null;
+        // Open the par screen empty (new course) or filled in with a course to change
+        function startCourseEdit(key) {
+            editingCourseKey = key;
+            let c = key ? allAvailableCourses[key] : null;
+            document.getElementById('add-course-title').textContent = c ? 'Change the holes' : 'Create Custom Course';
+            document.getElementById('new-course-name').value = c ? c.name.replace(/ \(Custom\)$/, '') : '';
+            for (let i = 1; i <= 18; i++) document.getElementById(`custom-par-${i}`).value = c ? c.pars[i - 1] : '';
+            document.getElementById('tees-modal').classList.remove('active');
+            showScreen('step-add-course');
+        }
+        function saveCustomCourse() {
+            let name = document.getElementById('new-course-name').value.trim();
+            if (!name) { alert("Please enter a course name."); return; }
+            let pars = [];
+            for(let i=1; i<=18; i++) {
+                let val = parseInt(document.getElementById(`custom-par-${i}`).value);
+                pars.push(isNaN(val) ? 4 : val);
+            }
+            let courseKey = editingCourseKey || "custom_" + name.toLowerCase().replace(/[^a-z0-9]/g, '');
+            let customCourses = savedCourses();
+            customCourses[courseKey] = { name: courseDatabase[courseKey] ? name : name + " (Custom)", pars: pars };
+            localStorage.setItem('customCourses', JSON.stringify(customCourses));
+            refreshCourseDropdown();
+            document.getElementById('course-selector').value = courseKey;
+            document.getElementById('course-selector').dispatchEvent(new Event('change'));
+            document.getElementById('new-course-name').value = '';
+            for(let i=1; i<=18; i++) document.getElementById(`custom-par-${i}`).value = '';
+            alert(editingCourseKey ? "Holes saved." : "Course Saved Successfully!");
+            editingCourseKey = null;
+            switchScreen('step-add-course', 'step-1');
+        }
+        // A course you added goes away; a changed built-in course goes back to its original card
+        function deleteCourse() {
+            let key = document.getElementById('course-selector').value, custom = savedCourses();
+            if (!custom[key]) return;
+            let builtIn = !!courseDatabase[key];
+            if (!confirm(builtIn ? `Put ${courseDatabase[key].name} back to the original card?` : `Delete ${custom[key].name}? Rounds already played keep their scores.`)) return;
+            delete custom[key];
+            localStorage.setItem('customCourses', JSON.stringify(custom));
+            refreshCourseDropdown();
+            let sel = document.getElementById('course-selector');
+            sel.value = builtIn ? key : Object.keys(allAvailableCourses)[0];
+            sel.dispatchEvent(new Event('change'));
+            openTeesEditor();
         }
 
         // ==========================================
@@ -2438,6 +2469,9 @@ function toggle9HoleOptions() {
                 tees.push({ name: newName, yards: null, rating: null, slope: null });
             } else teeSelectToFill = null;
             renderTeeRows(tees);
+            let del = document.getElementById('course-del-btn'), custom = savedCourses();
+            del.textContent = courseDatabase[key] ? (custom[key] ? '↺ Use the original card' : '') : '🗑 Delete this course';
+            del.style.display = del.textContent ? '' : 'none';
             if (typeof newName === 'string') setTimeout(() => { let rows = document.querySelectorAll('#tees-rows .tee-edit-row'); rows[rows.length - 1]?.querySelector(newName ? '.te-rating' : '.te-name')?.focus(); }, 50);
             document.getElementById('tees-modal').classList.add('active');
         }
@@ -7473,7 +7507,7 @@ function hideCartHoleHeader() {
         // Which copy of the app this phone is showing. Bump APP_VERSION (and version.txt to match) with every change to the app.
         // A phone can hold on to an older copy for a while after an update, so the app asks the site for version.txt each time
         // it opens or comes back to the front; if that differs, it loads the new copy by itself (or offers it mid-round).
-        const APP_VERSION = '2026-11-21.1';
+        const APP_VERSION = '2026-11-21.2';
         document.getElementById('app-version').textContent = 'Version ' + APP_VERSION;
         let updateTried = false;
         async function checkForUpdate() {
