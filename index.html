@@ -1824,7 +1824,7 @@ const courseDatabase = {
     "chatata_valley": { name: "Chatata Valley (Cleveland, TN)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 5, 4, 3, 4, 3, 4, 5] },
     "council_fire": { name: "Council Fire (Chattanooga, TN)", pars: [4, 5, 4, 3, 4, 5, 3, 4, 4, 4, 5, 3, 5, 3, 4, 4, 3, 5] },
     "chattanooga_cc": { name: "Chattanooga Country Club", pars: [4, 4, 3, 5, 4, 4, 3, 5, 4, 4, 4, 3, 5, 4, 4, 3, 5, 4] },
-    "tennessee_national": { name: "Tennessee National (Loudon, TN)", pars: [4, 4, 4, 3, 5, 4, 5, 3, 4, 4, 4, 3, 4, 5, 4, 5, 3, 4] },
+    "tennessee_national": { name: "Tennessee National (Loudon, TN)", pars: [4, 5, 3, 5, 4, 4, 3, 4, 4, 4, 5, 3, 4, 5, 4, 4, 3, 4] }, // from John's card, Nov 2026
     "ballyhack": { name: "Ballyhack Golf Club (Roanoke, VA)", pars: [4, 5, 3, 4, 4, 4, 3, 4, 5, 5, 4, 4, 3, 4, 5, 4, 3, 4] },
     "virginian": { name: "The Virginian Golf Club (Bristol, VA)", pars: [4, 3, 5, 4, 4, 5, 4, 3, 4, 4, 4, 4, 3, 5, 3, 4, 4, 5] }
 };
@@ -7473,7 +7473,7 @@ function hideCartHoleHeader() {
         // Which copy of the app this phone is showing. Bump APP_VERSION (and version.txt to match) with every change to the app.
         // A phone can hold on to an older copy for a while after an update, so the app asks the site for version.txt each time
         // it opens or comes back to the front; if that differs, it loads the new copy by itself (or offers it mid-round).
-        const APP_VERSION = '2026-11-19.1';
+        const APP_VERSION = '2026-11-21.1';
         document.getElementById('app-version').textContent = 'Version ' + APP_VERSION;
         let updateTried = false;
         async function checkForUpdate() {
