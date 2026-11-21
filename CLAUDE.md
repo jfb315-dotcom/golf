@@ -49,6 +49,7 @@ A phone web app John uses to run golf for his group: sign-ups, balanced teams, l
 - Collapsible sections use `fold(id, title, body, open)`; reuse it rather than writing `<details>` by hand. A row of buttons that each open a view (John prefers these to dropdowns on Standings): `viewTabsHTML(id, [[key, label, body], …])`.
 - Comments say *why*, in plain words, one line. Match the surrounding style (long single-line CSS rules, `let`, arrow functions).
 - Adding a file the app loads: add it to `APP_FILES` in `sw.js` and bump `CACHE`. Changing a `card-*.png`: add `?v=N` to its `og:image` so Messages refetches it.
+- Courses: built-in cards are `courseDatabase` (pars) and `builtInTees`, checked against the club's printed card. Courses added or changed on the phone are `localStorage.customCourses` (phone only); an entry with a built-in key replaces that card until **↺ Use the original card**. Add / change / delete live in Courses & tees (`startCourseEdit`, `deleteCourse`). Tee changes are shared through `course_tees`.
 - Never add `start_url` to a manifest: each Home Screen icon must keep the link it was saved from.
 
 ## Design rules
