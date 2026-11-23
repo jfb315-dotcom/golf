@@ -720,7 +720,7 @@
         html.revamp .rv-tabbar button i { font-style: normal; font-size: 20px; line-height: 24px; }
         html.revamp .rv-tabbar button.on { color: var(--accent-gold); }
         html.revamp .rv-tabbar .rv-fab i { width: 52px; height: 52px; margin-top: -22px; border-radius: 18px; background: var(--accent-gold); color: var(--on-accent); display: grid; place-items: center; font-size: 26px; box-shadow: 0 8px 24px color-mix(in srgb, var(--accent-gold) 35%, transparent); }
-        .om-press-made { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin: 6px 0; padding: 8px 12px; border-radius: 12px; background: var(--fill-soft); font-size: 14px; color: var(--text-muted); }
+        .om-press-made { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 8px; margin: 6px 0; padding: 8px 12px; border-radius: 12px; background: var(--fill-soft); font-size: 14px; color: var(--text-muted); }
         /* iPhones zoom the whole page in when you tap a typing box with text under 16px, and don't zoom back out.
            These boxes were smaller, so they get 16px. */
         .roster-stroke-input, #round-date, input[type="time"], select[id$="-tee"], .tee-edit-row input,
@@ -761,7 +761,9 @@
         .om-win { font-weight: 900; font-size: 1.2em; }
         .app-version { margin: 22px 4px 0; text-align: center; font-size: 12px; color: var(--text-muted); }
         .update-bar { display: block; width: 100%; margin: 4px 0 6px; padding: 12px; border: 0; border-radius: 14px; background: var(--accent-gold); color: var(--on-accent); font-size: 15px; font-weight: 800; position: relative; z-index: 600; }
-        .om-unpress { margin-left: 8px; padding: 3px 10px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-muted); font-size: 12px; font-weight: 700; }
+        .om-unpress { margin-left: 8px; min-height: 44px; padding: 6px 14px; border-radius: 999px; border: 1px solid var(--line); background: var(--fill); color: var(--text-main); font-size: 14px; font-weight: 700; flex-shrink: 0; }
+        .om-press-made > span { flex: 1 1 100%; }
+        #press-hole { width: 100%; min-height: 56px; border-radius: 14px; font-size: 17px; padding: 0 14px; background: var(--fill); color: var(--text-main); border: 1px solid var(--line); }
         .om-grid-rules { margin: 10px 0 0; font-size: 12px; color: var(--text-muted); }
         .om-final-banner .om-final-note { font-size: 13px; color: var(--text-muted); }
         .om-total b.om-settle { margin-top: 6px; color: var(--accent-gold); font-size: 17px; }
@@ -1184,7 +1186,7 @@
                 <li><b>The second nine you play is double.</b> Start on 1: $25 on 1–9, $50 on 10–18. Start on 10: $25 on 10–18, $50 on 1–9.</li>
             </ul>
             <p><b>On Standings:</b> the trending box and the <b>money so far</b> are on top. Under them, tap <b>1st ball → 2nd</b>, <b>Nassau</b> or <b>Scorecards</b> to see that part. The nine you're playing shows first (once the match is over, the front nine is first again). The number that won each hole is in bold. <b>↑ Pick another view</b> at the end takes you back up to the buttons.</p>
-            <p>You keep all four scores. When a pair can press, a <b>PRESS</b> button shows under the money table. Pressed by mistake? Open <b>Presses made</b> at the bottom and tap <b>Undo</b> (only you see that).</p>
+            <p>You keep all four scores. When a pair can press, a <b>PRESS</b> button shows under the money table. Tapping it asks which hole the press <b>starts on</b>: the next hole, or an earlier one if you're putting it in late. Wrong hole? Open <b>Presses made</b> at the bottom and tap <b>Change hole</b>; pressed by mistake, tap <b>Undo</b> (only you see that).</p>
             <p><b>Let the others follow along:</b> on the scoring screen, tap <b>📣 Send the match to the other players</b>. The four players are listed. Tap <b>💬 Text</b> next to each player; each gets a short text with <b>his own link</b>. A player with no number in Players gets <b>Copy link</b> instead.</p>
             <p>His link always shows the match <b>from his pair's side</b> (his names first, + when they're up), whoever he's partnered with that day. It's watch only: no scoring, no presses, no alerts. See <b>JB Live</b> below to keep it on his Home Screen.</p>
         </details>
@@ -1509,6 +1511,17 @@
         </div>
     </div>
 
+    <div id="press-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="press-title" style="margin-top: 0; color: var(--text-main); text-align: center;">Press</h2>
+            <p class="clean-sub" id="press-who" style="text-align: center; margin-top: -6px;"></p>
+            <div class="field-label">Starts on hole</div>
+            <div class="select-wrap"><select id="press-hole" aria-label="Hole the press starts on"></select></div>
+            <p class="dash-footnote" id="press-note">Late putting it in? Pick the hole it really started on. Each pair gets one press per bet.</p>
+            <button class="btn-primary" id="press-save" onclick="savePress()">Save</button>
+            <button class="btn-secondary" onclick="document.getElementById('press-modal').classList.remove('active')">Cancel</button>
+        </div>
+    </div>
     <div id="tees-modal" class="modal-overlay">
         <div class="modal-content">
             <h2 style="margin-top: 0; color: var(--text-main); text-align: center;">Tees &amp; ratings</h2>
@@ -6190,7 +6203,7 @@ function hideCartHoleHeader() {
 
             // ---- presses made, with Undo: the organizer's, at the bottom, folded ----
             if (live && pressList.length) {
-                html += fold('om-presses', `Presses made (${pressList.length}) · undo one`, pressList.map(pr => `<div class="om-press-made"><span>⤴ ${pr.text} · from hole ${pr.start}</span><button type="button" class="om-unpress" onclick="unpressOurMatch('${pr.key}','${pr.by}')">Undo</button></div>`).join(''));
+                html += fold('om-presses', `Presses made (${pressList.length}) · change or undo`, pressList.map(pr => `<div class="om-press-made"><span>⤴ ${pr.text} · from hole ${pr.start}</span><button type="button" class="om-unpress om-movepress" onclick="openPressPicker('${pr.key}','${pr.by}', true)">Change hole</button><button type="button" class="om-unpress" onclick="unpressOurMatch('${pr.key}','${pr.by}')">Undo</button></div>`).join(''));
             }
             return html + `</section>`;
         }
@@ -6398,18 +6411,39 @@ function hideCartHoleHeader() {
             document.getElementById('our-match')?.scrollIntoView({ block: 'start' });
         }
 
-        function pressOurMatch(key, side) {
+        function pressOurMatch(key, side) { openPressPicker(key, side, false); }
+        let pressPick = null; // the press being made or moved: { key, side (real, not flipped), edit }
+        function openPressPicker(key, side, edit) {
             side = realOurMatchSide(side);
             let m = calculateOurMatch(roundData, scoresDb, matchPresses);
             let n = m && m.nassau[key];
-            if (!n || !n.canPress[side]) return;
-            let name = m.names[side === 'A' ? 0 : 1];
+            if (!n || (edit ? matchPresses?.[key]?.[side] == null : !n.canPress[side])) return;
             let label = { front: 'front 9', back: 'back 9', overall: 'overall' }[key];
-            let next = n.holes[n.holes.indexOf(n.lastDone) + 1];
-            if (!confirm(`${name} press the ${label} ($${roundData.ourMatch.nassauBet} per person), starting on hole ${next}?\n\nEach side gets one press per bet.`)) return;
-            matchPresses = { ...matchPresses, [key]: { ...(matchPresses[key] || {}), [side]: n.lastDone } };
-            trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('matchPresses', key, side), n.lastDone));
-            sendAlert('presses', `⤴ ${name} pressed the ${{ front: 'Front 9', back: 'Back 9', overall: 'Overall' }[key]}`, `Our Match · from hole ${next}`, 'our-match', `press-${key}-${side}`);
+            // Any hole after the bet's first, up to the next one to play
+            let last = Math.min(n.holes.indexOf(n.lastDone) + 1, n.holes.length - 1);
+            let starts = n.holes.slice(1, last + 1);
+            let now = edit ? n.holes[n.holes.indexOf(matchPresses[key][side]) + 1] : starts[starts.length - 1];
+            document.getElementById('press-hole').innerHTML = starts.map(h => `<option value="${h}"${h === now ? ' selected' : ''}>Hole ${h}${!edit && h === starts[starts.length - 1] && !n.finished ? ' (next hole)' : ''}</option>`).join('');
+            document.getElementById('press-title').textContent = edit ? 'Change the press hole' : `Press the ${label}`;
+            document.getElementById('press-who').textContent = `${m.names[side === 'A' ? 0 : 1]} · $${roundData.ourMatch.nassauBet} per person`;
+            document.getElementById('press-note').textContent = edit ? 'The money updates as soon as you save.' : 'Late putting it in? Pick the hole it really started on. Each pair gets one press per bet.';
+            pressPick = { key, side, edit };
+            document.getElementById('press-modal').classList.add('active');
+        }
+        function savePress() {
+            if (!pressPick) return;
+            let { key, side, edit } = pressPick;
+            let m = calculateOurMatch(roundData, scoresDb, matchPresses), n = m && m.nassau[key];
+            let start = Number(document.getElementById('press-hole').value);
+            let i = n ? n.holes.indexOf(start) : -1;
+            document.getElementById('press-modal').classList.remove('active');
+            pressPick = null;
+            if (i < 1) return;
+            let after = n.holes[i - 1]; // stored as the last hole before the press starts
+            matchPresses = { ...matchPresses, [key]: { ...(matchPresses[key] || {}), [side]: after } };
+            trackCloudWrite(activeTournamentRef.update(new firebase.firestore.FieldPath('matchPresses', key, side), after));
+            let name = m.names[side === 'A' ? 0 : 1];
+            if (!edit) sendAlert('presses', `⤴ ${name} pressed the ${{ front: 'Front 9', back: 'Back 9', overall: 'Overall' }[key]}`, `Our Match · from hole ${start}`, 'our-match', `press-${key}-${side}`);
             viewDashboard();
             document.getElementById('our-match')?.scrollIntoView({ block: 'start' });
         }
@@ -7507,7 +7541,7 @@ function hideCartHoleHeader() {
         // Which copy of the app this phone is showing. Bump APP_VERSION (and version.txt to match) with every change to the app.
         // A phone can hold on to an older copy for a while after an update, so the app asks the site for version.txt each time
         // it opens or comes back to the front; if that differs, it loads the new copy by itself (or offers it mid-round).
-        const APP_VERSION = '2026-11-21.2';
+        const APP_VERSION = '2026-11-23.1';
         document.getElementById('app-version').textContent = 'Version ' + APP_VERSION;
         let updateTried = false;
         async function checkForUpdate() {
