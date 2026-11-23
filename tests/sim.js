@@ -95,7 +95,7 @@ const results = [];
             scoresDb[g.id][p.id] = scoresDb[g.id][p.id] || {}; scoresDb[g.id][p.id][h] = Math.max(1, par + (x < 0.12 ? -1 : x < 0.55 ? 0 : x < 0.85 ? 1 : 2)); who.push([g.id, p.id]); }));
           saveScoresToCloud(who, h);
         }, [h, Array.from({ length: 20 }, rnd)]);
-        if (om && i === 3 && rnd() < 0.6) await page.evaluate(() => { let m = calculateOurMatch(roundData, scoresDb, matchPresses); let k = Object.keys(m.nassau).find(k => m.nassau[k].canPress.A || m.nassau[k].canPress.B); if (k) pressOurMatch(k, m.nassau[k].canPress.A ? 'A' : 'B'); });
+        if (om && i === 3 && rnd() < 0.6) await page.evaluate(() => { let m = calculateOurMatch(roundData, scoresDb, matchPresses); let k = Object.keys(m.nassau).find(k => m.nassau[k].canPress.A || m.nassau[k].canPress.B); if (k) { pressOurMatch(k, m.nassau[k].canPress.A ? 'A' : 'B'); savePress(); } });
         if (i === Math.floor(seq.length / 2)) {
           await page.evaluate(() => viewDashboard());
           const mid = await page.innerText('#step-dashboard');

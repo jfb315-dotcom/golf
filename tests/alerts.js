@@ -65,7 +65,7 @@ let fails = 0; const ok = (c, m) => { console.log((c ? 'PASS ' : 'FAIL ') + m); 
   await page.click('text=View standings'); await page.waitForTimeout(200);
   const pressBtn = page.locator('.om-press').first();
   const pressText = await pressBtn.innerText();
-  await pressBtn.click(); await page.waitForTimeout(300);
+  await pressBtn.click(); await page.waitForTimeout(200); await page.click('#press-save'); await page.waitForTimeout(300);
   ok(sent.some(a => a.title.startsWith('⤴ ') && a.title.includes('pressed the') && a.view === 'our-match'), 'press alert sent (' + pressText + '): ' + sent.map(a => a.title).join(' | '));
   ok(await page.isVisible('#step-dashboard .alerts-banner .ab-chip'), 'standings shows the alerts tag too');
 
